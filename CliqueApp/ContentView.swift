@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    // Main View
     @State var backgroundColor: Color = Color(#colorLiteral(red: 0.4620226622, green: 0.8382837176, blue: 1, alpha: 1))
     
     var body: some View {
