@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		E68A6E3B2D3076A200E5AF14 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		E6DB939C2D2C5944002D6BBD /* CliqueApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CliqueApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E68A6E3B2D3076A200E5AF14 /* FirebaseAnalytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = CliqueApp;
 			packageProductDependencies = (
+				E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */,
 			);
 			productName = CliqueApp;
 			productReference = E6DB939C2D2C5944002D6BBD /* CliqueApp.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = E6DB93932D2C5944002D6BBD;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E6DB939D2D2C5944002D6BBD /* Products */;
 			projectDirPath = "";
@@ -322,6 +331,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.6.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E6DB93942D2C5944002D6BBD /* Project object */;
 }
