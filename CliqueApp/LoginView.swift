@@ -18,10 +18,6 @@ struct LoginView: View {
         ZStack {
             loginBackgroundColor.ignoresSafeArea()
             
-//            RoundedRectangle(cornerRadius: /*@START_MENU_TOKEN@*/25.0/*@END_MENU_TOKEN@*/)
-//                .frame(width: 300, height:500)
-//                .foregroundColor(Color(#colorLiteral(red: 0.5818830132, green: 0.2156915367, blue: 1, alpha: 1)))
-            
             VStack {
                 
                 Spacer()
