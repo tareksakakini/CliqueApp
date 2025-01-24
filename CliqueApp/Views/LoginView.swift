@@ -115,22 +115,6 @@ extension LoginView {
     
     private var signin_button: some View {
         
-        
-        //        NavigationLink(
-        //            "Sign in",
-        //            destination: {
-        //                if ud.isUserPresent(username: enteredUsername, password: enteredPassword) {
-        //                    LandingView(enteredName: enteredUsername, enteredEmail: enteredPassword, landing_background_color: main_color)
-        //                }
-        //            })
-        //        .padding()
-        //        .padding(.horizontal)
-        //        .background(.white)
-        //        .cornerRadius(10)
-        //        .foregroundColor(main_color)
-        //        .bold()
-        //        .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-        
         Button {
             if ud.isUserPresent(username: enteredUsername, password: enteredPassword) {
                 go_to_landing_screen = true
@@ -153,26 +137,5 @@ extension LoginView {
         .navigationDestination(isPresented: $go_to_landing_screen) {
             LandingView(enteredName: enteredUsername, enteredEmail: enteredPassword, landing_background_color: main_color)
         }
-
-        //        NavigationLink(
-        //            "Sign in",
-        //            destination: LandingView(enteredName: enteredUsername, enteredEmail: enteredPassword, landing_background_color: main_color)
-        //        )
-        //        .padding()
-        //        .padding(.horizontal)
-        //        .background(.white)
-        //        .cornerRadius(10)
-        //        .foregroundColor(main_color)
-        //        .bold()
-        //        .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-        //        .disabled(!ud.isUserPresent(username: enteredUsername, password: enteredPassword))
-        //        .onTapGesture {
-        //            if !ud.isUserPresent(username: enteredUsername, password: enteredPassword) {
-        //                show_wrong_message = true
-        //            }
-        //            else {
-        //                show_wrong_message = false
-        //            }
-        //        }
     }
 }
