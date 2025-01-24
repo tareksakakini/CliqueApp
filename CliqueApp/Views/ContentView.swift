@@ -14,7 +14,7 @@ struct ContentView: View {
     @EnvironmentObject private var ud: UserViewModel
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 
                 backgroundColor.ignoresSafeArea()
@@ -22,32 +22,14 @@ struct ContentView: View {
                 VStack {
                     Spacer()
                     
-                    Image(systemName: "bonjour")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 150, height: 150)
-                        .foregroundColor(.white)
+                    mainpage_logo
                     
-                    Text("Let's Clique")
-                        .font(.custom("Noteworthy-Bold", size: 25))
-                        .foregroundColor(.white)
-                    
-                    RoundedRectangle(cornerRadius: /*@START_MENU_TOKEN@*/25.0/*@END_MENU_TOKEN@*/)
-                        .frame(width:120, height:3)
-                        .foregroundColor(.white)
+                    mainpage_subtitle
                     
                     Spacer()
                     Spacer()
                     
-                    NavigationLink("Log In", destination: LoginView(main_color: backgroundColor))
-                        .bold()
-                        .font(.title2)
-                        .padding()
-                        .padding(.horizontal)
-                        .background(.white)
-                        .cornerRadius(10)
-                        .foregroundColor(backgroundColor)
-                        .shadow(radius: 10)
+                    mainpage_button
                     
                     Spacer()
                 }
@@ -59,4 +41,40 @@ struct ContentView: View {
 #Preview {
     ContentView()
         .environmentObject(UserViewModel())
+}
+
+extension ContentView {
+    private var mainpage_logo: some View {
+        Image(systemName: "bonjour")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(width: 150, height: 150)
+            .foregroundColor(.white)
+        
+    }
+    
+    private var mainpage_subtitle: some View {
+        VStack {
+            Text("Let's Clique")
+                .font(.custom("Noteworthy-Bold", size: 25))
+                .foregroundColor(.white)
+            
+            RoundedRectangle(cornerRadius: /*@START_MENU_TOKEN@*/25.0/*@END_MENU_TOKEN@*/)
+                .frame(width:120, height:3)
+                .foregroundColor(.white)
+        }
+        
+    }
+    
+    private var mainpage_button: some View {
+        NavigationLink("Log In", destination: LoginView(main_color: backgroundColor))
+            .bold()
+            .font(.title2)
+            .padding()
+            .padding(.horizontal)
+            .background(.white)
+            .cornerRadius(10)
+            .foregroundColor(backgroundColor)
+            .shadow(radius: 10)
+    }
 }
