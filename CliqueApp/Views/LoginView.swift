@@ -8,8 +8,11 @@
 import SwiftUI
 
 struct LoginView: View {
-    @State var name: String = ""
-    @State var email: String = ""
+    
+    @EnvironmentObject private var ud: UserViewModel
+    
+    @State var enteredUsername: String = ""
+    @State var enteredPassword: String = ""
     
     @State var loginBackgroundColor: Color = Color.white
     @State var main_color: Color
@@ -44,13 +47,13 @@ struct LoginView: View {
                 
                 Spacer()
                 
-                TextField("Enter your name here ...", text: $name)
+                TextField("Enter your username here ...", text: $enteredUsername)
                     .padding()
                     .background(.white)
                     .cornerRadius(10)
                     .padding()
                 
-                TextField("Enter your e-mail here ...", text: $email)
+                TextField("Enter your password here ...", text: $enteredPassword)
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
                     .padding()
@@ -60,7 +63,9 @@ struct LoginView: View {
                 
                 Spacer()
                 
-                NavigationLink("Sign in", destination: LandingView(enteredName: name, enteredEmail: email, landing_background_color: main_color))
+                NavigationLink(
+                    "Sign in",
+                    destination: ud.isUserPresent(username: enteredUsername, password: enteredPassword) ? LandingView(enteredName: enteredUsername, enteredEmail: enteredPassword, landing_background_color: main_color) : LandingView(enteredName: "Khara", enteredEmail: enteredPassword, landing_background_color: main_color))
                     .padding()
                     .padding(.horizontal)
                     .background(.white)
@@ -86,4 +91,5 @@ struct LoginView: View {
 #Preview {
     var backgroundColor: Color = Color(#colorLiteral(red: 0.4620226622, green: 0.8382837176, blue: 1, alpha: 1))
     LoginView(main_color: backgroundColor)
+        .environmentObject(UserViewModel())
 }
