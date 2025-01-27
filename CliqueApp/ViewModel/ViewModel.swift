@@ -25,4 +25,14 @@ class ViewModel: ObservableObject {
         }
         return userPresent
     }
+    
+    func getEvents(username: String) -> [EventModel] {
+        var eventsForUser: [EventModel] = []
+        for event in self.events {
+            if event.attendeesAccepted.contains(username) {
+                eventsForUser.append(event)
+            }
+        }
+        return eventsForUser
+    }
 }

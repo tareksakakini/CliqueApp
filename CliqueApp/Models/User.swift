@@ -16,7 +16,7 @@ struct UserModel {
     let eventsInvited: [String]
 }
 
-struct EventModel {
+struct EventModel: Hashable {
     let id: String
     let title: String
     let location: String
