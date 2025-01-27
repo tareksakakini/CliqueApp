@@ -18,6 +18,8 @@ struct LoginView: View {
     
     @State var go_to_landing_screen: Bool = false
     
+    @State private var user_signedin: UserModel? = nil
+    
     var body: some View {
         ZStack {
             Color.white.ignoresSafeArea()
@@ -112,9 +114,10 @@ extension LoginView {
     private var signin_button: some View {
         
         Button {
-            if ud.isUserPresent(username: enteredUsername, password: enteredPassword) {
+            if ud.getUser(username: enteredUsername, password: enteredPassword) != nil {
                 go_to_landing_screen = true
                 show_wrong_message = false
+                user_signedin = ud.getUser(username: enteredUsername, password: enteredPassword)
             }
             else {
                 show_wrong_message = true
@@ -131,7 +134,10 @@ extension LoginView {
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
         .navigationDestination(isPresented: $go_to_landing_screen) {
-            MainView(enteredName: enteredUsername, enteredEmail: enteredPassword)
+            if let user_signedin {
+                MainView(user: user_signedin)
+            }
+            
         }
     }
 }

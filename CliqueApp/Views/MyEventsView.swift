@@ -11,8 +11,7 @@ struct MyEventsView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
-    @State var enteredName: String
-    @State var enteredEmail: String
+    @State var user: UserModel
     
     var body: some View {
         
@@ -24,7 +23,7 @@ struct MyEventsView: View {
                 header
                 
                 ScrollView {
-                    ForEach(ud.getEvents(username: enteredName), id: \.self) {event in
+                    ForEach(ud.getEvents(username: user.userName), id: \.self) {event in
                         EventPillView(
                             event: event
                         )
@@ -36,9 +35,7 @@ struct MyEventsView: View {
 }
 
 #Preview {
-    var name: String = "tareksakakini"
-    var email: String = "john@example.com"
-    MyEventsView(enteredName: name, enteredEmail: email)
+    MyEventsView(user: UserData.userData[0])
         .environmentObject(ViewModel())
 }
 
@@ -60,7 +57,7 @@ extension MyEventsView {
                 .frame(width: 25, height: 25)
                 .foregroundColor(.white)
             
-            Text(enteredName)
+            Text(user.userName)
                 .foregroundColor(.white)
                 .font(.subheadline)
                 .bold()

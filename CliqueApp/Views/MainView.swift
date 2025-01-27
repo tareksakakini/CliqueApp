@@ -11,18 +11,17 @@ struct MainView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
-    @State var enteredName: String
-    @State var enteredEmail: String
+    @State var user: UserModel
     
     var body: some View {
         TabView {
-            MyEventsView(enteredName: enteredName, enteredEmail: enteredEmail)
+            MyEventsView(user: user)
                 .tabItem {
                     Image(systemName: "house.fill")
                     Text("My Events")
                 }
             
-            MyInvitesView(enteredName: enteredName, enteredEmail: enteredEmail)
+            MyInvitesView(user: user)
                 .tabItem {
                     Image(systemName: "envelope.fill")
                     Text("Invites")
@@ -37,10 +36,12 @@ struct MainView: View {
             Text("My Settings")
                 .tabItem {
                     Image(systemName: "gearshape.fill")
+                    //                          "gear")
                     Text("My Settings")
                 }
             
         }
+        .navigationBarHidden(true)
         .accentColor(Color.accentColor)
         .onAppear {
             // Change the background color of the TabBar
@@ -54,8 +55,7 @@ struct MainView: View {
 }
 
 #Preview {
-    var name: String = "tareksakakini"
-    var email: String = "john@example.com"
-    MainView(enteredName: name, enteredEmail: email)
+    MainView(user: UserData.userData[1])
         .environmentObject(ViewModel())
+    
 }

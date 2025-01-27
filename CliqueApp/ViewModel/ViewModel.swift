@@ -16,14 +16,13 @@ class ViewModel: ObservableObject {
         self.events = UserData.eventData
     }
     
-    func isUserPresent(username: String, password: String) -> Bool {
-        var userPresent = false
+    func getUser(username: String, password: String) -> UserModel? {
         for user in self.users {
             if user.userName == username && user.password == password {
-                userPresent = true
+                return user
             }
         }
-        return userPresent
+        return nil
     }
     
     func getEvents(username: String) -> [EventModel] {

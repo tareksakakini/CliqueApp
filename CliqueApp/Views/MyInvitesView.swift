@@ -11,8 +11,8 @@ struct MyInvitesView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
-    @State var enteredName: String
-    @State var enteredEmail: String
+
+    @State var user: UserModel
     
     var body: some View {
         
@@ -24,7 +24,7 @@ struct MyInvitesView: View {
                 header
                 
                 ScrollView {
-                    ForEach(ud.getInvites(username: enteredName), id: \.self) {event in
+                    ForEach(ud.getInvites(username: user.userName), id: \.self) {event in
                         EventPillView(
                             event: event
                         )
@@ -36,10 +36,7 @@ struct MyInvitesView: View {
 }
 
 #Preview {
-    var name: String = "tareksakakini"
-    var email: String = "john@example.com"
-    var main_color: Color = Color(#colorLiteral(red: 0.4620226622, green: 0.8382837176, blue: 1, alpha: 1))
-    MyInvitesView(enteredName: name, enteredEmail: email)
+    MyInvitesView(user: UserData.userData[0])
         .environmentObject(ViewModel())
 }
 
@@ -61,7 +58,7 @@ extension MyInvitesView {
                 .frame(width: 25, height: 25)
                 .foregroundColor(.white)
             
-            Text(enteredName)
+            Text(user.userName)
                 .foregroundColor(.white)
                 .font(.subheadline)
                 .bold()
