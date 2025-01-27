@@ -17,7 +17,7 @@ struct MainView: View {
         TabView {
             MyEventsView(user: user)
                 .tabItem {
-                    Image(systemName: "house.fill")
+                    Image(systemName: "shareplay")
                     Text("My Events")
                 }
             
