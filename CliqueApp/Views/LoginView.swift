@@ -14,16 +14,13 @@ struct LoginView: View {
     @State var enteredUsername: String = ""
     @State var enteredPassword: String = ""
     
-    @State var loginBackgroundColor: Color = Color.white
-    @State var main_color: Color
-    
     @State var show_wrong_message: Bool = false
     
     @State var go_to_landing_screen: Bool = false
     
     var body: some View {
         ZStack {
-            loginBackgroundColor.ignoresSafeArea()
+            Color.white.ignoresSafeArea()
             
             VStack {
                 
@@ -53,7 +50,7 @@ struct LoginView: View {
                 
             }
             .frame(width: 300, height: 500)
-            .background(main_color)
+            .background(Color.accentColor)
             .cornerRadius(20)
             .shadow(radius: 50)
         }
@@ -63,8 +60,7 @@ struct LoginView: View {
 }
 
 #Preview {
-    var backgroundColor: Color = Color(#colorLiteral(red: 0.4620226622, green: 0.8382837176, blue: 1, alpha: 1))
-    LoginView(main_color: backgroundColor)
+    LoginView()
         .environmentObject(ViewModel())
 }
 
@@ -130,12 +126,12 @@ extension LoginView {
                 .padding(.horizontal)
                 .background(.white)
                 .cornerRadius(10)
-                .foregroundColor(main_color)
+                .foregroundColor(Color.accentColor)
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
         .navigationDestination(isPresented: $go_to_landing_screen) {
-            MainView(enteredName: enteredUsername, enteredEmail: enteredPassword, landing_background_color: main_color)
+            MainView(enteredName: enteredUsername, enteredEmail: enteredPassword)
         }
     }
 }

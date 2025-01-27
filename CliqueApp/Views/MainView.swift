@@ -13,17 +13,16 @@ struct MainView: View {
     
     @State var enteredName: String
     @State var enteredEmail: String
-    @State var landing_background_color: Color
     
     var body: some View {
         TabView {
-            MyEventsView(enteredName: enteredName, enteredEmail: enteredEmail, landing_background_color: landing_background_color)
+            MyEventsView(enteredName: enteredName, enteredEmail: enteredEmail)
                 .tabItem {
                     Image(systemName: "house.fill")
                     Text("My Events")
                 }
             
-            MyInvitesView(enteredName: enteredName, enteredEmail: enteredEmail, landing_background_color: landing_background_color)
+            MyInvitesView(enteredName: enteredName, enteredEmail: enteredEmail)
                 .tabItem {
                     Image(systemName: "envelope.fill")
                     Text("Invites")
@@ -42,7 +41,7 @@ struct MainView: View {
                 }
             
         }
-        .accentColor(landing_background_color)
+        .accentColor(Color.accentColor)
         .onAppear {
             // Change the background color of the TabBar
             let appearance = UITabBarAppearance()
@@ -57,7 +56,6 @@ struct MainView: View {
 #Preview {
     var name: String = "tareksakakini"
     var email: String = "john@example.com"
-    var main_color: Color = Color(#colorLiteral(red: 0.4620226622, green: 0.8382837176, blue: 1, alpha: 1))
-    MainView(enteredName: name, enteredEmail: email, landing_background_color: main_color)
+    MainView(enteredName: name, enteredEmail: email)
         .environmentObject(ViewModel())
 }

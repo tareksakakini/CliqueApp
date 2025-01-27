@@ -8,23 +8,19 @@
 import SwiftUI
 
 struct EventPillView: View {
-    let landing_background_color: Color
-    let eventName: String
-    let eventLocation: String
-    let eventDate: String
-    let eventTime: String
+    let event: EventModel
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text("\(eventName)")
-                    .foregroundColor(landing_background_color)
+                Text("\(event.title)")
+                    .foregroundColor(.accentColor)
                     .padding(.horizontal)
                     .font(.title3)
                     .bold()
                 
                 
-                Text("\(eventLocation)")
-                    .foregroundColor(landing_background_color)
+                Text("\(event.location)")
+                    .foregroundColor(.accentColor)
                     .padding(.horizontal)
                     .font(.subheadline)
             }
@@ -32,25 +28,26 @@ struct EventPillView: View {
             Spacer()
             
             VStack(alignment: .trailing) {
-                Text("\(eventDate)")
-                    .foregroundColor(landing_background_color)
+                Text("\(event.date)")
+                    .foregroundColor(.accentColor)
                     .padding(.horizontal)
                     .font(.title3)
                     .bold()
                 
                 
-                Text("\(eventTime)")
-                    .foregroundColor(landing_background_color)
+                Text("\(event.time)")
+                    .foregroundColor(.accentColor)
                     .padding(.horizontal)
                     .font(.subheadline)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 100)
+        .frame(height: 70)
         .background(.white)
-        .cornerRadius(15)
+        .cornerRadius(20)
         .padding(.horizontal, 20)
         .padding(.vertical, 5)
+        .shadow(color: .white.opacity(0.4), radius: 10, x: 0, y: 10)
         
     }
 }
@@ -58,13 +55,9 @@ struct EventPillView: View {
 
 #Preview {
     ZStack {
-        Color.black
+        Color.accentColor.ignoresSafeArea()
         EventPillView(
-            landing_background_color: Color.black,
-            eventName: "TestEvent",
-            eventLocation: "Dummy Location",
-            eventDate: "2025-01-01",
-            eventTime: "12 AM"
+            event: UserData.eventData[0]
         )
     }
     

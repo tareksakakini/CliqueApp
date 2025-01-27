@@ -13,12 +13,11 @@ struct MyEventsView: View {
     
     @State var enteredName: String
     @State var enteredEmail: String
-    @State var landing_background_color: Color
     
     var body: some View {
         
         ZStack {
-            landing_background_color.ignoresSafeArea()
+            Color.accentColor.ignoresSafeArea()
             
             VStack {
                 
@@ -27,11 +26,7 @@ struct MyEventsView: View {
                 ScrollView {
                     ForEach(ud.getEvents(username: enteredName), id: \.self) {event in
                         EventPillView(
-                            landing_background_color: landing_background_color,
-                            eventName: event.title,
-                            eventLocation: event.location,
-                            eventDate: event.date,
-                            eventTime: event.time
+                            event: event
                         )
                     }
                 }
@@ -43,8 +38,7 @@ struct MyEventsView: View {
 #Preview {
     var name: String = "tareksakakini"
     var email: String = "john@example.com"
-    var main_color: Color = Color(#colorLiteral(red: 0.4620226622, green: 0.8382837176, blue: 1, alpha: 1))
-    MyEventsView(enteredName: name, enteredEmail: email, landing_background_color: main_color)
+    MyEventsView(enteredName: name, enteredEmail: email)
         .environmentObject(ViewModel())
 }
 

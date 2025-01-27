@@ -7,16 +7,15 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct StartingView: View {
     // Main View
-    @State var backgroundColor: Color = Color(#colorLiteral(red: 0.4620226622, green: 0.8382837176, blue: 1, alpha: 1))
     @EnvironmentObject private var ud: ViewModel
     
     var body: some View {
         NavigationStack {
             ZStack {
                 
-                backgroundColor.ignoresSafeArea()
+                Color.accentColor.ignoresSafeArea()
             
                 VStack {
                     Spacer()
@@ -38,11 +37,11 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    StartingView()
         .environmentObject(ViewModel())
 }
 
-extension ContentView {
+extension StartingView {
     private var mainpage_logo: some View {
         Image(systemName: "bonjour")
             .resizable()
@@ -66,14 +65,14 @@ extension ContentView {
     }
     
     private var mainpage_button: some View {
-        NavigationLink("Log In", destination: LoginView(main_color: backgroundColor))
+        NavigationLink("Log In", destination: LoginView())
             .bold()
             .font(.title2)
             .padding()
             .padding(.horizontal)
             .background(.white)
             .cornerRadius(10)
-            .foregroundColor(backgroundColor)
+            .foregroundColor(Color.accentColor)
             .shadow(radius: 10)
     }
 }
