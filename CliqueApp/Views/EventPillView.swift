@@ -11,19 +11,39 @@ struct EventPillView: View {
     let landing_background_color: Color
     let eventName: String
     let eventLocation: String
+    let eventDate: String
+    let eventTime: String
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("\(eventName)")
-                .foregroundColor(landing_background_color)
-                .padding(.horizontal)
-                .font(.title3)
-                .bold()
+        HStack {
+            VStack(alignment: .leading) {
+                Text("\(eventName)")
+                    .foregroundColor(landing_background_color)
+                    .padding(.horizontal)
+                    .font(.title3)
+                    .bold()
+                
+                
+                Text("\(eventLocation)")
+                    .foregroundColor(landing_background_color)
+                    .padding(.horizontal)
+                    .font(.subheadline)
+            }
             
+            Spacer()
             
-            Text("\(eventLocation)")
-                .foregroundColor(landing_background_color)
-                .padding(.horizontal)
-                .font(.subheadline)
+            VStack(alignment: .trailing) {
+                Text("\(eventDate)")
+                    .foregroundColor(landing_background_color)
+                    .padding(.horizontal)
+                    .font(.title3)
+                    .bold()
+                
+                
+                Text("\(eventTime)")
+                    .foregroundColor(landing_background_color)
+                    .padding(.horizontal)
+                    .font(.subheadline)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 100)
@@ -37,5 +57,15 @@ struct EventPillView: View {
 
 
 #Preview {
-    EventPillView(landing_background_color: Color.black, eventName: "TestEvent", eventLocation: "Dummy Location")
+    ZStack {
+        Color.black
+        EventPillView(
+            landing_background_color: Color.black,
+            eventName: "TestEvent",
+            eventLocation: "Dummy Location",
+            eventDate: "2025-01-01",
+            eventTime: "12 AM"
+        )
+    }
+    
 }

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct LandingView: View {
+struct MyInvitesView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
@@ -25,11 +25,13 @@ struct LandingView: View {
                 header
                 
                 ScrollView {
-                    ForEach(ud.getEvents(username: enteredName), id: \.self) {event in
+                    ForEach(ud.getInvites(username: enteredName), id: \.self) {event in
                         EventPillView(
                             landing_background_color: landing_background_color,
                             eventName: event.title,
-                            eventLocation: event.location
+                            eventLocation: event.location,
+                            eventDate: event.date,
+                            eventTime: event.time
                         )
                     }
                 }
@@ -42,11 +44,11 @@ struct LandingView: View {
     var name: String = "tareksakakini"
     var email: String = "john@example.com"
     var main_color: Color = Color(#colorLiteral(red: 0.4620226622, green: 0.8382837176, blue: 1, alpha: 1))
-    LandingView(enteredName: name, enteredEmail: email, landing_background_color: main_color)
+    MyInvitesView(enteredName: name, enteredEmail: email, landing_background_color: main_color)
         .environmentObject(ViewModel())
 }
 
-extension LandingView {
+extension MyInvitesView {
     private var header: some View {
         HStack {
             
@@ -54,7 +56,7 @@ extension LandingView {
                 .foregroundColor(.white)
                 .frame(width: 5, height: 45)
             
-            Text("Your Events")
+            Text("My Invites")
                 .font(.largeTitle)
                 .foregroundColor(.white)
             

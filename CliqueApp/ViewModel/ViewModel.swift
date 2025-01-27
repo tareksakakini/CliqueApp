@@ -35,4 +35,14 @@ class ViewModel: ObservableObject {
         }
         return eventsForUser
     }
+    
+    func getInvites(username: String) -> [EventModel] {
+        var eventsForUser: [EventModel] = []
+        for event in self.events {
+            if event.attendeesInvited.contains(username) {
+                eventsForUser.append(event)
+            }
+        }
+        return eventsForUser
+    }
 }

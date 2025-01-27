@@ -135,7 +135,7 @@ extension LoginView {
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
         .navigationDestination(isPresented: $go_to_landing_screen) {
-            LandingView(enteredName: enteredUsername, enteredEmail: enteredPassword, landing_background_color: main_color)
+            MainView(enteredName: enteredUsername, enteredEmail: enteredPassword, landing_background_color: main_color)
         }
     }
 }
