@@ -9,7 +9,7 @@ import SwiftUI
 
 struct LoginView: View {
     
-    @EnvironmentObject private var ud: UserViewModel
+    @EnvironmentObject private var ud: ViewModel
     
     @State var enteredUsername: String = ""
     @State var enteredPassword: String = ""
@@ -65,7 +65,7 @@ struct LoginView: View {
 #Preview {
     var backgroundColor: Color = Color(#colorLiteral(red: 0.4620226622, green: 0.8382837176, blue: 1, alpha: 1))
     LoginView(main_color: backgroundColor)
-        .environmentObject(UserViewModel())
+        .environmentObject(ViewModel())
 }
 
 extension LoginView {

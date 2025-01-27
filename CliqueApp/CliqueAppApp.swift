@@ -11,7 +11,7 @@ import SwiftUI
 @main
 struct CliqueAppApp: App {
     
-    @StateObject private var ud = UserViewModel()
+    @StateObject private var ud = ViewModel()
     
     var body: some Scene {
         WindowGroup {

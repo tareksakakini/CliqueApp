@@ -9,7 +9,7 @@ import SwiftUI
 
 struct LandingView: View {
     
-    @EnvironmentObject private var ud: UserViewModel
+    @EnvironmentObject private var ud: ViewModel
     
     @State var enteredName: String
     @State var enteredEmail: String
@@ -80,5 +80,5 @@ struct LandingView: View {
     var email: String = "john@example.com"
     var main_color: Color = Color(#colorLiteral(red: 0.4620226622, green: 0.8382837176, blue: 1, alpha: 1))
     LandingView(enteredName: name, enteredEmail: email, landing_background_color: main_color)
-        .environmentObject(UserViewModel())
+        .environmentObject(ViewModel())
 }

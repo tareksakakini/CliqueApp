@@ -12,4 +12,16 @@ struct UserModel {
     let lastName: String
     let userName: String
     let password: String
+    let eventsAccepted: [String]
+    let eventsInvited: [String]
+}
+
+struct EventModel {
+    let id: String
+    let title: String
+    let location: String
+    let date: String
+    let time: String
+    let attendeesAccepted: [String]
+    let attendeesInvited: [String]
 }
