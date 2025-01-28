@@ -10,7 +10,7 @@ import Foundation
 class ViewModel: ObservableObject {
     var users: [UserModel]
     var events: [EventModel]
-    var friendship: [String: [String]]
+    @Published var friendship: [String: [String]]
     
     init() {
         self.users = UserData.userData

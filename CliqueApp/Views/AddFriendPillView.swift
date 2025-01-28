@@ -10,6 +10,7 @@ import SwiftUI
 struct AddFriendPillView: View {
     
     @EnvironmentObject private var ud: ViewModel
+    @Environment(\.dismiss) var dismiss
     
     let workingUser: UserModel?
     let userToAdd: UserModel?
@@ -33,6 +34,7 @@ struct AddFriendPillView: View {
                 if let workingUser = workingUser {
                     if let userToAdd = userToAdd {
                         ud.addFriendship(username1: workingUser.userName, username2: userToAdd.userName)
+                        dismiss()
                     }
                 }
                 
