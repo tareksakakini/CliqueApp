@@ -65,7 +65,7 @@ extension StartingView {
     }
     
     private var mainpage_button: some View {
-        NavigationLink("Log In", destination: LoginView())
+        NavigationLink("Get Started", destination: LoginView())
             .bold()
             .font(.title2)
             .padding()

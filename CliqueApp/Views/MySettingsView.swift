@@ -7,12 +7,13 @@
 
 import SwiftUI
 
-struct MyFriendsView: View {
+struct MySettingsView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
-
+    
     @State var user: UserModel
+    @State var go_to_login_screen: Bool = false
     
     var body: some View {
         
@@ -20,27 +21,38 @@ struct MyFriendsView: View {
             Color.accentColor.ignoresSafeArea()
             
             VStack {
-                
                 header
                 
-                ScrollView {
-                    ForEach(ud.getFriends(username: user.userName), id: \.self) {friend_username in
-                        FriendPillView(
-                            user: ud.getUser(username: friend_username)
-                        )
-                    }
+                Spacer()
+                
+                Button {
+                    go_to_login_screen = true
+                } label: {
+                    Text("Sign out")
+                        .padding()
+                        .padding(.horizontal)
+                        .background(.white)
+                        .cornerRadius(10)
+                        .foregroundColor(Color.accentColor)
+                        .bold()
+                        .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
                 }
+                .navigationDestination(isPresented: $go_to_login_screen) {
+                    LoginView()
+                }
+                
+                Spacer()
             }
         }
     }
 }
 
 #Preview {
-    MyFriendsView(user: UserData.userData[0])
+    MySettingsView(user: UserData.userData[0])
         .environmentObject(ViewModel())
 }
 
-extension MyFriendsView {
+extension MySettingsView {
     private var header: some View {
         HStack {
             
@@ -48,7 +60,7 @@ extension MyFriendsView {
                 .foregroundColor(.white)
                 .frame(width: 5, height: 45)
             
-            Text("My Friends")
+            Text("My Settings")
                 .font(.largeTitle)
                 .foregroundColor(.white)
             

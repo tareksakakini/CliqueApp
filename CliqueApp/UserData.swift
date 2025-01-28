@@ -8,6 +8,15 @@
 import Foundation
 
 struct UserData {
+    
+    static let friendshipData: [String: [String]] = [
+        "tareksakakini": ["alikanj", "hassandbouk", "mohamadelhajj"],
+        "hassandbouk": ["tareksakakini", "jadyaacoub"],
+        "jadyaacoub": ["hassandbouk"],
+        "mohamadelhajj": ["tareksakakini"],
+        "alikanj": ["tareksakakini"]
+    ]
+    
     static let userData: [UserModel] = [
         UserModel(
             firstName: "Tarek",

@@ -10,15 +10,26 @@ import Foundation
 class ViewModel: ObservableObject {
     let users: [UserModel]
     let events: [EventModel]
+    let friendship: [String: [String]]
     
     init() {
         self.users = UserData.userData
         self.events = UserData.eventData
+        self.friendship = UserData.friendshipData
     }
     
-    func getUser(username: String, password: String) -> UserModel? {
+    func isUser(username: String, password: String) -> Bool {
         for user in self.users {
             if user.userName == username && user.password == password {
+                return true
+            }
+        }
+        return false
+    }
+    
+    func getUser(username: String) -> UserModel? {
+        for user in self.users {
+            if user.userName == username {
                 return user
             }
         }
@@ -43,5 +54,14 @@ class ViewModel: ObservableObject {
             }
         }
         return eventsForUser
+    }
+    
+    func getFriends(username: String) -> [String] {
+        if let friends = self.friendship[username] {
+            return friends
+        }
+        else {
+            return []
+        }
     }
 }

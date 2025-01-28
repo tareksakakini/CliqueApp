@@ -27,13 +27,13 @@ struct MainView: View {
                     Text("Invites")
                 }
             
-            Text("My Friends")
+            MyFriendsView(user: user)
                 .tabItem {
                     Image(systemName: "person.2.fill")
                     Text("My Friends")
                 }
             
-            Text("My Settings")
+            MySettingsView(user: user)
                 .tabItem {
                     Image(systemName: "gearshape.fill")
                     //                          "gear")
