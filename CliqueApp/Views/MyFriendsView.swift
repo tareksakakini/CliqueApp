@@ -10,7 +10,7 @@ import SwiftUI
 struct MyFriendsView: View {
     
     @EnvironmentObject private var ud: ViewModel
-    
+    @State private var isSheetPresented: Bool = false
 
     @State var user: UserModel
     
@@ -54,14 +54,21 @@ extension MyFriendsView {
             
             Spacer()
             
-            Circle()
-                .frame(width: 25, height: 25)
-                .foregroundColor(.white)
-            
-            Text(user.firstName)
-                .foregroundColor(.white)
-                .font(.subheadline)
-                .bold()
+            Button {
+                isSheetPresented = true
+            } label: {
+                Image(systemName: "person.fill.badge.plus")
+                    .resizable()
+                    .scaledToFill()
+                    .foregroundColor(.white)
+                    .frame(width: 40, height: 40)
+                    .shadow(color: .white.opacity(0.3), radius: 1, x: 0, y: 2)
+            }
+            .sheet(isPresented: $isSheetPresented) {
+                AddFriendView(user: user)
+                    .presentationDetents([.fraction(0.9)])
+            }
+
         }
         .padding()
     }

@@ -8,9 +8,9 @@
 import Foundation
 
 class ViewModel: ObservableObject {
-    let users: [UserModel]
-    let events: [EventModel]
-    let friendship: [String: [String]]
+    var users: [UserModel]
+    var events: [EventModel]
+    var friendship: [String: [String]]
     
     init() {
         self.users = UserData.userData
@@ -63,5 +63,32 @@ class ViewModel: ObservableObject {
         else {
             return []
         }
+    }
+    
+    func stringMatchUsers(query: String) -> [UserModel] {
+        var to_return: [UserModel] = []
+        for user in self.users {
+            if user.userName.contains(query) {
+                to_return += [user]
+            }
+        }
+        return to_return
+    }
+    
+    func addFriendship(username1: String, username2: String) {
+        if self.friendship.keys.contains(username1) {
+            self.friendship[username1]! += [username2]
+        }
+        else {
+            self.friendship[username1]! = [username2]
+        }
+        
+        if self.friendship.keys.contains(username2) {
+            self.friendship[username2]! += [username1]
+        }
+        else {
+            self.friendship[username2]! = [username1]
+        }
+
     }
 }
