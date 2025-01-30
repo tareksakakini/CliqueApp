@@ -8,46 +8,60 @@
 import SwiftUI
 
 struct EventPillView: View {
+    @State var showSheet: Bool = false
     let event: EventModel
+    let user: UserModel
+    let inviteView: Bool
     var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
-                Text("\(event.title)")
-                    .foregroundColor(.accentColor)
-                    .padding(.horizontal)
-                    .font(.title3)
-                    .bold()
-                
-                
-                Text("\(event.location)")
-                    .foregroundColor(.accentColor)
-                    .padding(.horizontal)
-                    .font(.subheadline)
+        
+        Button {
+            if inviteView {
+                showSheet = true
             }
-            
-            Spacer()
-            
-            VStack(alignment: .trailing) {
-                Text("\(event.date)")
-                    .foregroundColor(.accentColor)
-                    .padding(.horizontal)
-                    .font(.title3)
-                    .bold()
+        } label: {
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("\(event.title)")
+                        .foregroundColor(.accentColor)
+                        .padding(.horizontal)
+                        .font(.title3)
+                        .bold()
+                    
+                    
+                    Text("\(event.location)")
+                        .foregroundColor(.accentColor)
+                        .padding(.horizontal)
+                        .font(.subheadline)
+                }
                 
+                Spacer()
                 
-                Text("\(event.time)")
-                    .foregroundColor(.accentColor)
-                    .padding(.horizontal)
-                    .font(.subheadline)
+                VStack(alignment: .trailing) {
+                    Text("\(event.date)")
+                        .foregroundColor(.accentColor)
+                        .padding(.horizontal)
+                        .font(.title3)
+                        .bold()
+                    
+                    
+                    Text("\(event.time)")
+                        .foregroundColor(.accentColor)
+                        .padding(.horizontal)
+                        .font(.subheadline)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: 70)
+            .background(.white)
+            .cornerRadius(20)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 5)
+            .shadow(color: .white.opacity(0.4), radius: 10, x: 0, y: 10)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 70)
-        .background(.white)
-        .cornerRadius(20)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 5)
-        .shadow(color: .white.opacity(0.4), radius: 10, x: 0, y: 10)
+        .sheet(isPresented: $showSheet) {
+            EventResponseView(user: user, event: event)
+                .presentationDetents([.fraction(0.1)])
+        }
         
     }
 }
@@ -57,7 +71,9 @@ struct EventPillView: View {
     ZStack {
         Color.accentColor.ignoresSafeArea()
         EventPillView(
-            event: UserData.eventData[0]
+            event: UserData.eventData[0],
+            user: UserData.userData[0],
+            inviteView: true
         )
     }
     

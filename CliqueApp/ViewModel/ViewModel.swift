@@ -8,8 +8,8 @@
 import Foundation
 
 class ViewModel: ObservableObject {
-    var users: [UserModel]
-    var events: [EventModel]
+    @Published var users: [UserModel]
+    @Published var events: [EventModel]
     @Published var friendship: [String: [String]]
     
     init() {
@@ -44,6 +44,15 @@ class ViewModel: ObservableObject {
             }
         }
         return eventsForUser
+    }
+    
+    func getEvent(eventID: String) -> EventModel? {
+        for event in self.events {
+            if event.id == eventID {
+                return event
+            }
+        }
+        return nil
     }
     
     func getInvites(username: String) -> [EventModel] {
@@ -102,6 +111,17 @@ class ViewModel: ObservableObject {
         if self.friendship.keys.contains(username2) {
             if self.friendship[username2]!.contains(username1) {
                 self.friendship[username2]!.removeAll { $0 == username1 }
+            }
+        }
+    }
+    
+    func inviteRespond(username: String, event_id: String, accepted: Bool) {
+        if let index = self.events.firstIndex(where: { $0.id == event_id }) {
+            if accepted {
+                self.events[index].attendeesAccepted.append(username)
+                self.events[index].attendeesInvited.removeAll { $0 == username }
+            } else {
+                self.events[index].attendeesInvited.removeAll { $0 == username }
             }
         }
     }

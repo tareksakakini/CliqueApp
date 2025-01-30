@@ -25,7 +25,9 @@ struct MyEventsView: View {
                 ScrollView {
                     ForEach(ud.getEvents(username: user.userName), id: \.self) {event in
                         EventPillView(
-                            event: event
+                            event: event,
+                            user: user,
+                            inviteView: false
                         )
                     }
                 }

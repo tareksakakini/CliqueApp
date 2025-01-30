@@ -22,41 +22,31 @@ struct UserData {
             firstName: "Tarek",
             lastName: "Sakakini",
             userName: "tareksakakini",
-            password: "adeeb",
-            eventsAccepted: ["1", "2", "4", "5", "6", "7", "8", "9", "10"],
-            eventsInvited: ["3", "11", "12", "13", "14", "15"]
+            password: "adeeb"
         ),
         UserModel(
             firstName: "Ali",
             lastName: "Kanj",
             userName: "alikanj",
-            password: "adeeb",
-            eventsAccepted: ["1", "3"],
-            eventsInvited: ["2"]
+            password: "adeeb"
         ),
         UserModel(
             firstName: "Hassan",
             lastName: "Dbouk",
             userName: "hassandbouk",
-            password: "adeeb",
-            eventsAccepted: [],
-            eventsInvited: []
+            password: "adeeb"
         ),
         UserModel(
             firstName: "Mohamad",
             lastName: "El Hajj",
             userName: "mohamadelhajj",
-            password: "adeeb",
-            eventsAccepted: [],
-            eventsInvited: []
+            password: "adeeb"
         ),
         UserModel(
             firstName: "Jad",
             lastName: "Yaacoub",
             userName: "jadyaacoub",
-            password: "adeeb",
-            eventsAccepted: [],
-            eventsInvited: []
+            password: "adeeb"
         )
     ]
     
