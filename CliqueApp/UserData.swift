@@ -9,7 +9,7 @@ import Foundation
 
 struct UserData {
     
-    static let friendshipData: [String: [String]] = [
+    static var friendshipData: [String: [String]] = [
         "tareksakakini": ["alikanj", "hassandbouk", "mohamadelhajj"],
         "hassandbouk": ["tareksakakini", "jadyaacoub"],
         "jadyaacoub": ["hassandbouk"],
@@ -17,7 +17,7 @@ struct UserData {
         "alikanj": ["tareksakakini"]
     ]
     
-    static let userData: [UserModel] = [
+    static var userData: [UserModel] = [
         UserModel(
             firstName: "Tarek",
             lastName: "Sakakini",
@@ -60,7 +60,7 @@ struct UserData {
         )
     ]
     
-    static let eventData: [EventModel] = [
+    static var eventData: [EventModel] = [
         EventModel(
             id: "1",
             title: "Snowboarding",

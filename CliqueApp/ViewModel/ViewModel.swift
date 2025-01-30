@@ -91,4 +91,19 @@ class ViewModel: ObservableObject {
         }
 
     }
+    
+    func removeFriendship(username1: String, username2: String) {
+        if self.friendship.keys.contains(username1) {
+            if self.friendship[username1]!.contains(username2) {
+                self.friendship[username1]!.removeAll { $0 == username2 }
+            }
+        }
+        
+        if self.friendship.keys.contains(username2) {
+            if self.friendship[username2]!.contains(username1) {
+                self.friendship[username2]!.removeAll { $0 == username1 }
+            }
+        }
+    }
+            
 }
