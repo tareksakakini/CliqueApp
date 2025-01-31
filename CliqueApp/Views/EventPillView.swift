@@ -15,9 +15,7 @@ struct EventPillView: View {
     var body: some View {
         
         Button {
-            if inviteView {
-                showSheet = true
-            }
+            showSheet = true
         } label: {
             HStack {
                 VStack(alignment: .leading) {
@@ -59,7 +57,7 @@ struct EventPillView: View {
             .shadow(color: .white.opacity(0.4), radius: 10, x: 0, y: 10)
         }
         .sheet(isPresented: $showSheet) {
-            EventResponseView(user: user, event: event)
+            EventResponseView(user: user, event: event, inviteView: inviteView)
                 .presentationDetents([.fraction(0.1)])
         }
         
@@ -73,7 +71,7 @@ struct EventPillView: View {
         EventPillView(
             event: UserData.eventData[0],
             user: UserData.userData[0],
-            inviteView: true
+            inviteView: false
         )
     }
     

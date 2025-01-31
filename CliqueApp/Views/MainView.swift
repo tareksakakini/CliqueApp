@@ -13,25 +13,37 @@ struct MainView: View {
     
     @State var user: UserModel
     
+    @State private var selectedTab = 0
+    
     var body: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             MyEventsView(user: user)
                 .tabItem {
                     Image(systemName: "shareplay")
                     Text("My Events")
                 }
+                .tag(0)
             
             MyInvitesView(user: user)
                 .tabItem {
                     Image(systemName: "envelope.fill")
                     Text("Invites")
                 }
+                .tag(1)
+            
+            CreateEventView(user: user, selectedTab: $selectedTab)
+                .tabItem {
+                    Image(systemName: "plus.square.fill")
+                    Text("New Event")
+                }
+                .tag(2)
             
             MyFriendsView(user: user)
                 .tabItem {
                     Image(systemName: "person.2.fill")
                     Text("My Friends")
                 }
+                .tag(3)
             
             MySettingsView(user: user)
                 .tabItem {
@@ -39,6 +51,7 @@ struct MainView: View {
                     //                          "gear")
                     Text("My Settings")
                 }
+                .tag(4)
             
         }
         .navigationBarHidden(true)

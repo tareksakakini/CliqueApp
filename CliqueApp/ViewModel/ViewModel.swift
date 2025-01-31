@@ -125,5 +125,31 @@ class ViewModel: ObservableObject {
             }
         }
     }
+    
+    func eventLeave(username: String, event_id: String) {
+        if let index = self.events.firstIndex(where: { $0.id == event_id }) {
+                self.events[index].attendeesAccepted.removeAll { $0 == username }
+        }
+    }
+    
+    func getNextEventID() -> String {
+        
+        if self.events.isEmpty {
+            return "1"
+        }
+        var IDs: [Int] = []
+        for event in self.events {
+            IDs.append(Int(event.id)!)
+        }
+        return String(IDs.max()! + 1)
+    }
+    
+    func createEvent(title: String, location: String, date: String, time: String, user: UserModel, invitees: [String]) {
+        
+        let nextID = getNextEventID()
+        
+        var new_event: EventModel = EventModel(id: nextID, title: title, location: location, date: date, time: time, attendeesAccepted: [user.userName], attendeesInvited: invitees)
+        self.events += [new_event]
+    }
             
 }
