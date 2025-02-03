@@ -22,31 +22,31 @@ struct UserData {
             firstName: "Tarek",
             lastName: "Sakakini",
             userName: "tareksakakini",
-            password: "adeeb"
+            password: "temp1"
         ),
         UserModel(
             firstName: "Ali",
             lastName: "Kanj",
             userName: "alikanj",
-            password: "adeeb"
+            password: "temp1"
         ),
         UserModel(
             firstName: "Hassan",
             lastName: "Dbouk",
             userName: "hassandbouk",
-            password: "adeeb"
+            password: "temp1"
         ),
         UserModel(
             firstName: "Mohamad",
             lastName: "El Hajj",
             userName: "mohamadelhajj",
-            password: "adeeb"
+            password: "temp1"
         ),
         UserModel(
             firstName: "Jad",
             lastName: "Yaacoub",
             userName: "jadyaacoub",
-            password: "adeeb"
+            password: "temp1"
         )
     ]
     

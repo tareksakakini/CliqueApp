@@ -98,7 +98,7 @@ extension LoginView {
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
             
-            TextField("Enter your password here ...", text: $enteredPassword)
+            SecureField("Enter your password here ...", text: $enteredPassword)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
                 .padding()
