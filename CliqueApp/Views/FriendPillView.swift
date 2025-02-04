@@ -20,7 +20,7 @@ struct FriendPillView: View {
                 .padding(.horizontal)
             
             if let currentUser = user {
-                Text("\(currentUser.firstName) \(currentUser.lastName)")
+                Text("\(currentUser.fullname)")
                     .foregroundColor(.accentColor)
                     .font(.title3)
                     .bold()

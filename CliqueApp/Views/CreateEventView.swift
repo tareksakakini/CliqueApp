@@ -93,7 +93,7 @@ extension CreateEventView {
                 .frame(width: 25, height: 25)
                 .foregroundColor(.white)
             
-            Text(user.firstName)
+            Text(user.userName)
                 .foregroundColor(.white)
                 .font(.subheadline)
                 .bold()
@@ -170,7 +170,7 @@ extension CreateEventView {
                     Image(systemName: "plus.circle")
                 }
                 .sheet(isPresented: $addInviteeSheet) {
-                    AddInviteesView(invitees: $invitees)
+                    AddInviteesView(user: user, invitees: $invitees)
                         .presentationDetents([.fraction(0.9)])
                 }
             }

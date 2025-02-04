@@ -74,11 +74,27 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func stringMatchUsers(query: String) -> [UserModel] {
+    func stringMatchUsers(query: String, viewingUser: UserModel, isFriend: Bool = false) -> [UserModel] {
         var to_return: [UserModel] = []
-        for user in self.users {
-            if user.userName.contains(query) {
-                to_return += [user]
+        var usernames_to_check: [String] = []
+        
+        if isFriend {
+            if self.friendship.keys.contains(viewingUser.userName) {
+                usernames_to_check = self.friendship[viewingUser.userName]!
+            }
+        }
+        else {
+            for user in self.users {
+                usernames_to_check += [user.userName]
+            }
+        }
+        
+        
+        for username in usernames_to_check {
+            if username.contains(query) {
+                if let grabbed_user = self.getUser(username: username) {
+                    to_return += [grabbed_user]
+                }
             }
         }
         return to_return
@@ -89,14 +105,14 @@ class ViewModel: ObservableObject {
             self.friendship[username1]! += [username2]
         }
         else {
-            self.friendship[username1]! = [username2]
+            self.friendship[username1] = [username2]
         }
         
         if self.friendship.keys.contains(username2) {
             self.friendship[username2]! += [username1]
         }
         else {
-            self.friendship[username2]! = [username1]
+            self.friendship[username2] = [username1]
         }
 
     }
@@ -148,8 +164,13 @@ class ViewModel: ObservableObject {
         
         let nextID = getNextEventID()
         
-        var new_event: EventModel = EventModel(id: nextID, title: title, location: location, date: date, time: time, attendeesAccepted: [user.userName], attendeesInvited: invitees)
+        let new_event: EventModel = EventModel(id: nextID, title: title, location: location, date: date, time: time, attendeesAccepted: [user.userName], attendeesInvited: invitees)
         self.events += [new_event]
+    }
+    
+    func addUser(fullname: String, username: String, password: String) {
+        let newUser = UserModel(fullname: fullname, userName: username, password: password)
+        self.users += [newUser]
     }
             
 }

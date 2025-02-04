@@ -19,32 +19,27 @@ struct UserData {
     
     static var userData: [UserModel] = [
         UserModel(
-            firstName: "Tarek",
-            lastName: "Sakakini",
+            fullname: "Tarek Sakakini",
             userName: "tareksakakini",
             password: "temp1"
         ),
         UserModel(
-            firstName: "Ali",
-            lastName: "Kanj",
+            fullname: "Ali Kanj",
             userName: "alikanj",
             password: "temp1"
         ),
         UserModel(
-            firstName: "Hassan",
-            lastName: "Dbouk",
+            fullname: "Hassan Dbouk",
             userName: "hassandbouk",
             password: "temp1"
         ),
         UserModel(
-            firstName: "Mohamad",
-            lastName: "El Hajj",
+            fullname: "Mohamad El Hajj",
             userName: "mohamadelhajj",
             password: "temp1"
         ),
         UserModel(
-            firstName: "Jad",
-            lastName: "Yaacoub",
+            fullname: "Jad Yaacoub",
             userName: "jadyaacoub",
             password: "temp1"
         )

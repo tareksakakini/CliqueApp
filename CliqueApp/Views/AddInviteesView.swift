@@ -11,6 +11,7 @@ struct AddInviteesView: View {
     
     @EnvironmentObject private var ud: ViewModel
     @State private var searchEntry: String = ""
+    @State var user: UserModel
     
     @Binding var invitees: [String]
     
@@ -30,10 +31,11 @@ struct AddInviteesView: View {
                     .padding()
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
+                    .foregroundStyle(.black)
                 
                 ScrollView {
                     
-                    ForEach(ud.stringMatchUsers(query: searchEntry), id: \.userName)
+                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user, isFriend: true), id: \.userName)
                     {user_returned in
                         AddInviteePillView(userToAdd: user_returned, invitees: $invitees)
                     }
@@ -47,7 +49,7 @@ struct AddInviteesView: View {
 }
 
 #Preview {
-    AddInviteesView(invitees: .constant([]))
+    AddInviteesView(user: UserData.userData[0], invitees: .constant([]))
         .environmentObject(ViewModel())
 }
 

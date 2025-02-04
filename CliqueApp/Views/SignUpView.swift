@@ -7,16 +7,18 @@
 
 import SwiftUI
 
-struct LoginView: View {
+struct SignUpView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
-    @State var enteredUsername: String = ""
-    @State var enteredPassword: String = ""
+    @State var fullname: String = ""
+    @State var username: String = ""
+    @State var password: String = ""
+    
     
     @State var show_wrong_message: Bool = false
     
-    @State var go_to_landing_screen: Bool = false
+    @State var goToMainView: Bool = false
     
     var body: some View {
         ZStack {
@@ -34,36 +36,19 @@ struct LoginView: View {
                 
                 user_fields
                 
-                if show_wrong_message {
-                    Text("Wrong username/password. Try again").font(.caption)
-                        .foregroundColor(.white)
-                }
-                
-                
-                
+                Spacer()
+                Spacer()
                 Spacer()
                 
-                signin_button
+                signup_button
                 
-                
-                HStack {
-                    Text("Don't have an account?")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                    NavigationLink {
-                        SignUpView()
-                    } label: {
-                        Text("Create Account")
-                            .font(.caption)
-                            .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
-                    }
-                }
-                .padding()
-                
+                Spacer()
+                Spacer()
+                Spacer()
                 
                 
             }
-            .frame(width: 300, height: 500)
+            .frame(width: 400, height: 700)
             .background(Color.accentColor)
             .cornerRadius(20)
             .shadow(radius: 50)
@@ -74,18 +59,18 @@ struct LoginView: View {
 }
 
 #Preview {
-    LoginView()
+    SignUpView()
         .environmentObject(ViewModel())
 }
 
-extension LoginView {
+extension SignUpView {
     private var header: some View {
         HStack {
             RoundedRectangle(cornerRadius: 10)
                 .foregroundColor(.white)
                 .frame(width: 5, height: 50, alignment: .leading)
             
-            Text("Login")
+            Text("Sign Up")
                 .foregroundColor(.white)
                 .font(.largeTitle)
             
@@ -103,39 +88,60 @@ extension LoginView {
     
     private var user_fields: some View {
         
-        VStack {
-            TextField("Enter your username here ...", text: $enteredUsername)
+        VStack(alignment: .leading) {
+            Text("Full Name")
+                .padding(.top, 30)
+                .padding(.leading, 25)
+                .font(.title2)
+                .foregroundColor(.white)
+            
+            TextField("Enter your name here ...", text: $fullname)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
-                .padding()
+                .padding(.horizontal)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
             
-            SecureField("Enter your password here ...", text: $enteredPassword)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
+            Text("Username")
+                .padding(.top, 15)
+                .padding(.leading, 25)
+                .font(.title2)
+                .foregroundColor(.white)
+            
+            TextField("Enter your username here ...", text: $username)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
+                .padding(.horizontal)
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
+            
+            Text("Password")
+                .padding(.top, 15)
+                .padding(.leading, 25)
+                .font(.title2)
+                .foregroundColor(.white)
+            
+            SecureField("Enter your password here ...", text: $password)
                 .padding()
+                .background(.white)
+                .cornerRadius(10)
+                .padding(.horizontal)
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
         }
         
     }
     
-    private var signin_button: some View {
+    private var signup_button: some View {
         
         Button {
-            if ud.isUser(username: enteredUsername, password: enteredPassword) {
-                go_to_landing_screen = true
-                show_wrong_message = false
-            }
-            else {
-                show_wrong_message = true
-            }
+            ud.addUser(fullname: fullname, username: username, password: password)
+            goToMainView = true
             
         } label: {
-            Text("Sign in")
+            Text("Create Account")
                 .padding()
                 .padding(.horizontal)
                 .background(.white)
@@ -144,11 +150,10 @@ extension LoginView {
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
-        .navigationDestination(isPresented: $go_to_landing_screen) {
-            if let user = ud.getUser(username: enteredUsername) {
+        .navigationDestination(isPresented: $goToMainView) {
+            if let user = ud.getUser(username: username) {
                 MainView(user: user)
             }
-            
         }
     }
 }

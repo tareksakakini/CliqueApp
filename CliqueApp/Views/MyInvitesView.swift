@@ -60,7 +60,7 @@ extension MyInvitesView {
                 .frame(width: 25, height: 25)
                 .foregroundColor(.white)
             
-            Text(user.firstName)
+            Text(user.userName)
                 .foregroundColor(.white)
                 .font(.subheadline)
                 .bold()

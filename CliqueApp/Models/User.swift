@@ -8,8 +8,7 @@
 import Foundation
 
 struct UserModel {
-    var firstName: String
-    var lastName: String
+    var fullname: String
     var userName: String
     var password: String
 }
