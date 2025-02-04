@@ -11,4 +11,5 @@ struct UserModel {
     var fullname: String
     var userName: String
     var password: String
+    var profilePic: String = "userDefault"
 }

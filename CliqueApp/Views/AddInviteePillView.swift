@@ -17,11 +17,16 @@ struct AddInviteePillView: View {
     var body: some View {
         HStack {
             
-            Circle()
-                .frame(width: 40, height: 40)
-                .padding(.horizontal)
-            
             if let currentUser = userToAdd {
+                
+                Image(currentUser.profilePic)
+                    .resizable()
+                    .scaledToFit()
+                    .clipShape(Circle())
+                    .frame(width: 50)
+                    .padding(.leading)
+                
+                
                 VStack(alignment: .leading) {
                     Text("\(currentUser.fullname)")
                         .foregroundColor(.accentColor)
@@ -33,6 +38,7 @@ struct AddInviteePillView: View {
                         .font(.caption)
                         .bold()
                 }
+                .padding(.leading, 5)
                 
             }
             

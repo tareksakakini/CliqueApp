@@ -21,7 +21,8 @@ struct UserData {
         UserModel(
             fullname: "Tarek Sakakini",
             userName: "tareksakakini",
-            password: "temp1"
+            password: "temp1",
+            profilePic: "tarek_pic"
         ),
         UserModel(
             fullname: "Ali Kanj",
