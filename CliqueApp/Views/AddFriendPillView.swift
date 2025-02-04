@@ -22,11 +22,20 @@ struct AddFriendPillView: View {
                 .padding(.horizontal)
             
             if let currentUser = userToAdd {
-                Text("\(currentUser.fullname)")
-                    .foregroundColor(.accentColor)
-                    .font(.title3)
-                    .bold()
+                VStack(alignment: .leading) {
+                    Text("\(currentUser.fullname)")
+                        .foregroundColor(.accentColor)
+                        .font(.title3)
+                        .bold()
+                    
+                    Text("@\(currentUser.userName)")
+                        .foregroundColor(Color(#colorLiteral(red: 0.4756349325, green: 0.4756467342, blue: 0.4756404161, alpha: 1)))
+                        .font(.caption)
+                        .bold()
+                }
             }
+            
+            
             
             Spacer()
             
