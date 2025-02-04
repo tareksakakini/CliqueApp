@@ -36,6 +36,15 @@ class ViewModel: ObservableObject {
         return nil
     }
     
+    func getUserByName(name: String) -> UserModel? {
+        for user in self.users {
+            if user.fullname == name {
+                return user
+            }
+        }
+        return nil
+    }
+    
     func getEvents(username: String) -> [EventModel] {
         var eventsForUser: [EventModel] = []
         for event in self.events {
@@ -43,6 +52,7 @@ class ViewModel: ObservableObject {
                 eventsForUser.append(event)
             }
         }
+        eventsForUser = eventsForUser.sorted { $0.dateTime < $1.dateTime }
         return eventsForUser
     }
     
@@ -62,6 +72,7 @@ class ViewModel: ObservableObject {
                 eventsForUser.append(event)
             }
         }
+        eventsForUser = eventsForUser.sorted { $0.dateTime < $1.dateTime }
         return eventsForUser
     }
     
@@ -76,23 +87,27 @@ class ViewModel: ObservableObject {
     
     func stringMatchUsers(query: String, viewingUser: UserModel, isFriend: Bool = false) -> [UserModel] {
         var to_return: [UserModel] = []
-        var usernames_to_check: [String] = []
+        var names_to_check: [String] = []
         
         if isFriend {
             if self.friendship.keys.contains(viewingUser.userName) {
-                usernames_to_check = self.friendship[viewingUser.userName]!
+                for username in self.friendship[viewingUser.userName]! {
+                    if let curr_user = self.getUser(username: username) {
+                        names_to_check += [curr_user.fullname]
+                    }
+                }
             }
         }
         else {
             for user in self.users {
-                usernames_to_check += [user.userName]
+                names_to_check += [user.fullname]
             }
         }
         
         
-        for username in usernames_to_check {
-            if username.contains(query) {
-                if let grabbed_user = self.getUser(username: username) {
+        for name in names_to_check {
+            if name.lowercased().contains(query.lowercased()) {
+                if let grabbed_user = self.getUserByName(name: name) {
                     to_return += [grabbed_user]
                 }
             }
@@ -160,17 +175,29 @@ class ViewModel: ObservableObject {
         return String(IDs.max()! + 1)
     }
     
-    func createEvent(title: String, location: String, date: String, time: String, user: UserModel, invitees: [String]) {
+    func createEvent(title: String, location: String, dateTime: Date, user: UserModel, invitees: [String]) {
         
         let nextID = getNextEventID()
         
-        let new_event: EventModel = EventModel(id: nextID, title: title, location: location, date: date, time: time, attendeesAccepted: [user.userName], attendeesInvited: invitees)
+        let new_event: EventModel = EventModel(id: nextID, title: title, location: location, dateTime: dateTime, attendeesAccepted: [user.userName], attendeesInvited: invitees)
         self.events += [new_event]
     }
     
     func addUser(fullname: String, username: String, password: String) {
         let newUser = UserModel(fullname: fullname, userName: username, password: password)
         self.users += [newUser]
+    }
+    
+    func formatDate(date: Date) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "MMM d, yyyy"
+        return dateFormatter.string(from: date)
+    }
+    
+    func formatTime(time: Date) -> String {
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "h:mm a"
+        return timeFormatter.string(from: time)
     }
             
 }

@@ -11,8 +11,7 @@ struct EventModel: Hashable {
     var id: String
     var title: String
     var location: String
-    var date: String
-    var time: String
+    var dateTime: Date
     var attendeesAccepted: [String]
     var attendeesInvited: [String]
 }

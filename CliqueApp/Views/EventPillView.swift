@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct EventPillView: View {
+    @EnvironmentObject private var ud: ViewModel
     @State var showSheet: Bool = false
     let event: EventModel
     let user: UserModel
@@ -35,14 +36,14 @@ struct EventPillView: View {
                 Spacer()
                 
                 VStack(alignment: .trailing) {
-                    Text("\(event.date)")
+                    Text("\(ud.formatDate(date: event.dateTime))")
                         .foregroundColor(.accentColor)
                         .padding(.horizontal)
                         .font(.title3)
                         .bold()
                     
                     
-                    Text("\(event.time)")
+                    Text("\(ud.formatTime(time: event.dateTime))")
                         .foregroundColor(.accentColor)
                         .padding(.horizontal)
                         .font(.subheadline)
@@ -73,6 +74,7 @@ struct EventPillView: View {
             user: UserData.userData[0],
             inviteView: false
         )
+        .environmentObject(ViewModel())
     }
     
 }

@@ -17,8 +17,7 @@ struct CreateEventView: View {
     @Binding var selectedTab: Int
     @State var event_title: String = ""
     @State var event_location: String = ""
-    @State var event_date: String = ""
-    @State var event_time: String = ""
+    @State var event_dateTime: Date = Date()
     @State var invitees: [String] = []
     
     var body: some View {
@@ -61,7 +60,7 @@ extension CreateEventView {
     private var create_button: some View {
         
         Button {
-            ud.createEvent(title: event_title, location: event_location, date: event_date, time: event_time, user: user, invitees: invitees)
+            ud.createEvent(title: event_title, location: event_location, dateTime: event_dateTime, user: user, invitees: invitees)
             selectedTab = 0
             
         } label: {
@@ -133,33 +132,20 @@ extension CreateEventView {
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
             
-            Text("Date")
+            Text("Date and Time")
                 .padding(.top, 15)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("Enter date here ...", text: $event_date)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding(.horizontal)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
-            
-            Text("Time")
-                .padding(.top, 15)
-                .padding(.leading, 25)
-                .font(.title2)
+            DatePicker("", selection: $event_dateTime, displayedComponents: [.date, .hourAndMinute])
                 .foregroundColor(.white)
-            
-            TextField("Enter time here ...", text: $event_time)
+                .labelsHidden()
+                .tint(.white)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
-                .padding(.horizontal)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
+                .padding(.horizontal, 20)
             
             HStack {
                 Text("Invitees")
