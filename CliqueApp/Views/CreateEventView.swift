@@ -88,9 +88,13 @@ extension CreateEventView {
             
             Spacer()
             
-            Circle()
-                .frame(width: 25, height: 25)
-                .foregroundColor(.white)
+            Image(user.profilePic)
+                .resizable()
+                .scaledToFit()
+                .clipShape(Circle())
+                .frame(width: 30)
+                .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                .padding(.leading)
             
             Text(user.userName)
                 .foregroundColor(.white)
