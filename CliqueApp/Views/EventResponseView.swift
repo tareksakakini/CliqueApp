@@ -17,9 +17,11 @@ struct EventResponseView: View {
     
     var body: some View {
         ZStack {
-            Color.black.opacity(0.2).ignoresSafeArea()
+            Color.accent.ignoresSafeArea()
             
             VStack {
+                
+                event_info
                 
                 Spacer()
                 
@@ -96,6 +98,79 @@ extension EventResponseView {
             }
             
             Spacer()
+        }
+    }
+    
+    private var event_info: some View {
+        ScrollView {
+            VStack(alignment: .leading) {
+                Text("\(event.title)")
+                    .font(.largeTitle)
+                    .padding(.bottom)
+                
+                HStack {
+                    Image(systemName: "calendar")
+                    Text("\(ud.formatDate(date: event.dateTime))")
+                }
+                .font(.body)
+                
+                HStack {
+                    Image(systemName: "clock")
+                    Text("\(ud.formatTime(time: event.dateTime))")
+                }
+                .font(.body)
+                
+                HStack {
+                    Image(systemName: "map.fill")
+                    Text("\(event.location)")
+                }
+                .font(.body)
+                
+                HStack {
+                    Image(systemName: "person.3.fill")
+                    Text("People")
+                }
+                .font(.body)
+                .bold()
+                .padding(.top, 15)
+                
+                ForEach(event.attendeesAccepted, id: \.self) {username in
+                    if let user = ud.getUser(username: username) {
+                        HStack {
+                            Image(user.profilePic)
+                                .resizable()
+                                .scaledToFit()
+                                .clipShape(Circle())
+                                .frame(width: 30)
+                                .padding(.horizontal, 3)
+                            Text("\(user.fullname)")
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                        }
+                    }
+                }
+                
+                ForEach(event.attendeesInvited, id: \.self) {username in
+                    if let user = ud.getUser(username: username) {
+                        HStack {
+                            Image(user.profilePic)
+                                .resizable()
+                                .scaledToFit()
+                                .clipShape(Circle())
+                                .frame(width: 30)
+                                .padding(.horizontal, 3)
+                            Text("\(user.fullname)")
+                            Image(systemName: "questionmark.circle")
+                                .foregroundColor(.white)
+                        }
+                    }
+                }
+                
+                
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundColor(.white)
+            .padding()
         }
     }
 }

@@ -17,6 +17,10 @@ struct UserData {
         "alikanj": ["tareksakakini"]
     ]
     
+//    static var friendInviteSent: [String: [String]] = [:]
+//    
+//    static var friendInviteReceived: [String: [String]] = [:]
+        
     static var userData: [UserModel] = [
         UserModel(
             fullname: "Tarek Sakakini",
@@ -53,7 +57,7 @@ struct UserData {
             location: "Northstar",
             dateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 5, hour: 11, minute: 10))!,
             attendeesAccepted: ["tareksakakini", "alikanj"],
-            attendeesInvited: []
+            attendeesInvited: ["jadyaacoub"]
         ),
         EventModel(
             id: "2",

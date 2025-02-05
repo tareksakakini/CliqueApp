@@ -59,7 +59,7 @@ struct EventPillView: View {
         }
         .sheet(isPresented: $showSheet) {
             EventResponseView(user: user, event: event, inviteView: inviteView)
-                .presentationDetents([.fraction(0.1)])
+                .presentationDetents([.fraction(0.5)])
         }
         
     }
