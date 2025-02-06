@@ -14,6 +14,7 @@ struct MySettingsView: View {
     
     @State var user: UserModel
     @State var go_to_login_screen: Bool = false
+    @State var message: String = ""
     
     var body: some View {
         
@@ -26,7 +27,16 @@ struct MySettingsView: View {
                 Spacer()
                 
                 Button {
-                    go_to_login_screen = true
+                    AuthManager.shared.signOut { success, error in
+                        if success {
+                            //isLoggedIn = false
+                            //message = "Signed Out"
+                            go_to_login_screen = true
+                        } else {
+                            message = error ?? "Unknown error"
+                        }
+                    }
+                    
                 } label: {
                     Text("Sign out")
                         .padding()
@@ -40,6 +50,8 @@ struct MySettingsView: View {
                 .navigationDestination(isPresented: $go_to_login_screen) {
                     LoginView()
                 }
+                
+                Text("\(message)")
                 
                 Spacer()
             }

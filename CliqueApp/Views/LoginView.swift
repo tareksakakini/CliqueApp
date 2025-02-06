@@ -126,13 +126,22 @@ extension LoginView {
     private var signin_button: some View {
         
         Button {
-            if ud.isUser(username: enteredUsername, password: enteredPassword) {
-                go_to_landing_screen = true
-                show_wrong_message = false
+            AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword) { success, error in
+                if success {
+                    go_to_landing_screen = true
+                    show_wrong_message = false
+                } else {
+                    show_wrong_message = true
+                }
             }
-            else {
-                show_wrong_message = true
-            }
+            
+//            if ud.isUser(username: enteredUsername, password: enteredPassword) {
+//                go_to_landing_screen = true
+//                show_wrong_message = false
+//            }
+//            else {
+//                show_wrong_message = true
+//            }
             
         } label: {
             Text("Sign in")

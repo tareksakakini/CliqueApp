@@ -14,6 +14,7 @@ struct SignUpView: View {
     @State var fullname: String = ""
     @State var username: String = ""
     @State var password: String = ""
+    @State var message: String = ""
     
     
     @State var show_wrong_message: Bool = false
@@ -41,6 +42,8 @@ struct SignUpView: View {
                 Spacer()
                 
                 signup_button
+                
+                Text("\(message)")
                 
                 Spacer()
                 Spacer()
@@ -137,7 +140,10 @@ extension SignUpView {
     private var signup_button: some View {
         
         Button {
-            ud.addUser(fullname: fullname, username: username, password: password)
+            AuthManager.shared.signUp(email: username, password: password) { success, error in
+                message = success ? "Sign Up Successful!" : error ?? "Unknown error"
+            }
+            //ud.addUser(fullname: fullname, username: username, password: password)
             goToMainView = true
             
         } label: {

@@ -10,46 +10,46 @@ import Foundation
 struct UserData {
     
     static var friendshipData: [String: [String]] = [
-        "tareksakakini": ["alikanj", "hassandbouk", "mohamadelhajj"],
-        "hassandbouk": ["tareksakakini", "jadyaacoub"],
-        "jadyaacoub": ["hassandbouk"],
-        "mohamadelhajj": ["tareksakakini"],
-        "alikanj": ["tareksakakini"]
+        "tareksakakini@gmail.com": ["alikanj@gmail.com", "hassandbouk@gmail.com", "mohamadelhajj@gmail.com"],
+        "hassandbouk@gmail.com": ["tareksakakini@gmail.com", "jadyaacoub@gmail.com"],
+        "jadyaacoub@gmail.com": ["hassandbouk@gmail.com"],
+        "mohamadelhajj@gmail.com": ["tareksakakini@gmail.com"],
+        "alikanj@gmail.com": ["tareksakakini@gmail.com"]
     ]
     
     static var friendInviteSent: [String: [String]] = [
-        "jadyaacoub": ["tareksakakini"]
+        "jadyaacoub@gmail.com": ["tareksakakini@gmail.com"]
     ]
     
     static var friendInviteReceived: [String: [String]] = [
-        "tareksakakini": ["jadyaacoub"]
+        "tareksakakini@gmail.com": ["jadyaacoub@gmail.com"]
     ]
         
     static var userData: [UserModel] = [
         UserModel(
             fullname: "Tarek Sakakini",
-            userName: "tareksakakini",
+            userName: "tareksakakini@gmail.com",
             password: "temp1",
             profilePic: "tarek_pic"
         ),
         UserModel(
             fullname: "Ali Kanj",
-            userName: "alikanj",
+            userName: "alikanj@gmail.com",
             password: "temp1"
         ),
         UserModel(
             fullname: "Hassan Dbouk",
-            userName: "hassandbouk",
+            userName: "hassandbouk@gmail.com",
             password: "temp1"
         ),
         UserModel(
             fullname: "Mohamad El Hajj",
-            userName: "mohamadelhajj",
+            userName: "mohamadelhajj@gmail.com",
             password: "temp1"
         ),
         UserModel(
             fullname: "Jad Yaacoub",
-            userName: "jadyaacoub",
+            userName: "jadyaacoub@gmail.com",
             password: "temp1"
         )
     ]
@@ -60,24 +60,24 @@ struct UserData {
             title: "Snowboarding",
             location: "Northstar",
             dateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 5, hour: 11, minute: 10))!,
-            attendeesAccepted: ["tareksakakini", "alikanj"],
-            attendeesInvited: ["jadyaacoub"]
+            attendeesAccepted: ["tareksakakini@gmail.com", "alikanj@gmail.com"],
+            attendeesInvited: ["jadyaacoub@gmail.com"]
         ),
         EventModel(
             id: "2",
             title: "Board Game Night",
             location: "George and Marias",
             dateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 4, hour: 11, minute: 10))!,
-            attendeesAccepted: ["tareksakakini"],
-            attendeesInvited: ["alikanj"]
+            attendeesAccepted: ["tareksakakini@gmail.com"],
+            attendeesInvited: ["alikanj@gmail.com"]
         ),
         EventModel(
             id: "3",
             title: "Coffee Date",
             location: "Old Soul",
             dateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 6, hour: 11, minute: 10))!,
-            attendeesAccepted: ["alikanj"],
-            attendeesInvited: ["tareksakakini"]
+            attendeesAccepted: ["alikanj@gmail.com"],
+            attendeesInvited: ["tareksakakini@gmail.com"]
         ),
 //        EventModel(
 //            id: "4",
