@@ -24,6 +24,14 @@ struct MyFriendsView: View {
                 header
                 
                 ScrollView {
+                    
+                    ForEach(ud.getFriendInvites(username: user.userName), id: \.self) {friend_username in
+                        FriendRequestPillView(
+                            viewing_user: user,
+                            user: ud.getUser(username: friend_username)
+                        )
+                    }
+                    
                     ForEach(ud.getFriends(username: user.userName), id: \.self) {friend_username in
                         FriendPillView(
                             viewing_user: user,

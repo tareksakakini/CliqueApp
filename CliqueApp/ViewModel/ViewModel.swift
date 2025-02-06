@@ -11,11 +11,15 @@ class ViewModel: ObservableObject {
     @Published var users: [UserModel]
     @Published var events: [EventModel]
     @Published var friendship: [String: [String]]
+    @Published var friendInviteSent: [String: [String]]
+    @Published var friendInviteReceived: [String: [String]]
     
     init() {
         self.users = UserData.userData
         self.events = UserData.eventData
         self.friendship = UserData.friendshipData
+        self.friendInviteSent = UserData.friendInviteSent
+        self.friendInviteReceived = UserData.friendInviteReceived
     }
     
     func isUser(username: String, password: String) -> Bool {
@@ -85,6 +89,15 @@ class ViewModel: ObservableObject {
         }
     }
     
+    func getFriendInvites(username: String) -> [String] {
+        if let invitations = self.friendInviteReceived[username] {
+            return invitations
+        }
+        else {
+            return []
+        }
+    }
+    
     func stringMatchUsers(query: String, viewingUser: UserModel, isFriend: Bool = false) -> [UserModel] {
         var to_return: [UserModel] = []
         var names_to_check: [String] = []
@@ -115,21 +128,63 @@ class ViewModel: ObservableObject {
         return to_return
     }
     
-    func addFriendship(username1: String, username2: String) {
-        if self.friendship.keys.contains(username1) {
-            self.friendship[username1]! += [username2]
+//    func addFriendship(username1: String, username2: String) {
+//        if self.friendship.keys.contains(username1) {
+//            self.friendship[username1]! += [username2]
+//        }
+//        else {
+//            self.friendship[username1] = [username2]
+//        }
+//        
+//        if self.friendship.keys.contains(username2) {
+//            self.friendship[username2]! += [username1]
+//        }
+//        else {
+//            self.friendship[username2] = [username1]
+//        }
+//
+//    }
+    
+    func sendFriendshipRequest(sender: String, receiver: String) {
+        
+        if self.friendInviteSent.keys.contains(sender) {
+            self.friendInviteSent[sender]! += [receiver]
         }
         else {
-            self.friendship[username1] = [username2]
+            self.friendInviteSent[sender] = [receiver]
         }
         
-        if self.friendship.keys.contains(username2) {
-            self.friendship[username2]! += [username1]
+        if self.friendInviteReceived.keys.contains(receiver) {
+            self.friendInviteReceived[receiver]! += [sender]
         }
         else {
-            self.friendship[username2] = [username1]
+            self.friendInviteReceived[receiver] = [sender]
         }
-
+    }
+    
+    func acceptFriendshipRequest(sender: String, receiver: String) {
+        
+        if self.friendInviteSent.keys.contains(sender) {
+            self.friendInviteSent[sender]!.removeAll { $0 == receiver }
+        }
+        
+        if self.friendInviteReceived.keys.contains(receiver) {
+            self.friendInviteReceived[receiver]!.removeAll { $0 == sender }
+        }
+        
+        if self.friendship.keys.contains(sender) {
+            self.friendship[sender]! += [receiver]
+        }
+        else {
+            self.friendship[sender] = [receiver]
+        }
+        
+        if self.friendship.keys.contains(receiver) {
+            self.friendship[receiver]! += [sender]
+        }
+        else {
+            self.friendship[receiver] = [sender]
+        }
     }
     
     func removeFriendship(username1: String, username2: String) {

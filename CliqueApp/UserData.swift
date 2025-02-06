@@ -17,9 +17,13 @@ struct UserData {
         "alikanj": ["tareksakakini"]
     ]
     
-//    static var friendInviteSent: [String: [String]] = [:]
-//    
-//    static var friendInviteReceived: [String: [String]] = [:]
+    static var friendInviteSent: [String: [String]] = [
+        "jadyaacoub": ["tareksakakini"]
+    ]
+    
+    static var friendInviteReceived: [String: [String]] = [
+        "tareksakakini": ["jadyaacoub"]
+    ]
         
     static var userData: [UserModel] = [
         UserModel(

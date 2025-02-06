@@ -7,17 +7,15 @@
 
 import SwiftUI
 
-struct AddFriendPillView: View {
-    
+struct FriendRequestPillView: View {
     @EnvironmentObject private var ud: ViewModel
-    @Environment(\.dismiss) var dismiss
     
-    let workingUser: UserModel?
-    let userToAdd: UserModel?
+    let viewing_user: UserModel?
+    let user: UserModel?
     var body: some View {
         HStack {
             
-            if let currentUser = userToAdd {
+            if let currentUser = user {
                 
                 Image(currentUser.profilePic)
                     .resizable()
@@ -38,30 +36,31 @@ struct AddFriendPillView: View {
                         .bold()
                 }
                 .padding(.leading, 5)
+                
             }
+            
             
             
             
             Spacer()
             
             Button {
-                if let workingUser = workingUser {
-                    if let userToAdd = userToAdd {
-                        ud.sendFriendshipRequest(sender: workingUser.userName, receiver: userToAdd.userName)
-                        dismiss()
+                if let user = user {
+                    if let viewing_user = viewing_user {
+                        ud.acceptFriendshipRequest(sender: user.userName, receiver: viewing_user.userName)
                     }
                 }
                 
             } label: {
-                Image(systemName: "plus")
-                    .resizable()
-                    .scaledToFit()
-                    .foregroundColor(.accentColor)
-                    .font(.caption)
-                    .frame(width: 25, height: 25)
-                    .padding()
-                    .padding(.horizontal)
+                Text("Accept")
             }
+            .bold()
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+            .background(.green.opacity(0.6))
+            .cornerRadius(10)
+            .padding()
+
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 70)
@@ -78,11 +77,9 @@ struct AddFriendPillView: View {
 #Preview {
     ZStack {
         Color.accentColor.ignoresSafeArea()
-        AddFriendPillView(
-            workingUser: UserData.userData[0],
-            userToAdd: UserData.userData[1]
+        FriendRequestPillView(
+            viewing_user: UserData.userData[0], user: UserData.userData[0]
         )
-        .environmentObject(ViewModel())
     }
     
 }
