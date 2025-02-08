@@ -22,14 +22,14 @@ class ViewModel: ObservableObject {
         self.friendInviteReceived = UserData.friendInviteReceived
     }
     
-    func isUser(username: String, password: String) -> Bool {
-        for user in self.users {
-            if user.userName == username && user.password == password {
-                return true
-            }
-        }
-        return false
-    }
+//    func isUser(username: String, password: String) -> Bool {
+//        for user in self.users {
+//            if user.userName == username && user.password == password {
+//                return true
+//            }
+//        }
+//        return false
+//    }
     
     func getUser(username: String) -> UserModel? {
         for user in self.users {

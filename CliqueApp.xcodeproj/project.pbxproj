@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		E68A6E3B2D3076A200E5AF14 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */; };
 		E6FB31442D55358C00F76BB9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = E6FB31432D55358C00F76BB9 /* FirebaseAuth */; };
+		E6FB31DA2D57342C00F76BB9 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = E6FB31D92D57342C00F76BB9 /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 			files = (
 				E68A6E3B2D3076A200E5AF14 /* FirebaseAnalytics in Frameworks */,
 				E6FB31442D55358C00F76BB9 /* FirebaseAuth in Frameworks */,
+				E6FB31DA2D57342C00F76BB9 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -82,6 +84,7 @@
 			packageProductDependencies = (
 				E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */,
 				E6FB31432D55358C00F76BB9 /* FirebaseAuth */,
+				E6FB31D92D57342C00F76BB9 /* FirebaseFirestore */,
 			);
 			productName = CliqueApp;
 			productReference = E6DB939C2D2C5944002D6BBD /* CliqueApp.app */;
@@ -364,6 +367,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
+		};
+		E6FB31D92D57342C00F76BB9 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

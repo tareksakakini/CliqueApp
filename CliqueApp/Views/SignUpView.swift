@@ -140,7 +140,7 @@ extension SignUpView {
     private var signup_button: some View {
         
         Button {
-            AuthManager.shared.signUp(email: username, password: password) { success, error in
+            AuthManager.shared.signUp(email: username, password: password, fullname: fullname) { success, error in
                 message = success ? "Sign Up Successful!" : error ?? "Unknown error"
             }
             //ud.addUser(fullname: fullname, username: username, password: password)

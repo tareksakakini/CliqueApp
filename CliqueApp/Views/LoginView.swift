@@ -11,6 +11,8 @@ struct LoginView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
+    @State var user: UserModel = UserModel(fullname: "", userName: "", password: "")
+    
     @State var enteredUsername: String = ""
     @State var enteredPassword: String = ""
     
@@ -68,6 +70,7 @@ struct LoginView: View {
             .cornerRadius(20)
             .shadow(radius: 50)
         }
+        .navigationBarHidden(true)
         
         
     }
@@ -126,8 +129,11 @@ extension LoginView {
     private var signin_button: some View {
         
         Button {
-            AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword) { success, error in
+            AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword) { success, data, error in
                 if success {
+                    user.userName = data!["email"] as? String ?? "Unknown"
+                    user.fullname = data!["fullname"] as? String ?? "Unknown"
+                    
                     go_to_landing_screen = true
                     show_wrong_message = false
                 } else {
@@ -154,9 +160,14 @@ extension LoginView {
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
         .navigationDestination(isPresented: $go_to_landing_screen) {
-            if let user = ud.getUser(username: enteredUsername) {
-                MainView(user: user)
-            }
+            MainView(user: user)
+//            if let unwrapped_user = user {
+//                MainView(user: unwrapped_user)
+//            }
+//            if let user_data = data
+//                ud.getUser(username: enteredUsername) {
+//                MainView(user: user)
+//            }
             
         }
     }
