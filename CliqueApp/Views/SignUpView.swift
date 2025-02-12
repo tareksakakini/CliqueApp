@@ -140,9 +140,28 @@ extension SignUpView {
     private var signup_button: some View {
         
         Button {
-            AuthManager.shared.signUp(email: username, password: password, fullname: fullname) { success, error in
-                message = success ? "Sign Up Successful!" : error ?? "Unknown error"
+            
+            Task {
+                do {
+                    let user = try await AuthManager.shared.signUp(email: username, password: password)
+                    
+                    Task {
+                        do {
+                            let firestoreService = DatabaseManager()
+                            try await firestoreService.addUserToFirestore(uid: user.uid, email: username, fullname: fullname, profilePic: "userDefault")
+                        } catch {
+                            print("Failed to add user: \(error.localizedDescription)")
+                        }
+                    }
+                    
+                    print("User signed up: \(user.uid)")
+                } catch {
+                    print("Sign up failed: \(error.localizedDescription)")
+                }
             }
+//            AuthManager.shared.signUp(email: username, password: password, fullname: fullname) { success, error in
+//                message = success ? "Sign Up Successful!" : error ?? "Unknown error"
+//            }
             //ud.addUser(fullname: fullname, username: username, password: password)
             goToMainView = true
             

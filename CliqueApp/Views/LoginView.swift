@@ -129,17 +129,30 @@ extension LoginView {
     private var signin_button: some View {
         
         Button {
-            AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword) { success, data, error in
-                if success {
-                    user.userName = data!["email"] as? String ?? "Unknown"
-                    user.fullname = data!["fullname"] as? String ?? "Unknown"
-                    
+            
+            Task {
+                do {
+                    let user = try await AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword)
                     go_to_landing_screen = true
                     show_wrong_message = false
-                } else {
+                    print("User signed up: \(user.uid)")
+                } catch {
+                    print("Sign up failed: \(error.localizedDescription)")
                     show_wrong_message = true
                 }
             }
+            
+//            AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword) { success, data, error in
+//                if success {
+//                    user.userName = data!["email"] as? String ?? "Unknown"
+//                    user.fullname = data!["fullname"] as? String ?? "Unknown"
+//                    
+//                    go_to_landing_screen = true
+//                    show_wrong_message = false
+//                } else {
+//                    show_wrong_message = true
+//                }
+//            }
             
 //            if ud.isUser(username: enteredUsername, password: enteredPassword) {
 //                go_to_landing_screen = true

@@ -27,15 +27,26 @@ struct MySettingsView: View {
                 Spacer()
                 
                 Button {
-                    AuthManager.shared.signOut { success, error in
-                        if success {
-                            //isLoggedIn = false
-                            //message = "Signed Out"
+                    
+                    Task {
+                        do {
+                            try AuthManager.shared.signOut()
                             go_to_login_screen = true
-                        } else {
-                            message = error ?? "Unknown error"
+                            print("User signed out")
+                        } catch {
+                            print("Sign out failed")
                         }
                     }
+                    
+//                    AuthManager.shared.signOut { success, error in
+//                        if success {
+//                            //isLoggedIn = false
+//                            //message = "Signed Out"
+//                            go_to_login_screen = true
+//                        } else {
+//                            message = error ?? "Unknown error"
+//                        }
+//                    }
                     
                 } label: {
                     Text("Sign out")
