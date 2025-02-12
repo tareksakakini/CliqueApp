@@ -159,10 +159,6 @@ extension SignUpView {
                     print("Sign up failed: \(error.localizedDescription)")
                 }
             }
-//            AuthManager.shared.signUp(email: username, password: password, fullname: fullname) { success, error in
-//                message = success ? "Sign Up Successful!" : error ?? "Unknown error"
-//            }
-            //ud.addUser(fullname: fullname, username: username, password: password)
             goToMainView = true
             
         } label: {

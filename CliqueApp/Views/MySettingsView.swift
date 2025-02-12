@@ -38,16 +38,6 @@ struct MySettingsView: View {
                         }
                     }
                     
-//                    AuthManager.shared.signOut { success, error in
-//                        if success {
-//                            //isLoggedIn = false
-//                            //message = "Signed Out"
-//                            go_to_login_screen = true
-//                        } else {
-//                            message = error ?? "Unknown error"
-//                        }
-//                    }
-                    
                 } label: {
                     Text("Sign out")
                         .padding()

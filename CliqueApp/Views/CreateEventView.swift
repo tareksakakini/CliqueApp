@@ -61,6 +61,14 @@ extension CreateEventView {
         
         Button {
             ud.createEvent(title: event_title, location: event_location, dateTime: event_dateTime, user: user, invitees: invitees)
+            Task {
+                do {
+                    let firestoreService = DatabaseManager()
+                    try await firestoreService.addEventToFirestore(id: UUID().uuidString, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [user.email], attendeesInvited: invitees)
+                } catch {
+                    print("Failed to add event: \(error.localizedDescription)")
+                }
+            }
             selectedTab = 0
             
         } label: {

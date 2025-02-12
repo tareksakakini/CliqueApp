@@ -144,28 +144,6 @@ extension LoginView {
                     show_wrong_message = true
                 }
             }
-            
-//            Task {
-//                do {
-//                    let authenticated_user = try await AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword)
-//                    Task {
-//                        do {
-//                            let firestoreService = DatabaseManager()
-//                            user = try await firestoreService.getUserFromFirestore(uid: authenticated_user.uid)
-//                            print("User fetched: \(user.fullname), Email: \(user.email)")
-//                        } catch {
-//                            print("Failed to fetch user: \(error.localizedDescription)")
-//                        }
-//                    }
-//                    go_to_landing_screen = true
-//                    show_wrong_message = false
-//                    print("User signed in: \(authenticated_user.uid)")
-//                } catch {
-//                    print("Sign in failed: \(error.localizedDescription)")
-//                    show_wrong_message = true
-//                }
-//            }
-            
         } label: {
             Text("Sign in")
                 .padding()
