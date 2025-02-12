@@ -11,7 +11,7 @@ struct LoginView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
-    @State var user: UserModel = UserModel(fullname: "", userName: "", password: "")
+    @State var user: UserModel = UserModel(uid: "", fullname: "", email: "", createdAt: Date(), profilePic: "userDefault")
     
     @State var enteredUsername: String = ""
     @State var enteredPassword: String = ""
@@ -132,34 +132,38 @@ extension LoginView {
             
             Task {
                 do {
-                    let user = try await AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword)
+                    let authenticated_user = try await AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword)
+                    let firestoreService = DatabaseManager()
+                    user = try await firestoreService.getUserFromFirestore(uid: authenticated_user.uid)
+                    print("User fetched: \(user.fullname), Email: \(user.email)")
                     go_to_landing_screen = true
                     show_wrong_message = false
-                    print("User signed up: \(user.uid)")
+                    print("User signed in: \(authenticated_user.uid)")
                 } catch {
-                    print("Sign up failed: \(error.localizedDescription)")
+                    print("Sign in failed: \(error.localizedDescription)")
                     show_wrong_message = true
                 }
             }
             
-//            AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword) { success, data, error in
-//                if success {
-//                    user.userName = data!["email"] as? String ?? "Unknown"
-//                    user.fullname = data!["fullname"] as? String ?? "Unknown"
-//                    
+//            Task {
+//                do {
+//                    let authenticated_user = try await AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword)
+//                    Task {
+//                        do {
+//                            let firestoreService = DatabaseManager()
+//                            user = try await firestoreService.getUserFromFirestore(uid: authenticated_user.uid)
+//                            print("User fetched: \(user.fullname), Email: \(user.email)")
+//                        } catch {
+//                            print("Failed to fetch user: \(error.localizedDescription)")
+//                        }
+//                    }
 //                    go_to_landing_screen = true
 //                    show_wrong_message = false
-//                } else {
+//                    print("User signed in: \(authenticated_user.uid)")
+//                } catch {
+//                    print("Sign in failed: \(error.localizedDescription)")
 //                    show_wrong_message = true
 //                }
-//            }
-            
-//            if ud.isUser(username: enteredUsername, password: enteredPassword) {
-//                go_to_landing_screen = true
-//                show_wrong_message = false
-//            }
-//            else {
-//                show_wrong_message = true
 //            }
             
         } label: {
@@ -174,14 +178,6 @@ extension LoginView {
         }
         .navigationDestination(isPresented: $go_to_landing_screen) {
             MainView(user: user)
-//            if let unwrapped_user = user {
-//                MainView(user: unwrapped_user)
-//            }
-//            if let user_data = data
-//                ud.getUser(username: enteredUsername) {
-//                MainView(user: user)
-//            }
-            
         }
     }
 }

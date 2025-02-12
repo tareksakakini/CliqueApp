@@ -23,6 +23,28 @@ class DatabaseManager {
             throw error
         }
     }
+    
+    func getUserFromFirestore(uid: String) async throws -> UserModel {
+            let userRef = db.collection("users").document(uid)
+            
+            do {
+                let document = try await userRef.getDocument()
+                guard let data = document.data() else {
+                    throw NSError(domain: "FirestoreError", code: 404, userInfo: [NSLocalizedDescriptionKey: "User not found"])
+                }
+                
+                return UserModel(
+                    uid: data["uid"] as? String ?? "",
+                    fullname: data["fullname"] as? String ?? "",
+                    email: data["email"] as? String ?? "",
+                    createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                    profilePic: data["profilePic"] as? String ?? ""
+                )
+            } catch {
+                print("Error fetching user: \(error.localizedDescription)")
+                throw error
+            }
+        }
 }
 
 

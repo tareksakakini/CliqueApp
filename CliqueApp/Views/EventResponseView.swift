@@ -48,7 +48,7 @@ extension EventResponseView {
             Spacer()
             
             Button {
-                ud.inviteRespond(username: user.userName, event_id: event.id, accepted: true)
+                ud.inviteRespond(username: user.email, event_id: event.id, accepted: true)
             } label: {
                 Text("Accept")
                     .padding()
@@ -63,7 +63,7 @@ extension EventResponseView {
             Spacer()
             
             Button {
-                ud.inviteRespond(username: user.userName, event_id: event.id, accepted: false)
+                ud.inviteRespond(username: user.email, event_id: event.id, accepted: false)
             } label: {
                 Text("Reject")
                     .padding()
@@ -85,7 +85,7 @@ extension EventResponseView {
             Spacer()
             
             Button {
-                ud.eventLeave(username: user.userName, event_id: event.id)
+                ud.eventLeave(username: user.email, event_id: event.id)
             } label: {
                 Text("Leave Event")
                     .padding()

@@ -23,7 +23,7 @@ struct MyEventsView: View {
                 header
                 
                 ScrollView {
-                    ForEach(ud.getEvents(username: user.userName), id: \.self) {event in
+                    ForEach(ud.getEvents(username: user.email), id: \.self) {event in
                         EventPillView(
                             event: event,
                             user: user,
@@ -63,7 +63,7 @@ extension MyEventsView {
                 .overlay(Circle().stroke(Color.white, lineWidth: 2))
                 .padding(.leading)
             
-            Text(user.userName)
+            Text(user.email)
                 .foregroundColor(.white)
                 .font(.subheadline)
                 .bold()

@@ -34,7 +34,7 @@ struct AddFriendView: View {
                 
                 ScrollView {
                     
-                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user), id: \.userName)
+                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user), id: \.email)
                     {user_returned in
                         AddFriendPillView(workingUser: user, userToAdd: user_returned)
                     }

@@ -35,7 +35,7 @@ struct AddInviteesView: View {
                 
                 ScrollView {
                     
-                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user, isFriend: true), id: \.userName)
+                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user, isFriend: true), id: \.email)
                     {user_returned in
                         AddInviteePillView(userToAdd: user_returned, invitees: $invitees)
                     }

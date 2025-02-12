@@ -8,8 +8,9 @@
 import Foundation
 
 struct UserModel {
+    var uid: String = ""
     var fullname: String
-    var userName: String
-    var password: String
+    var email: String
+    var createdAt: Date = Date()
     var profilePic: String = "userDefault"
 }

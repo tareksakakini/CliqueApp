@@ -32,7 +32,7 @@ struct AddFriendPillView: View {
                         .font(.title3)
                         .bold()
                     
-                    Text("@\(currentUser.userName)")
+                    Text("@\(currentUser.email)")
                         .foregroundColor(Color(#colorLiteral(red: 0.4756349325, green: 0.4756467342, blue: 0.4756404161, alpha: 1)))
                         .font(.caption)
                         .bold()
@@ -47,7 +47,7 @@ struct AddFriendPillView: View {
             Button {
                 if let workingUser = workingUser {
                     if let userToAdd = userToAdd {
-                        ud.sendFriendshipRequest(sender: workingUser.userName, receiver: userToAdd.userName)
+                        ud.sendFriendshipRequest(sender: workingUser.email, receiver: userToAdd.email)
                         dismiss()
                     }
                 }

@@ -33,7 +33,7 @@ class ViewModel: ObservableObject {
     
     func getUser(username: String) -> UserModel? {
         for user in self.users {
-            if user.userName == username {
+            if user.email == username {
                 return user
             }
         }
@@ -103,8 +103,8 @@ class ViewModel: ObservableObject {
         var names_to_check: [String] = []
         
         if isFriend {
-            if self.friendship.keys.contains(viewingUser.userName) {
-                for username in self.friendship[viewingUser.userName]! {
+            if self.friendship.keys.contains(viewingUser.email) {
+                for username in self.friendship[viewingUser.email]! {
                     if let curr_user = self.getUser(username: username) {
                         names_to_check += [curr_user.fullname]
                     }
@@ -234,12 +234,12 @@ class ViewModel: ObservableObject {
         
         let nextID = getNextEventID()
         
-        let new_event: EventModel = EventModel(id: nextID, title: title, location: location, dateTime: dateTime, attendeesAccepted: [user.userName], attendeesInvited: invitees)
+        let new_event: EventModel = EventModel(id: nextID, title: title, location: location, dateTime: dateTime, attendeesAccepted: [user.email], attendeesInvited: invitees)
         self.events += [new_event]
     }
     
-    func addUser(fullname: String, username: String, password: String) {
-        let newUser = UserModel(fullname: fullname, userName: username, password: password)
+    func addUser(fullname: String, email: String, createdAt: Date) {
+        let newUser = UserModel(fullname: fullname, email: email, createdAt: Date())
         self.users += [newUser]
     }
     

@@ -30,7 +30,7 @@ struct FriendPillView: View {
                         .font(.title3)
                         .bold()
                     
-                    Text("@\(currentUser.userName)")
+                    Text("@\(currentUser.email)")
                         .foregroundColor(Color(#colorLiteral(red: 0.4756349325, green: 0.4756467342, blue: 0.4756404161, alpha: 1)))
                         .font(.caption)
                         .bold()
@@ -47,7 +47,7 @@ struct FriendPillView: View {
             Button {
                 if let user = user {
                     if let viewing_user = viewing_user {
-                        ud.removeFriendship(username1: user.userName, username2: viewing_user.userName)
+                        ud.removeFriendship(username1: user.email, username2: viewing_user.email)
                     }
                 }
                 

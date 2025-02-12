@@ -33,7 +33,7 @@ struct InviteePillView: View {
             
             Button {
                 if let user = user {
-                    invitees.removeAll { $0 == user.userName }
+                    invitees.removeAll { $0 == user.email }
                 }
                 
             } label: {
