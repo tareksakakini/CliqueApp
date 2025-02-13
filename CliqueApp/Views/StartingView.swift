@@ -15,7 +15,7 @@ struct StartingView: View {
         NavigationStack {
             ZStack {
                 
-                Color.accentColor.ignoresSafeArea()
+                Color(.accent).ignoresSafeArea()
             
                 VStack {
                     Spacer()
@@ -72,7 +72,7 @@ extension StartingView {
             .padding(.horizontal)
             .background(.white)
             .cornerRadius(10)
-            .foregroundColor(Color.accentColor)
+            .foregroundColor(Color(.accent))
             .shadow(radius: 10)
     }
 }

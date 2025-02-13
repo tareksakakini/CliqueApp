@@ -28,7 +28,7 @@ struct AddFriendPillView: View {
                 
                 VStack(alignment: .leading) {
                     Text("\(currentUser.fullname)")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .font(.title3)
                         .bold()
                     
@@ -56,7 +56,7 @@ struct AddFriendPillView: View {
                 Image(systemName: "plus")
                     .resizable()
                     .scaledToFit()
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color(.accent))
                     .font(.caption)
                     .frame(width: 25, height: 25)
                     .padding()
@@ -77,7 +77,7 @@ struct AddFriendPillView: View {
 
 #Preview {
     ZStack {
-        Color.accentColor.ignoresSafeArea()
+        Color(.accent).ignoresSafeArea()
         AddFriendPillView(
             workingUser: UserData.userData[0],
             userToAdd: UserData.userData[1]

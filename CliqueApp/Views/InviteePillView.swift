@@ -21,7 +21,7 @@ struct InviteePillView: View {
             
             if let currentUser = user {
                 Text("\(currentUser.fullname)")
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color(.accent))
                     .font(.title3)
                     .bold()
             }
@@ -56,7 +56,7 @@ struct InviteePillView: View {
 
 #Preview {
     ZStack {
-        Color.accentColor.ignoresSafeArea()
+        Color(.accent).ignoresSafeArea()
         InviteePillView(
             user: UserData.userData[0],
             invitees: .constant([])

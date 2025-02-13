@@ -21,14 +21,14 @@ struct EventPillView: View {
             HStack {
                 VStack(alignment: .leading) {
                     Text("\(event.title)")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .padding(.horizontal)
                         .font(.title3)
                         .bold()
                     
                     
                     Text("\(event.location)")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .padding(.horizontal)
                         .font(.subheadline)
                 }
@@ -37,14 +37,14 @@ struct EventPillView: View {
                 
                 VStack(alignment: .trailing) {
                     Text("\(ud.formatDate(date: event.dateTime))")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .padding(.horizontal)
                         .font(.title3)
                         .bold()
                     
                     
                     Text("\(ud.formatTime(time: event.dateTime))")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .padding(.horizontal)
                         .font(.subheadline)
                 }
@@ -68,7 +68,7 @@ struct EventPillView: View {
 
 #Preview {
     ZStack {
-        Color.accentColor.ignoresSafeArea()
+        Color(.accent).ignoresSafeArea()
         EventPillView(
             event: UserData.eventData[0],
             user: UserData.userData[0],

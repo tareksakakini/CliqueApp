@@ -11,6 +11,8 @@ struct SignUpView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
+    @State var user = UserModel(fullname: "", email: "", createdAt: Date())
+    
     @State var fullname: String = ""
     @State var username: String = ""
     @State var password: String = ""
@@ -52,7 +54,7 @@ struct SignUpView: View {
                 
             }
             .frame(width: 400, height: 700)
-            .background(Color.accentColor)
+            .background(Color(.accent))
             .cornerRadius(20)
             .shadow(radius: 50)
         }
@@ -143,38 +145,30 @@ extension SignUpView {
             
             Task {
                 do {
-                    let user = try await AuthManager.shared.signUp(email: username, password: password)
-                    
-                    Task {
-                        do {
-                            let firestoreService = DatabaseManager()
-                            try await firestoreService.addUserToFirestore(uid: user.uid, email: username, fullname: fullname, profilePic: "userDefault")
-                        } catch {
-                            print("Failed to add user: \(error.localizedDescription)")
-                        }
-                    }
-                    
+                    let signup_user = try await AuthManager.shared.signUp(email: username, password: password)
+                    let firestoreService = DatabaseManager()
+                    try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: username, fullname: fullname, profilePic: "userDefault")
+                    user = try await firestoreService.getUserFromFirestore(uid: signup_user.uid)
                     print("User signed up: \(user.uid)")
+                    goToMainView = true
                 } catch {
                     print("Sign up failed: \(error.localizedDescription)")
                 }
             }
-            goToMainView = true
-            
         } label: {
             Text("Create Account")
                 .padding()
                 .padding(.horizontal)
                 .background(.white)
                 .cornerRadius(10)
-                .foregroundColor(Color.accentColor)
+                .foregroundColor(Color(.accent))
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
         .navigationDestination(isPresented: $goToMainView) {
-            if let user = ud.getUser(username: username) {
-                MainView(user: user)
-            }
+            
+            MainView(user: user)
+            
         }
     }
 }

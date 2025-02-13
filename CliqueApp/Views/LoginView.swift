@@ -66,7 +66,7 @@ struct LoginView: View {
                 
             }
             .frame(width: 300, height: 500)
-            .background(Color.accentColor)
+            .background(Color(.accent))
             .cornerRadius(20)
             .shadow(radius: 50)
         }
@@ -150,7 +150,7 @@ extension LoginView {
                 .padding(.horizontal)
                 .background(.white)
                 .cornerRadius(10)
-                .foregroundColor(Color.accentColor)
+                .foregroundColor(Color(.accent))
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }

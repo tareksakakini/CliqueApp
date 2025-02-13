@@ -66,5 +66,28 @@ class DatabaseManager {
             throw error
         }
     }
+    
+    func getAllEvents() async throws -> [EventModel] {
+            let eventsRef = db.collection("events")
+            
+            do {
+                let snapshot = try await eventsRef.getDocuments()
+                let events = snapshot.documents.compactMap { document -> EventModel? in
+                    let data = document.data()
+                    return EventModel(
+                        id: document.documentID,
+                        title: data["title"] as? String ?? "No Name",
+                        location: data["location"] as? String ?? "No Location",
+                        dateTime: (data["dateTime"] as? Timestamp)?.dateValue() ?? Date(),
+                        attendeesAccepted: data["attendeesAccepted"] as? [String] ?? [],
+                        attendeesInvited: data["attendeesInvited"] as? [String] ?? []
+                    )
+                }
+                return events
+            } catch {
+                print("Error fetching events: \(error.localizedDescription)")
+                throw error
+            }
+        }
 }
 

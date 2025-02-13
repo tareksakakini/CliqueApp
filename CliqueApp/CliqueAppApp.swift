@@ -20,6 +20,7 @@ struct CliqueAppApp: App {
         WindowGroup {
             StartingView()
                 .environmentObject(ud)
+                .accentColor(.green)
         }
     }
 }

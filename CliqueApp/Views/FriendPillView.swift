@@ -26,7 +26,7 @@ struct FriendPillView: View {
                 
                 VStack(alignment: .leading) {
                     Text("\(currentUser.fullname)")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .font(.title3)
                         .bold()
                     
@@ -71,7 +71,7 @@ struct FriendPillView: View {
 
 #Preview {
     ZStack {
-        Color.accentColor.ignoresSafeArea()
+        Color(.accent).ignoresSafeArea()
         FriendPillView(
             viewing_user: UserData.userData[0], user: UserData.userData[0]
         )

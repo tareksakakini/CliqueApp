@@ -16,21 +16,30 @@ struct MyEventsView: View {
     var body: some View {
         
         ZStack {
-            Color.accentColor.ignoresSafeArea()
+            
+            Color(.accent).ignoresSafeArea()
             
             VStack {
                 
                 header
                 
                 ScrollView {
-                    ForEach(ud.getEvents(username: user.email), id: \.self) {event in
-                        EventPillView(
-                            event: event,
-                            user: user,
-                            inviteView: false
-                        )
+                    
+                    ForEach(ud.events, id: \.self) {event in
+                        if event.attendeesAccepted.contains(user.email) {
+                            EventPillView(
+                                event: event,
+                                user: user,
+                                inviteView: false
+                            )
+                        }
                     }
                 }
+            }
+        }
+        .onAppear {
+            Task {
+                await ud.getAllEvents()
             }
         }
     }

@@ -29,7 +29,7 @@ struct AddInviteePillView: View {
                 
                 VStack(alignment: .leading) {
                     Text("\(currentUser.fullname)")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .font(.title3)
                         .bold()
                     
@@ -54,7 +54,7 @@ struct AddInviteePillView: View {
                 Image(systemName: "plus")
                     .resizable()
                     .scaledToFit()
-                    .foregroundColor(.accentColor)
+                    .foregroundColor(Color(.accent))
                     .font(.caption)
                     .frame(width: 25, height: 25)
                     .padding()
@@ -75,7 +75,7 @@ struct AddInviteePillView: View {
 
 #Preview {
     ZStack {
-        Color.accentColor.ignoresSafeArea()
+        Color(.accent).ignoresSafeArea()
         AddInviteePillView(
             userToAdd: UserData.userData[1],
             invitees: .constant([])

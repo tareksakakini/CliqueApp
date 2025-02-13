@@ -18,7 +18,7 @@ struct AddFriendView: View {
     var body: some View {
         
         ZStack {
-            Color.accentColor.ignoresSafeArea()
+            Color(.accent).ignoresSafeArea()
             
             VStack {
                 

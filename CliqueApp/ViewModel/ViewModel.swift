@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 class ViewModel: ObservableObject {
     @Published var users: [UserModel]
     @Published var events: [EventModel]
@@ -16,20 +17,63 @@ class ViewModel: ObservableObject {
     
     init() {
         self.users = UserData.userData
-        self.events = UserData.eventData
+        self.events = []
         self.friendship = UserData.friendshipData
         self.friendInviteSent = UserData.friendInviteSent
         self.friendInviteReceived = UserData.friendInviteReceived
     }
     
-//    func isUser(username: String, password: String) -> Bool {
-//        for user in self.users {
-//            if user.userName == username && user.password == password {
-//                return true
-//            }
-//        }
-//        return false
-//    }
+    func getAllEvents() async {
+        let firestoreService = DatabaseManager()
+        do {
+            let fetchedEvents = try await firestoreService.getAllEvents()
+            self.events = fetchedEvents
+        } catch {
+            print("Failed to fetch events: \(error.localizedDescription)")
+        }
+    }
+    
+    //    func isUser(username: String, password: String) -> Bool {
+    //        for user in self.users {
+    //            if user.userName == username && user.password == password {
+    //                return true
+    //            }
+    //        }
+    //        return false
+    //    }
+    
+    
+    func getEvents(username: String) async throws -> [EventModel] {
+        let firestoreService = DatabaseManager()
+        do {
+            let events = try await firestoreService.getAllEvents()
+            return events
+        } catch {
+            print("Failed to fetch events: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     func getUser(username: String) -> UserModel? {
         for user in self.users {
@@ -49,16 +93,16 @@ class ViewModel: ObservableObject {
         return nil
     }
     
-    func getEvents(username: String) -> [EventModel] {
-        var eventsForUser: [EventModel] = []
-        for event in self.events {
-            if event.attendeesAccepted.contains(username) {
-                eventsForUser.append(event)
-            }
-        }
-        eventsForUser = eventsForUser.sorted { $0.dateTime < $1.dateTime }
-        return eventsForUser
-    }
+    //    func getEvents(username: String) -> [EventModel] {
+    //        var eventsForUser: [EventModel] = []
+    //        for event in self.events {
+    //            if event.attendeesAccepted.contains(username) {
+    //                eventsForUser.append(event)
+    //            }
+    //        }
+    //        eventsForUser = eventsForUser.sorted { $0.dateTime < $1.dateTime }
+    //        return eventsForUser
+    //    }
     
     func getEvent(eventID: String) -> EventModel? {
         for event in self.events {
@@ -128,22 +172,22 @@ class ViewModel: ObservableObject {
         return to_return
     }
     
-//    func addFriendship(username1: String, username2: String) {
-//        if self.friendship.keys.contains(username1) {
-//            self.friendship[username1]! += [username2]
-//        }
-//        else {
-//            self.friendship[username1] = [username2]
-//        }
-//        
-//        if self.friendship.keys.contains(username2) {
-//            self.friendship[username2]! += [username1]
-//        }
-//        else {
-//            self.friendship[username2] = [username1]
-//        }
-//
-//    }
+    //    func addFriendship(username1: String, username2: String) {
+    //        if self.friendship.keys.contains(username1) {
+    //            self.friendship[username1]! += [username2]
+    //        }
+    //        else {
+    //            self.friendship[username1] = [username2]
+    //        }
+    //
+    //        if self.friendship.keys.contains(username2) {
+    //            self.friendship[username2]! += [username1]
+    //        }
+    //        else {
+    //            self.friendship[username2] = [username1]
+    //        }
+    //
+    //    }
     
     func sendFriendshipRequest(sender: String, receiver: String) {
         
@@ -214,7 +258,7 @@ class ViewModel: ObservableObject {
     
     func eventLeave(username: String, event_id: String) {
         if let index = self.events.firstIndex(where: { $0.id == event_id }) {
-                self.events[index].attendeesAccepted.removeAll { $0 == username }
+            self.events[index].attendeesAccepted.removeAll { $0 == username }
         }
     }
     
@@ -254,5 +298,5 @@ class ViewModel: ObservableObject {
         timeFormatter.dateFormat = "h:mm a"
         return timeFormatter.string(from: time)
     }
-            
+    
 }

@@ -56,7 +56,6 @@ struct MainView: View {
             
         }
         .navigationBarHidden(true)
-        .accentColor(Color.accentColor)
         .onAppear {
             // Change the background color of the TabBar
             let appearance = UITabBarAppearance()
