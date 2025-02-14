@@ -27,53 +27,12 @@ class ViewModel: ObservableObject {
         let firestoreService = DatabaseManager()
         do {
             let fetchedEvents = try await firestoreService.getAllEvents()
-            self.events = fetchedEvents
+            let ordered_fetchedEvents = fetchedEvents.sorted { $0.dateTime < $1.dateTime }
+            self.events = ordered_fetchedEvents
         } catch {
             print("Failed to fetch events: \(error.localizedDescription)")
         }
     }
-    
-    //    func isUser(username: String, password: String) -> Bool {
-    //        for user in self.users {
-    //            if user.userName == username && user.password == password {
-    //                return true
-    //            }
-    //        }
-    //        return false
-    //    }
-    
-    
-    func getEvents(username: String) async throws -> [EventModel] {
-        let firestoreService = DatabaseManager()
-        do {
-            let events = try await firestoreService.getAllEvents()
-            return events
-        } catch {
-            print("Failed to fetch events: \(error.localizedDescription)")
-            throw error
-        }
-    }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     
     func getUser(username: String) -> UserModel? {
         for user in self.users {
@@ -92,17 +51,6 @@ class ViewModel: ObservableObject {
         }
         return nil
     }
-    
-    //    func getEvents(username: String) -> [EventModel] {
-    //        var eventsForUser: [EventModel] = []
-    //        for event in self.events {
-    //            if event.attendeesAccepted.contains(username) {
-    //                eventsForUser.append(event)
-    //            }
-    //        }
-    //        eventsForUser = eventsForUser.sorted { $0.dateTime < $1.dateTime }
-    //        return eventsForUser
-    //    }
     
     func getEvent(eventID: String) -> EventModel? {
         for event in self.events {

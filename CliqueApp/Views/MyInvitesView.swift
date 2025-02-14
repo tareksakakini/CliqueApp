@@ -13,6 +13,7 @@ struct MyInvitesView: View {
     
 
     @State var user: UserModel
+    @State var refreshTrigger: Bool = false
     
     var body: some View {
         
@@ -24,14 +25,28 @@ struct MyInvitesView: View {
                 header
                 
                 ScrollView {
-                    ForEach(ud.getInvites(username: user.email), id: \.self) {event in
-                        EventPillView(
-                            event: event,
-                            user: user,
-                            inviteView: true
-                        )
+                    ForEach(ud.events, id: \.self) {event in
+                        if event.attendeesInvited .contains(user.email) {
+                            EventPillView(
+                                event: event,
+                                user: user,
+                                inviteView: true,
+                                refreshTrigger: $refreshTrigger
+                            )
+                        }
                     }
                 }
+            }
+        }
+        .onAppear {
+            Task {
+                await ud.getAllEvents()
+            }
+        }
+        .onChange(of: refreshTrigger) { _ in
+            print("variable changed")
+            Task {
+                await ud.getAllEvents()
             }
         }
     }
@@ -64,7 +79,7 @@ extension MyInvitesView {
                 .overlay(Circle().stroke(Color.white, lineWidth: 2))
                 .padding(.leading)
             
-            Text(user.email)
+            Text(user.fullname.components(separatedBy: " ").first ?? "")
                 .foregroundColor(.white)
                 .font(.subheadline)
                 .bold()

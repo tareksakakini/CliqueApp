@@ -87,7 +87,7 @@ extension MySettingsView {
                 .overlay(Circle().stroke(Color.white, lineWidth: 2))
                 .padding(.leading)
             
-            Text(user.email)
+            Text(user.fullname.components(separatedBy: " ").first ?? "")
                 .foregroundColor(.white)
                 .font(.subheadline)
                 .bold()

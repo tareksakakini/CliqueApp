@@ -12,6 +12,7 @@ struct MyEventsView: View {
     @EnvironmentObject private var ud: ViewModel
     
     @State var user: UserModel
+    @State private var refreshTrigger = false
     
     var body: some View {
         
@@ -30,7 +31,8 @@ struct MyEventsView: View {
                             EventPillView(
                                 event: event,
                                 user: user,
-                                inviteView: false
+                                inviteView: false,
+                                refreshTrigger: $refreshTrigger
                             )
                         }
                     }
@@ -38,6 +40,12 @@ struct MyEventsView: View {
             }
         }
         .onAppear {
+            Task {
+                await ud.getAllEvents()
+            }
+        }
+        .onChange(of: refreshTrigger) { _ in
+            print("variable changed")
             Task {
                 await ud.getAllEvents()
             }
@@ -72,7 +80,7 @@ extension MyEventsView {
                 .overlay(Circle().stroke(Color.white, lineWidth: 2))
                 .padding(.leading)
             
-            Text(user.email)
+            Text(user.fullname.components(separatedBy: " ").first ?? "")
                 .foregroundColor(.white)
                 .font(.subheadline)
                 .bold()

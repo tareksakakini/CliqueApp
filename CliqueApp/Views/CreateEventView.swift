@@ -60,7 +60,7 @@ extension CreateEventView {
     private var create_button: some View {
         
         Button {
-            ud.createEvent(title: event_title, location: event_location, dateTime: event_dateTime, user: user, invitees: invitees)
+            //ud.createEvent(title: event_title, location: event_location, dateTime: event_dateTime, user: user, invitees: invitees)
             Task {
                 do {
                     let firestoreService = DatabaseManager()
@@ -104,7 +104,7 @@ extension CreateEventView {
                 .overlay(Circle().stroke(Color.white, lineWidth: 2))
                 .padding(.leading)
             
-            Text(user.email)
+            Text(user.fullname.components(separatedBy: " ").first ?? "")
                 .foregroundColor(.white)
                 .font(.subheadline)
                 .bold()
