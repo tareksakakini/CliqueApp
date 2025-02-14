@@ -16,6 +16,7 @@ struct AddFriendView: View {
     @State var user: UserModel
     
     var body: some View {
+        //working on friends on db
         
         ZStack {
             Color(.accent).ignoresSafeArea()
