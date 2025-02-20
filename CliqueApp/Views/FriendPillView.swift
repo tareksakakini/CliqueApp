@@ -47,7 +47,15 @@ struct FriendPillView: View {
             Button {
                 if let user = user {
                     if let viewing_user = viewing_user {
-                        ud.removeFriendship(username1: user.email, username2: viewing_user.email)
+                        Task {
+                            do {
+                                let databaseManager = DatabaseManager()
+                                try await databaseManager.removeFriends(user1: viewing_user.email, user2: user.email)
+                            } catch {
+                                print("Failed to remove friendship: \(error.localizedDescription)")
+                            }
+                        }
+                        ud.friendship.removeAll() { $0 == user.email }
                     }
                 }
                 
