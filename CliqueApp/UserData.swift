@@ -17,10 +17,6 @@ struct UserData {
         "alikanj@gmail.com": ["tareksakakini@gmail.com"]
     ]
     
-    static var friendInviteSent: [String: [String]] = [
-        "jadyaacoub@gmail.com": ["tareksakakini@gmail.com"]
-    ]
-    
     static var friendInviteReceived: [String: [String]] = [
         "tareksakakini@gmail.com": ["jadyaacoub@gmail.com"]
     ]

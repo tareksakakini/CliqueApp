@@ -25,6 +25,21 @@ struct MyFriendsView: View {
                 
                 ScrollView {
                     
+                    ForEach(ud.friendInviteReceived, id: \.self) {request_username in
+                        FriendRequestPillView(
+                            viewing_user: user,
+                            user: ud.getUser(username: request_username)
+                        )
+                    }
+                    
+                    ForEach(ud.friendship, id: \.self) {friend_username in
+                        FriendPillView(
+                            viewing_user: user,
+                            user: ud.getUser(username: friend_username)
+                        )
+                    }
+                    
+                    /*
                     ForEach(ud.getFriendInvites(username: user.email), id: \.self) {friend_username in
                         FriendRequestPillView(
                             viewing_user: user,
@@ -38,7 +53,19 @@ struct MyFriendsView: View {
                             user: ud.getUser(username: friend_username)
                         )
                     }
+                     */
                 }
+            }
+        }
+        .onAppear {
+            Task {
+                await ud.getAllUsers()
+            }
+            Task {
+                await ud.getUserFriends(user_email: user.email)
+            }
+            Task {
+                await ud.getUserFriendRequests(user_email: user.email)
             }
         }
     }

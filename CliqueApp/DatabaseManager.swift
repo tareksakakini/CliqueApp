@@ -1,5 +1,7 @@
 import FirebaseFirestore
+import FirebaseDatabaseInternal
 import FirebaseAuth
+import FirebaseDatabase
 
 class DatabaseManager {
     private let db = Firestore.firestore()
@@ -84,6 +86,28 @@ class DatabaseManager {
                 )
             }
             return events
+        } catch {
+            print("Error fetching events: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
+    func getAllUsers() async throws -> [UserModel] {
+        let usersRef = db.collection("users")
+        
+        do {
+            let snapshot = try await usersRef.getDocuments()
+            let users = snapshot.documents.compactMap { document -> UserModel? in
+                let data = document.data()
+                return UserModel(
+                    uid: document.documentID,
+                    fullname: data["fullname"] as? String ?? "No Name",
+                    email: data["email"] as? String ?? "No Email",
+                    createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                    profilePic: data["profilePic"] as? String ?? "userDefault"
+                )
+            }
+            return users
         } catch {
             print("Error fetching events: \(error.localizedDescription)")
             throw error
@@ -220,6 +244,146 @@ class DatabaseManager {
             throw error
         }
         
+    }
+    
+    func addFriends(user1: String, user2: String) async throws {
+        let user1Ref = db.collection("friendships").document(user1)
+        let user2Ref = db.collection("friendships").document(user2)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let user1Snapshot = user1Ref.getDocument()
+            async let user2Snapshot = user2Ref.getDocument()
+            let (user1Data, user2Data) = try await (user1Snapshot, user2Snapshot)
+            
+            var user1Friends = user1Data.data()?["friends"] as? [String] ?? []
+            var user2Friends = user2Data.data()?["friends"] as? [String] ?? []
+            
+            if !user1Friends.contains(user2) {
+                user1Friends.append(user2)
+            }
+            if !user2Friends.contains(user1) {
+                user2Friends.append(user1)
+            }
+            
+            // Update Firestore in parallel
+            async let updateUser1: Void = user1Ref.setData(["friends": user1Friends], merge: true)
+            async let updateUser2: Void = user2Ref.setData(["friends": user2Friends], merge: true)
+            //try await (updateUser1, updateUser2)
+        } catch {
+            throw error
+        }
+    }
+    
+    func removeFriends(user1: String, user2: String) async throws {
+        let user1Ref = db.collection("friendships").document(user1)
+        let user2Ref = db.collection("friendships").document(user2)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let user1Snapshot = user1Ref.getDocument()
+            async let user2Snapshot = user2Ref.getDocument()
+            let (user1Data, user2Data) = try await (user1Snapshot, user2Snapshot)
+            
+            var user1Friends = user1Data.data()?["friends"] as? [String] ?? []
+            var user2Friends = user2Data.data()?["friends"] as? [String] ?? []
+            
+            if user1Friends.contains(user2) {
+                user1Friends.removeAll() { $0 == user2 }
+            }
+            if user2Friends.contains(user1) {
+                user2Friends.removeAll() { $0 == user1 }
+            }
+            
+            // Update Firestore in parallel
+            async let updateUser1: Void = user1Ref.setData(["friends": user1Friends], merge: true)
+            async let updateUser2: Void = user2Ref.setData(["friends": user2Friends], merge: true)
+            //try await (updateUser1, updateUser2)
+        } catch {
+            throw error
+        }
+    }
+    
+    func sendFriendRequest(sender: String, receiver: String) async throws {
+        let receiverRef = db.collection("friendRequests").document(receiver)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let receiverSnapshot = receiverRef.getDocument()
+            let receiverData = try await receiverSnapshot
+            
+            var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
+            
+            if !receiverRequests.contains(sender) {
+                receiverRequests.append(sender)
+            }
+            
+            // Update Firestore in parallel
+            async let updateReceiver: Void = receiverRef.setData(["requests": receiverRequests], merge: true)
+            //try await (updateUser1, updateUser2)
+        } catch {
+            throw error
+        }
+    }
+    
+    func removeFriendRequest(sender: String, receiver: String) async throws {
+        let receiverRef = db.collection("friendRequests").document(receiver)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let receiverSnapshot = receiverRef.getDocument()
+            let receiverData = try await receiverSnapshot
+            
+            var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
+            
+            if receiverRequests.contains(sender) {
+                receiverRequests.removeAll() { $0 == sender }
+            }
+            
+            // Update Firestore in parallel
+            async let updateReceiver: Void = receiverRef.setData(["requests": receiverRequests], merge: true)
+            //try await (updateUser1, updateUser2)
+        } catch {
+            throw error
+        }
+    }
+    
+    func retrieveFriendRequest(user_email: String) async throws -> [String] {
+        let receiverRef = db.collection("friendRequests").document(user_email)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let receiverSnapshot = receiverRef.getDocument()
+            let receiverData = try await receiverSnapshot
+            
+            var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
+            return receiverRequests
+            
+            // Update Firestore in parallel
+            //async let updateReceiver: Void = receiverRef.setData(["requests": receiverRequests], merge: true)
+            //try await (updateUser1, updateUser2)
+        } catch {
+            throw error
+        }
+    }
+    
+    func retrieveFriends(user_email: String) async throws -> [String] {
+        let receiverRef = db.collection("friendships").document(user_email)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let receiverSnapshot = receiverRef.getDocument()
+            let receiverData = try await receiverSnapshot
+            
+            var receiverRequests = receiverData.data()?["friends"] as? [String] ?? []
+            return receiverRequests
+            
+            // Update Firestore in parallel
+            //async let updateReceiver: Void = receiverRef.setData(["requests": receiverRequests], merge: true)
+            //try await (updateUser1, updateUser2)
+        } catch {
+            throw error
+        }
     }
     
 }

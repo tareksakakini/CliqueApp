@@ -47,7 +47,15 @@ struct AddFriendPillView: View {
             Button {
                 if let workingUser = workingUser {
                     if let userToAdd = userToAdd {
-                        ud.sendFriendshipRequest(sender: workingUser.email, receiver: userToAdd.email)
+                        //ud.sendFriendshipRequest(sender: workingUser.email, receiver: userToAdd.email)
+                        Task {
+                            do {
+                                let firestoreService = DatabaseManager()
+                                try await firestoreService.sendFriendRequest(sender: workingUser.email, receiver: userToAdd.email)
+                            } catch {
+                                print("Friend Request Failed: \(error.localizedDescription)")
+                            }
+                        }
                         dismiss()
                     }
                 }

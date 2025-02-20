@@ -11,16 +11,34 @@ import Foundation
 class ViewModel: ObservableObject {
     @Published var users: [UserModel]
     @Published var events: [EventModel]
-    @Published var friendship: [String: [String]]
-    @Published var friendInviteSent: [String: [String]]
-    @Published var friendInviteReceived: [String: [String]]
+    @Published var friendship: [String]
+    @Published var friendInviteReceived: [String]
     
     init() {
-        self.users = UserData.userData
+        self.users = []
         self.events = []
-        self.friendship = UserData.friendshipData
-        self.friendInviteSent = UserData.friendInviteSent
-        self.friendInviteReceived = UserData.friendInviteReceived
+        self.friendship = []
+        self.friendInviteReceived = []
+    }
+    
+    func getUserFriends(user_email: String) async {
+        let firestoreService = DatabaseManager()
+        do {
+            let fetchedRequests = try await firestoreService.retrieveFriends(user_email: user_email)
+            self.friendship = fetchedRequests
+        } catch {
+            print("Failed to fetch events: \(error.localizedDescription)")
+        }
+    }
+    
+    func getUserFriendRequests(user_email: String) async {
+        let firestoreService = DatabaseManager()
+        do {
+            let fetchedRequests = try await firestoreService.retrieveFriendRequest(user_email: user_email)
+            self.friendInviteReceived = fetchedRequests
+        } catch {
+            print("Failed to fetch events: \(error.localizedDescription)")
+        }
     }
     
     func getAllEvents() async {
@@ -29,6 +47,16 @@ class ViewModel: ObservableObject {
             let fetchedEvents = try await firestoreService.getAllEvents()
             let ordered_fetchedEvents = fetchedEvents.sorted { $0.dateTime < $1.dateTime }
             self.events = ordered_fetchedEvents
+        } catch {
+            print("Failed to fetch events: \(error.localizedDescription)")
+        }
+    }
+    
+    func getAllUsers() async {
+        let firestoreService = DatabaseManager()
+        do {
+            let fetchedUsers = try await firestoreService.getAllUsers()
+            self.users = fetchedUsers
         } catch {
             print("Failed to fetch events: \(error.localizedDescription)")
         }
@@ -72,36 +100,36 @@ class ViewModel: ObservableObject {
         return eventsForUser
     }
     
-    func getFriends(username: String) -> [String] {
-        if let friends = self.friendship[username] {
-            return friends
-        }
-        else {
-            return []
-        }
-    }
+    //    func getFriends(username: String) -> [String] {
+    //        if let friends = self.friendship[username] {
+    //            return friends
+    //        }
+    //        else {
+    //            return []
+    //        }
+    //    }
     
-    func getFriendInvites(username: String) -> [String] {
-        if let invitations = self.friendInviteReceived[username] {
-            return invitations
-        }
-        else {
-            return []
-        }
-    }
+    //    func getFriendInvites(username: String) -> [String] {
+    //        if let invitations = self.friendInviteReceived[username] {
+    //            return invitations
+    //        }
+    //        else {
+    //            return []
+    //        }
+    //    }
     
     func stringMatchUsers(query: String, viewingUser: UserModel, isFriend: Bool = false) -> [UserModel] {
         var to_return: [UserModel] = []
         var names_to_check: [String] = []
         
         if isFriend {
-            if self.friendship.keys.contains(viewingUser.email) {
-                for username in self.friendship[viewingUser.email]! {
-                    if let curr_user = self.getUser(username: username) {
-                        names_to_check += [curr_user.fullname]
-                    }
+            
+            for username in self.friendship {
+                if let curr_user = self.getUser(username: username) {
+                    names_to_check += [curr_user.fullname]
                 }
             }
+            
         }
         else {
             for user in self.users {
@@ -139,58 +167,22 @@ class ViewModel: ObservableObject {
     
     func sendFriendshipRequest(sender: String, receiver: String) {
         
-        if self.friendInviteSent.keys.contains(sender) {
-            self.friendInviteSent[sender]! += [receiver]
-        }
-        else {
-            self.friendInviteSent[sender] = [receiver]
-        }
+
+        self.friendInviteReceived += [sender]
         
-        if self.friendInviteReceived.keys.contains(receiver) {
-            self.friendInviteReceived[receiver]! += [sender]
-        }
-        else {
-            self.friendInviteReceived[receiver] = [sender]
-        }
     }
     
     func acceptFriendshipRequest(sender: String, receiver: String) {
         
-        if self.friendInviteSent.keys.contains(sender) {
-            self.friendInviteSent[sender]!.removeAll { $0 == receiver }
-        }
         
-        if self.friendInviteReceived.keys.contains(receiver) {
-            self.friendInviteReceived[receiver]!.removeAll { $0 == sender }
-        }
-        
-        if self.friendship.keys.contains(sender) {
-            self.friendship[sender]! += [receiver]
-        }
-        else {
-            self.friendship[sender] = [receiver]
-        }
-        
-        if self.friendship.keys.contains(receiver) {
-            self.friendship[receiver]! += [sender]
-        }
-        else {
-            self.friendship[receiver] = [sender]
-        }
+        self.friendInviteReceived.removeAll { $0 == sender }
+        self.friendship += [receiver]
     }
     
     func removeFriendship(username1: String, username2: String) {
-        if self.friendship.keys.contains(username1) {
-            if self.friendship[username1]!.contains(username2) {
-                self.friendship[username1]!.removeAll { $0 == username2 }
-            }
-        }
-        
-        if self.friendship.keys.contains(username2) {
-            if self.friendship[username2]!.contains(username1) {
-                self.friendship[username2]!.removeAll { $0 == username1 }
-            }
-        }
+
+        self.friendship.removeAll { $0 == username2 }
+            
     }
     
     func inviteRespond(username: String, event_id: String, accepted: Bool) {

@@ -47,10 +47,23 @@ struct FriendRequestPillView: View {
             Button {
                 if let user = user {
                     if let viewing_user = viewing_user {
-                        ud.acceptFriendshipRequest(sender: user.email, receiver: viewing_user.email)
+                        //ud.acceptFriendshipRequest(sender: user.email, receiver: viewing_user.email)
+                        Task {
+                            do {
+                                let databaseManager = DatabaseManager()
+                                try await databaseManager.addFriends(user1: user.email, user2: viewing_user.email)
+                                try await databaseManager.removeFriendRequest(sender: user.email, receiver: viewing_user.email)
+                            } catch {
+                                print("Failed to add friendship: \(error.localizedDescription)")
+                            }
+                        }
+                        ud.friendInviteReceived.removeAll { $0 == user.email }
+                        //print(ud.friendInviteReceived)
+                        ud.friendship.append(user.email)
+                        //print(ud.friendship)
+                    
                     }
                 }
-                
             } label: {
                 Text("Accept")
             }
