@@ -27,7 +27,7 @@ struct CreateEventView: View {
             
             VStack {
                 
-                header
+                HeaderView(user: user, title: "New Event")
                 
                 Spacer()
                 
@@ -60,7 +60,6 @@ extension CreateEventView {
     private var create_button: some View {
         
         Button {
-            //ud.createEvent(title: event_title, location: event_location, dateTime: event_dateTime, user: user, invitees: invitees)
             Task {
                 do {
                     let firestoreService = DatabaseManager()
@@ -81,35 +80,6 @@ extension CreateEventView {
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
-    }
-    
-    private var header: some View {
-        HStack {
-            
-            RoundedRectangle(cornerRadius: 20)
-                .foregroundColor(.white)
-                .frame(width: 5, height: 45)
-            
-            Text("New Event")
-                .font(.largeTitle)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            Image(user.profilePic)
-                .resizable()
-                .scaledToFit()
-                .clipShape(Circle())
-                .frame(width: 30)
-                .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                .padding(.leading)
-            
-            Text(user.fullname.components(separatedBy: " ").first ?? "")
-                .foregroundColor(.white)
-                .font(.subheadline)
-                .bold()
-        }
-        .padding()
     }
     
     private var event_fields: some View {
@@ -179,7 +149,12 @@ extension CreateEventView {
             
             ForEach(invitees, id: \.self) { invitee in
                 let inviteeUser = ud.getUser(username: invitee)
-                InviteePillView(user: inviteeUser, invitees: $invitees)
+                PersonPillView(
+                    viewing_user: user,
+                    displayed_user: inviteeUser,
+                    personType: "invited",
+                    invitees: $invitees
+                )
             }
         }
         

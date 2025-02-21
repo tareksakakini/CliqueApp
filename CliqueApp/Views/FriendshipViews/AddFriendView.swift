@@ -7,16 +7,15 @@
 
 import SwiftUI
 
-struct AddInviteesView: View {
+struct AddFriendView: View {
     
     @EnvironmentObject private var ud: ViewModel
+    @State private var isSheetPresented: Bool = false
     @State private var searchEntry: String = ""
+    
     @State var user: UserModel
     
-    @Binding var invitees: [String]
-    
     var body: some View {
-        
         ZStack {
             Color(.accent).ignoresSafeArea()
             
@@ -31,13 +30,18 @@ struct AddInviteesView: View {
                     .padding()
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
-                    .foregroundStyle(.black)
                 
                 ScrollView {
                     
-                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user, isFriend: true), id: \.email)
+                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user), id: \.email)
                     {user_returned in
-                        AddInviteePillView(userToAdd: user_returned, invitees: $invitees)
+                        //AddFriendPillView(workingUser: user, userToAdd: user_returned)
+                        PersonPillView(
+                            viewing_user: user,
+                            displayed_user: user_returned,
+                            personType: "stranger",
+                            invitees: .constant([])
+                        )
                     }
                     
                 }
@@ -49,11 +53,11 @@ struct AddInviteesView: View {
 }
 
 #Preview {
-    AddInviteesView(user: UserData.userData[0], invitees: .constant([]))
+    AddFriendView(user: UserData.userData[0])
         .environmentObject(ViewModel())
 }
 
-extension AddInviteesView {
+extension AddFriendView {
     private var header: some View {
         HStack {
             
@@ -61,7 +65,7 @@ extension AddInviteesView {
                 .foregroundColor(.white)
                 .frame(width: 5, height: 45)
             
-            Text("Add Invitees")
+            Text("Add Friends")
                 .font(.largeTitle)
                 .foregroundColor(.white)
             

@@ -60,9 +60,6 @@ extension EventResponseView {
                         print("Failed to update: \(error.localizedDescription)")
                     }
                 }
-//                Task {
-//                    await ud.getAllEvents()
-//                }
                 isPresented.toggle()
             } label: {
                 Text("Accept")

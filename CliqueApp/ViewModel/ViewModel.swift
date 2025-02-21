@@ -80,26 +80,6 @@ class ViewModel: ObservableObject {
         return nil
     }
     
-    func getEvent(eventID: String) -> EventModel? {
-        for event in self.events {
-            if event.id == eventID {
-                return event
-            }
-        }
-        return nil
-    }
-    
-    func getInvites(username: String) -> [EventModel] {
-        var eventsForUser: [EventModel] = []
-        for event in self.events {
-            if event.attendeesInvited.contains(username) {
-                eventsForUser.append(event)
-            }
-        }
-        eventsForUser = eventsForUser.sorted { $0.dateTime < $1.dateTime }
-        return eventsForUser
-    }
-    
     func stringMatchUsers(query: String, viewingUser: UserModel, isFriend: Bool = false) -> [UserModel] {
         var to_return: [UserModel] = []
         var names_to_check: [String] = []
@@ -129,26 +109,6 @@ class ViewModel: ObservableObject {
         }
         return to_return
     }
-    
-//    func sendFriendshipRequest(sender: String, receiver: String) {
-//        
-//
-//        self.friendInviteReceived += [sender]
-//        
-//    }
-//    
-//    func acceptFriendshipRequest(sender: String, receiver: String) {
-//        
-//        
-//        self.friendInviteReceived.removeAll { $0 == sender }
-//        self.friendship += [receiver]
-//    }
-//    
-//    func removeFriendship(username1: String, username2: String) {
-//
-//        self.friendship.removeAll { $0 == username2 }
-//            
-//    }
     
     func formatDate(date: Date) -> String {
         let dateFormatter = DateFormatter()

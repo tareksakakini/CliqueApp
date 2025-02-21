@@ -22,7 +22,7 @@ struct MyEventsView: View {
             
             VStack {
                 
-                header
+                HeaderView(user: user, title: "My Events")
                 
                 ScrollView {
                     
@@ -56,35 +56,4 @@ struct MyEventsView: View {
 #Preview {
     MyEventsView(user: UserData.userData[0])
         .environmentObject(ViewModel())
-}
-
-extension MyEventsView {
-    private var header: some View {
-        HStack {
-            
-            RoundedRectangle(cornerRadius: 20)
-                .foregroundColor(.white)
-                .frame(width: 5, height: 45)
-            
-            Text("My Events")
-                .font(.largeTitle)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            Image(user.profilePic)
-                .resizable()
-                .scaledToFit()
-                .clipShape(Circle())
-                .frame(width: 30)
-                .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                .padding(.leading)
-            
-            Text(user.fullname.components(separatedBy: " ").first ?? "")
-                .foregroundColor(.white)
-                .font(.subheadline)
-                .bold()
-        }
-        .padding()
-    }
 }

@@ -22,7 +22,7 @@ struct MySettingsView: View {
             Color(.accent).ignoresSafeArea()
             
             VStack {
-                header
+                HeaderView(user: user, title: "My Settings")
                 
                 Spacer()
                 
@@ -63,35 +63,4 @@ struct MySettingsView: View {
 #Preview {
     MySettingsView(user: UserData.userData[0])
         .environmentObject(ViewModel())
-}
-
-extension MySettingsView {
-    private var header: some View {
-        HStack {
-            
-            RoundedRectangle(cornerRadius: 20)
-                .foregroundColor(.white)
-                .frame(width: 5, height: 45)
-            
-            Text("My Settings")
-                .font(.largeTitle)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            Image(user.profilePic)
-                .resizable()
-                .scaledToFit()
-                .clipShape(Circle())
-                .frame(width: 30)
-                .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                .padding(.leading)
-            
-            Text(user.fullname.components(separatedBy: " ").first ?? "")
-                .foregroundColor(.white)
-                .font(.subheadline)
-                .bold()
-        }
-        .padding()
-    }
 }

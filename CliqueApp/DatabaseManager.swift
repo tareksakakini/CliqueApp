@@ -358,10 +358,6 @@ class DatabaseManager {
             
             var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
             return receiverRequests
-            
-            // Update Firestore in parallel
-            //async let updateReceiver: Void = receiverRef.setData(["requests": receiverRequests], merge: true)
-            //try await (updateUser1, updateUser2)
         } catch {
             throw error
         }
@@ -377,10 +373,6 @@ class DatabaseManager {
             
             var receiverRequests = receiverData.data()?["friends"] as? [String] ?? []
             return receiverRequests
-            
-            // Update Firestore in parallel
-            //async let updateReceiver: Void = receiverRef.setData(["requests": receiverRequests], merge: true)
-            //try await (updateUser1, updateUser2)
         } catch {
             throw error
         }

@@ -7,16 +7,15 @@
 
 import SwiftUI
 
-struct AddFriendView: View {
+struct AddInviteesView: View {
     
     @EnvironmentObject private var ud: ViewModel
-    @State private var isSheetPresented: Bool = false
     @State private var searchEntry: String = ""
-    
     @State var user: UserModel
     
+    @Binding var invitees: [String]
+    
     var body: some View {
-        //working on friends on db
         
         ZStack {
             Color(.accent).ignoresSafeArea()
@@ -32,12 +31,19 @@ struct AddFriendView: View {
                     .padding()
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
+                    .foregroundStyle(.black)
                 
                 ScrollView {
                     
-                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user), id: \.email)
+                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user, isFriend: true), id: \.email)
                     {user_returned in
-                        AddFriendPillView(workingUser: user, userToAdd: user_returned)
+                        //AddInviteePillView(userToAdd: user_returned, invitees: $invitees)
+                        PersonPillView(
+                            viewing_user: user,
+                            displayed_user: user_returned,
+                            personType: "invitee",
+                            invitees: $invitees
+                        )
                     }
                     
                 }
@@ -49,11 +55,11 @@ struct AddFriendView: View {
 }
 
 #Preview {
-    AddFriendView(user: UserData.userData[0])
+    AddInviteesView(user: UserData.userData[0], invitees: .constant([]))
         .environmentObject(ViewModel())
 }
 
-extension AddFriendView {
+extension AddInviteesView {
     private var header: some View {
         HStack {
             
@@ -61,7 +67,7 @@ extension AddFriendView {
                 .foregroundColor(.white)
                 .frame(width: 5, height: 45)
             
-            Text("Add Friends")
+            Text("Add Invitees")
                 .font(.largeTitle)
                 .foregroundColor(.white)
             
