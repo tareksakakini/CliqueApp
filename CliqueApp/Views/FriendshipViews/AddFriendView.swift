@@ -35,15 +35,15 @@ struct AddFriendView: View {
                     
                     ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user), id: \.email)
                     {user_returned in
-                        //AddFriendPillView(workingUser: user, userToAdd: user_returned)
-                        PersonPillView(
-                            viewing_user: user,
-                            displayed_user: user_returned,
-                            personType: "stranger",
-                            invitees: .constant([])
-                        )
+                        if user.email != user_returned.email && !ud.friendship.contains(user_returned.email) {
+                            PersonPillView(
+                                viewing_user: user,
+                                displayed_user: user_returned,
+                                personType: "stranger",
+                                invitees: .constant([])
+                            )
+                        }
                     }
-                    
                 }
                 
                 Spacer()

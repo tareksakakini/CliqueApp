@@ -47,6 +47,14 @@ struct CreateEventView: View {
                 
             }
         }
+        .onAppear {
+            Task {
+                await ud.getAllUsers()
+            }
+            Task {
+                await ud.getUserFriends(user_email: user.email)
+            }
+        }
     }
 }
 

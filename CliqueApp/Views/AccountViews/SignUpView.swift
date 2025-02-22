@@ -71,6 +71,12 @@ struct SignUpView: View {
 extension SignUpView {
     private var header: some View {
         HStack {
+            Image("yalla_transparent")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 70, height: 70)
+                .foregroundColor(.white)
+            
             RoundedRectangle(cornerRadius: 10)
                 .foregroundColor(.white)
                 .frame(width: 5, height: 50, alignment: .leading)
@@ -80,12 +86,6 @@ extension SignUpView {
                 .font(.largeTitle)
             
             Spacer()
-            
-            Image(systemName: "bonjour")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 50, height: 50)
-                .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()

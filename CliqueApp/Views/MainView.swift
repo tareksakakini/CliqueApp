@@ -63,7 +63,17 @@ struct MainView: View {
             appearance.backgroundColor = UIColor.white // Set your desired color here
             UITabBar.appearance().standardAppearance = appearance
             UITabBar.appearance().scrollEdgeAppearance = appearance
+            Task {
+                await ud.getAllUsers()
+            }
+            Task {
+                await ud.getUserFriends(user_email: user.email)
+            }
+            Task {
+                await ud.getUserFriendRequests(user_email: user.email)
+            }
         }
+        .tint(Color(.accent))
     }
 }
 

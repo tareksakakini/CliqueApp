@@ -84,6 +84,12 @@ struct LoginView: View {
 extension LoginView {
     private var header: some View {
         HStack {
+            Image("yalla_transparent")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 70, height: 70)
+                .foregroundColor(.white)
+            
             RoundedRectangle(cornerRadius: 10)
                 .foregroundColor(.white)
                 .frame(width: 5, height: 50, alignment: .leading)
@@ -94,11 +100,7 @@ extension LoginView {
             
             Spacer()
             
-            Image(systemName: "bonjour")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 50, height: 50)
-                .foregroundColor(.white)
+            
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -107,7 +109,8 @@ extension LoginView {
     private var user_fields: some View {
         
         VStack {
-            TextField("Enter your username here ...", text: $enteredUsername)
+            TextField("", text: $enteredUsername, prompt: Text("Enter your username here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
@@ -115,7 +118,8 @@ extension LoginView {
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
             
-            SecureField("Enter your password here ...", text: $enteredPassword)
+            SecureField("", text: $enteredPassword, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
                 .padding()
