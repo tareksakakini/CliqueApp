@@ -109,7 +109,7 @@ extension LoginView {
     private var user_fields: some View {
         
         VStack {
-            TextField("", text: $enteredUsername, prompt: Text("Enter your username here ...").foregroundColor(Color.black.opacity(0.5)))
+            TextField("", text: $enteredUsername, prompt: Text("Enter your email here ...").foregroundColor(Color.black.opacity(0.5)))
                 .foregroundColor(.black)
                 .padding()
                 .background(.white)

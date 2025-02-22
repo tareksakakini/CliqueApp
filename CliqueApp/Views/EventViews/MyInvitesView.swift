@@ -38,11 +38,6 @@ struct MyInvitesView: View {
                 }
             }
         }
-        .onAppear {
-            Task {
-                await ud.getAllEvents()
-            }
-        }
         .onChange(of: refreshTrigger) { _ in
             print("variable changed")
             Task {

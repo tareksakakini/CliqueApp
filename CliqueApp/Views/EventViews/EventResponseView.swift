@@ -182,7 +182,7 @@ extension EventResponseView {
                                 .padding(.horizontal, 3)
                             Text("\(user.fullname)")
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundColor(.white)
                         }
                     }
                 }

@@ -108,13 +108,13 @@ extension SignUpView {
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
             
-            Text("Username")
+            Text("Email")
                 .padding(.top, 15)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("Enter your username here ...", text: $username)
+            TextField("Enter your email here ...", text: $username)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)

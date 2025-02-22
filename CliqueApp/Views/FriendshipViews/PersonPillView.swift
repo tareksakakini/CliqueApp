@@ -92,11 +92,12 @@ struct PersonPillView: View {
                     }
                 } label: {
                     Text("Accept")
+                        .foregroundColor(.white)
                 }
                 .bold()
                 .padding(.horizontal)
                 .padding(.vertical, 10)
-                .background(.green.opacity(0.6))
+                .background(Color(.accent))
                 .cornerRadius(10)
                 .padding()
             }
@@ -190,7 +191,7 @@ struct PersonPillView: View {
         PersonPillView(
             viewing_user: UserData.userData[0],
             displayed_user: UserData.userData[0],
-            personType: "friend",
+            personType: "requester",
             invitees: .constant([])
         )
     }

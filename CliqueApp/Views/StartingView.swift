@@ -57,7 +57,7 @@ extension StartingView {
     private var mainpage_subtitle: some View {
         VStack {
             Text("Plan your next outing")
-                .font(.custom("Noteworthy-Bold", size: 20))
+                //.font(.custom("Noteworthy-Bold", size: 20))
                 .foregroundColor(.white)
             
 //            RoundedRectangle(cornerRadius: /*@START_MENU_TOKEN@*/25.0/*@END_MENU_TOKEN@*/)

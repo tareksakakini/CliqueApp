@@ -72,6 +72,9 @@ struct MainView: View {
             Task {
                 await ud.getUserFriendRequests(user_email: user.email)
             }
+            Task {
+                await ud.getAllEvents()
+            }
         }
         .tint(Color(.accent))
     }
