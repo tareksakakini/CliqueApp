@@ -48,18 +48,35 @@ struct LoginView: View {
                 signin_button
                 
                 
-                HStack {
-                    Text("Don't have an account?")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                    NavigationLink {
-                        SignUpView()
-                    } label: {
-                        Text("Create Account")
+                VStack {
+                    HStack {
+                        Text("Don't have an account?")
                             .font(.caption)
-                            .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
+                            .foregroundColor(.white)
+                        NavigationLink {
+                            SignUpView()
+                        } label: {
+                            Text("Create Account")
+                                .font(.caption)
+                                .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
+                        }
+                        
+                    }
+                    HStack {
+                        Text("Forgot your password?")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                        NavigationLink {
+                            ResetPassordView()
+                        } label: {
+                            Text("Reset Password")
+                                .font(.caption)
+                                .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
+                        }
+                        
                     }
                 }
+                
                 .padding()
                 
                 
