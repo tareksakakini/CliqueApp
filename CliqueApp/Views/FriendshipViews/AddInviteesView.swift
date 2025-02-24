@@ -24,7 +24,8 @@ struct AddInviteesView: View {
                 
                 header
                 
-                TextField("Search for friends ...", text: $searchEntry)
+                TextField("", text: $searchEntry, prompt: Text("Search for friends to invite ...").foregroundColor(Color.black.opacity(0.5)))
+                    .foregroundColor(.black)
                     .padding()
                     .background(.white)
                     .cornerRadius(10)
@@ -49,6 +50,17 @@ struct AddInviteesView: View {
                 }
                 
                 Spacer()
+            }
+        }
+        .onAppear {
+            Task {
+                await ud.getAllUsers()
+            }
+            Task {
+                await ud.getUserFriends(user_email: user.email)
+            }
+            Task {
+                await ud.getUserFriendRequests(user_email: user.email)
             }
         }
     }

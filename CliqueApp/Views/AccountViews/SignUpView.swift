@@ -16,7 +16,8 @@ struct SignUpView: View {
     @State var fullname: String = ""
     @State var username: String = ""
     @State var password: String = ""
-    @State var message: String = ""
+    @State var isAgeChecked: Bool = false
+    @State var isAgreePolicy: Bool = false
     
     
     @State var show_wrong_message: Bool = false
@@ -27,7 +28,7 @@ struct SignUpView: View {
         ZStack {
             Color.white.ignoresSafeArea()
             
-            VStack {
+            VStack() {
                 
                 
                 
@@ -39,13 +40,49 @@ struct SignUpView: View {
                 
                 user_fields
                 
+                VStack {
+                    HStack() {
+                        Image(systemName: isAgeChecked ? "checkmark.square.fill" : "square.fill")
+                            .foregroundColor(isAgeChecked ? .blue.opacity(0.5) : .white)
+                            .background(Color.white) // White background for checkbox
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .onTapGesture {
+                                isAgeChecked.toggle()
+                            }
+                        
+                        Text("I am 16 years or older.")
+                            .foregroundColor(.white)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    HStack() {
+                        Image(systemName: isAgreePolicy ? "checkmark.square.fill" : "square.fill")
+                            .foregroundColor(isAgreePolicy ? .blue.opacity(0.5) : .white)
+                            .background(Color.white) // White background for checkbox
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .onTapGesture {
+                                isAgreePolicy.toggle()
+                            }
+                        
+                        Text("I have read and agree to the").foregroundColor(.white)
+                        
+                        NavigationLink(destination: PrivacyPolicyView()) {
+                            Text("Privacy Policy")
+                                .foregroundColor(Color(#colorLiteral(red: 0, green: 0.9914394021, blue: 1, alpha: 1)))
+                                .underline()
+                                .bold()
+                        }
+                        
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding()
+                
                 Spacer()
                 Spacer()
                 Spacer()
                 
                 signup_button
-                
-                Text("\(message)")
                 
                 Spacer()
                 Spacer()
@@ -64,8 +101,11 @@ struct SignUpView: View {
 }
 
 #Preview {
-    SignUpView()
-        .environmentObject(ViewModel())
+    NavigationStack {
+        SignUpView()
+            .environmentObject(ViewModel())
+    }
+    
 }
 
 extension SignUpView {
@@ -100,7 +140,8 @@ extension SignUpView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("Enter your name here ...", text: $fullname)
+            TextField("", text: $fullname, prompt: Text("Enter your name here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
@@ -114,7 +155,8 @@ extension SignUpView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("Enter your email here ...", text: $username)
+            TextField("", text: $username, prompt: Text("Enter your email here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
@@ -128,7 +170,8 @@ extension SignUpView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            SecureField("Enter your password here ...", text: $password)
+            SecureField("", text: $password, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
@@ -164,11 +207,14 @@ extension SignUpView {
                 .foregroundColor(Color(.accent))
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
+            
         }
+        .disabled(!isAgeChecked || !isAgreePolicy)
         .navigationDestination(isPresented: $goToMainView) {
             
             MainView(user: user)
             
         }
+        
     }
 }

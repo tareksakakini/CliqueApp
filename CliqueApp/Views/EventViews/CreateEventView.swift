@@ -72,6 +72,10 @@ extension CreateEventView {
                 do {
                     let firestoreService = DatabaseManager()
                     try await firestoreService.addEventToFirestore(id: UUID().uuidString, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [user.email], attendeesInvited: invitees)
+                    event_title = ""
+                    event_location = ""
+                    event_dateTime = Date()
+                    invitees = []
                 } catch {
                     print("Failed to add event: \(error.localizedDescription)")
                 }
@@ -100,7 +104,8 @@ extension CreateEventView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("Enter title here ...", text: $event_title)
+            TextField("", text: $event_title, prompt: Text("Enter your event title here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
@@ -114,7 +119,8 @@ extension CreateEventView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("Enter location here ...", text: $event_location)
+            TextField("", text: $event_location, prompt: Text("Enter your event location here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
