@@ -117,10 +117,6 @@ extension EventResponseView {
                         print("Failed to update: \(error.localizedDescription)")
                     }
                 }
-//                Task {
-//                    print("Refreshing events")
-//                    await ud.getAllEvents()
-//                }
                 isPresented.toggle()
                 
             } label: {

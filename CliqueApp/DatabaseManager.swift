@@ -378,5 +378,68 @@ class DatabaseManager {
         }
     }
     
+    func deleteUserAccount(uid: String, email: String) async throws {
+        let userRef = db.collection("users").document(uid)
+        let userFriendRef = db.collection("friendships").document(email)
+        let friendRequestRef = db.collection("friendRequests").document(email)
+        
+        do {
+            // Fetch all events where the user is an attendee
+            let eventSnapshot = try await db.collection("events").whereField("attendeesAccepted", arrayContains: email).getDocuments()
+            for document in eventSnapshot.documents {
+                let eventRef = db.collection("events").document(document.documentID)
+                try await eventRef.updateData([
+                    "attendeesAccepted": FieldValue.arrayRemove([email])
+                ])
+            }
+            
+            let invitedSnapshot = try await db.collection("events").whereField("attendeesInvited", arrayContains: email).getDocuments()
+            for document in invitedSnapshot.documents {
+                let eventRef = db.collection("events").document(document.documentID)
+                try await eventRef.updateData([
+                    "attendeesInvited": FieldValue.arrayRemove([email])
+                ])
+            }
+            
+            // Remove user from all friends' lists
+            let friendshipsSnapshot = try await userFriendRef.getDocument()
+            if let friendsList = friendshipsSnapshot.data()?["friends"] as? [String] {
+                for friendId in friendsList {
+                    let friendRef = db.collection("friendships").document(friendId)
+                    try await friendRef.updateData([
+                        "friends": FieldValue.arrayRemove([email])
+                    ])
+                }
+            }
+            
+            // Remove all friend requests **sent** by the user
+            let friendRequestsSnapshot = try await db.collection("friendRequests").getDocuments()
+            for document in friendRequestsSnapshot.documents {
+                let friendRequestRef = db.collection("friendRequests").document(document.documentID)
+                if var requests = document.data()["requests"] as? [String], requests.contains(email) {
+                    requests.removeAll { $0 == email }
+                    try await friendRequestRef.updateData(["requests": requests])
+                }
+            }
+            
+            // Delete user data from Firestore
+            try await userRef.delete()
+            try await userFriendRef.delete()
+            try await friendRequestRef.delete()
+            
+            // Delete the user's authentication account
+            if let user = Auth.auth().currentUser {
+                try await user.delete()
+            }
+            
+            print("User account and associated data deleted successfully.")
+        } catch {
+            print("Error deleting user data: \(error.localizedDescription)")
+            throw error
+        }
+    }
+
+
+    
 }
 
