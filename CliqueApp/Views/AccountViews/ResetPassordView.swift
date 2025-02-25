@@ -53,7 +53,7 @@ struct ResetPassordView: View {
                 
                 
             }
-            .frame(width: 400, height: 400)
+            .frame(width: 400, height: 300)
             .background(Color(.accent))
             .cornerRadius(20)
             .shadow(radius: 50)
@@ -101,7 +101,8 @@ extension ResetPassordView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("Enter your email here ...", text: $username)
+            TextField("", text: $username, prompt: Text("Enter your email here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
