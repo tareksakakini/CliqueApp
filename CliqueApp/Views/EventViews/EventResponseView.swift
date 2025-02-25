@@ -14,10 +14,12 @@ struct EventResponseView: View {
     @State var user: UserModel
     @State var event: EventModel
     let inviteView: Bool
+    @Binding var isPresented: Bool
+    @Binding var refreshTrigger: Bool
     
     var body: some View {
         ZStack {
-            Color.accent.ignoresSafeArea()
+            Color(.accent).ignoresSafeArea()
             
             VStack {
                 
@@ -38,7 +40,7 @@ struct EventResponseView: View {
 }
 
 #Preview {
-    EventResponseView(user: UserData.userData[0], event: UserData.eventData[0], inviteView: false)
+    EventResponseView(user: UserData.userData[0], event: UserData.eventData[0], inviteView: false, isPresented: .constant(true), refreshTrigger: .constant(false))
         .environmentObject(ViewModel())
 }
 
@@ -48,7 +50,17 @@ extension EventResponseView {
             Spacer()
             
             Button {
-                ud.inviteRespond(username: user.userName, event_id: event.id, accepted: true)
+                Task {
+                    do {
+                        let databaseManager = DatabaseManager()
+                        try await databaseManager.acceptInvite(eventId: event.id, userId: user.email)
+                        print("User successfully moved from inviteeAttended to inviteeAccepted!")
+                        refreshTrigger.toggle()
+                    } catch {
+                        print("Failed to update: \(error.localizedDescription)")
+                    }
+                }
+                isPresented.toggle()
             } label: {
                 Text("Accept")
                     .padding()
@@ -63,14 +75,24 @@ extension EventResponseView {
             Spacer()
             
             Button {
-                ud.inviteRespond(username: user.userName, event_id: event.id, accepted: false)
+                Task {
+                    do {
+                        let databaseManager = DatabaseManager()
+                        try await databaseManager.rejectInvite(eventId: event.id, userId: user.email)
+                        print("User successfully removed from inviteeAttended!")
+                        refreshTrigger.toggle()
+                    } catch {
+                        print("Failed to update: \(error.localizedDescription)")
+                    }
+                }
+                isPresented.toggle()
             } label: {
                 Text("Reject")
                     .padding()
                     .padding(.horizontal)
                     .background(.white)
                     .cornerRadius(10)
-                    .foregroundColor(Color.accentColor)
+                    .foregroundColor(Color(.accent))
                     .bold()
                     .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
             }
@@ -85,14 +107,29 @@ extension EventResponseView {
             Spacer()
             
             Button {
-                ud.eventLeave(username: user.userName, event_id: event.id)
+                Task {
+                    do {
+                        let databaseManager = DatabaseManager()
+                        try await databaseManager.leaveEvent(eventId: event.id, userId: user.email)
+                        print("User successfully removed from inviteeAttended!")
+                        refreshTrigger.toggle()
+                    } catch {
+                        print("Failed to update: \(error.localizedDescription)")
+                    }
+                }
+//                Task {
+//                    print("Refreshing events")
+//                    await ud.getAllEvents()
+//                }
+                isPresented.toggle()
+                
             } label: {
                 Text("Leave Event")
                     .padding()
                     .padding(.horizontal)
                     .background(.white)
                     .cornerRadius(10)
-                    .foregroundColor(Color.accentColor)
+                    .foregroundColor(Color(.accent))
                     .bold()
                     .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
             }
@@ -145,7 +182,7 @@ extension EventResponseView {
                                 .padding(.horizontal, 3)
                             Text("\(user.fullname)")
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundColor(.white)
                         }
                     }
                 }

@@ -11,7 +11,7 @@ struct LoginView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
-    @State var user: UserModel = UserModel(fullname: "", userName: "", password: "")
+    @State var user: UserModel = UserModel(uid: "", fullname: "", email: "", createdAt: Date(), profilePic: "userDefault")
     
     @State var enteredUsername: String = ""
     @State var enteredPassword: String = ""
@@ -48,25 +48,42 @@ struct LoginView: View {
                 signin_button
                 
                 
-                HStack {
-                    Text("Don't have an account?")
-                        .font(.caption)
-                        .foregroundColor(.white)
-                    NavigationLink {
-                        SignUpView()
-                    } label: {
-                        Text("Create Account")
+                VStack {
+                    HStack {
+                        Text("Don't have an account?")
                             .font(.caption)
-                            .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
+                            .foregroundColor(.white)
+                        NavigationLink {
+                            SignUpView()
+                        } label: {
+                            Text("Create Account")
+                                .font(.caption)
+                                .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
+                        }
+                        
+                    }
+                    HStack {
+                        Text("Forgot your password?")
+                            .font(.caption)
+                            .foregroundColor(.white)
+                        NavigationLink {
+                            ResetPassordView()
+                        } label: {
+                            Text("Reset Password")
+                                .font(.caption)
+                                .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
+                        }
+                        
                     }
                 }
+                
                 .padding()
                 
                 
                 
             }
             .frame(width: 300, height: 500)
-            .background(Color.accentColor)
+            .background(Color(.accent))
             .cornerRadius(20)
             .shadow(radius: 50)
         }
@@ -84,6 +101,12 @@ struct LoginView: View {
 extension LoginView {
     private var header: some View {
         HStack {
+            Image("yalla_transparent")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 70, height: 70)
+                .foregroundColor(.white)
+            
             RoundedRectangle(cornerRadius: 10)
                 .foregroundColor(.white)
                 .frame(width: 5, height: 50, alignment: .leading)
@@ -94,11 +117,7 @@ extension LoginView {
             
             Spacer()
             
-            Image(systemName: "bonjour")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 50, height: 50)
-                .foregroundColor(.white)
+            
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -107,7 +126,8 @@ extension LoginView {
     private var user_fields: some View {
         
         VStack {
-            TextField("Enter your username here ...", text: $enteredUsername)
+            TextField("", text: $enteredUsername, prompt: Text("Enter your email here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
@@ -115,7 +135,8 @@ extension LoginView {
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
             
-            SecureField("Enter your password here ...", text: $enteredPassword)
+            SecureField("", text: $enteredPassword, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
                 .padding()
@@ -129,46 +150,33 @@ extension LoginView {
     private var signin_button: some View {
         
         Button {
-            AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword) { success, data, error in
-                if success {
-                    user.userName = data!["email"] as? String ?? "Unknown"
-                    user.fullname = data!["fullname"] as? String ?? "Unknown"
-                    
+            
+            Task {
+                do {
+                    let authenticated_user = try await AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword)
+                    let firestoreService = DatabaseManager()
+                    user = try await firestoreService.getUserFromFirestore(uid: authenticated_user.uid)
+                    print("User fetched: \(user.fullname), Email: \(user.email)")
                     go_to_landing_screen = true
                     show_wrong_message = false
-                } else {
+                    print("User signed in: \(authenticated_user.uid)")
+                } catch {
+                    print("Sign in failed: \(error.localizedDescription)")
                     show_wrong_message = true
                 }
             }
-            
-//            if ud.isUser(username: enteredUsername, password: enteredPassword) {
-//                go_to_landing_screen = true
-//                show_wrong_message = false
-//            }
-//            else {
-//                show_wrong_message = true
-//            }
-            
         } label: {
             Text("Sign in")
                 .padding()
                 .padding(.horizontal)
                 .background(.white)
                 .cornerRadius(10)
-                .foregroundColor(Color.accentColor)
+                .foregroundColor(Color(.accent))
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
         .navigationDestination(isPresented: $go_to_landing_screen) {
             MainView(user: user)
-//            if let unwrapped_user = user {
-//                MainView(user: unwrapped_user)
-//            }
-//            if let user_data = data
-//                ud.getUser(username: enteredUsername) {
-//                MainView(user: user)
-//            }
-            
         }
     }
 }

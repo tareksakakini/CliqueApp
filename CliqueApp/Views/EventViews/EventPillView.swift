@@ -13,6 +13,7 @@ struct EventPillView: View {
     let event: EventModel
     let user: UserModel
     let inviteView: Bool
+    @Binding var refreshTrigger: Bool
     var body: some View {
         
         Button {
@@ -21,14 +22,14 @@ struct EventPillView: View {
             HStack {
                 VStack(alignment: .leading) {
                     Text("\(event.title)")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .padding(.horizontal)
                         .font(.title3)
                         .bold()
                     
                     
                     Text("\(event.location)")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .padding(.horizontal)
                         .font(.subheadline)
                 }
@@ -37,14 +38,14 @@ struct EventPillView: View {
                 
                 VStack(alignment: .trailing) {
                     Text("\(ud.formatDate(date: event.dateTime))")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .padding(.horizontal)
                         .font(.title3)
                         .bold()
                     
                     
                     Text("\(ud.formatTime(time: event.dateTime))")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(Color(.accent))
                         .padding(.horizontal)
                         .font(.subheadline)
                 }
@@ -58,7 +59,7 @@ struct EventPillView: View {
             .shadow(color: .white.opacity(0.4), radius: 10, x: 0, y: 10)
         }
         .sheet(isPresented: $showSheet) {
-            EventResponseView(user: user, event: event, inviteView: inviteView)
+            EventResponseView(user: user, event: event, inviteView: inviteView, isPresented: $showSheet, refreshTrigger: $refreshTrigger)
                 .presentationDetents([.fraction(0.5)])
         }
         
@@ -68,11 +69,12 @@ struct EventPillView: View {
 
 #Preview {
     ZStack {
-        Color.accentColor.ignoresSafeArea()
+        Color(.accent).ignoresSafeArea()
         EventPillView(
             event: UserData.eventData[0],
             user: UserData.userData[0],
-            inviteView: false
+            inviteView: false,
+            refreshTrigger: .constant(false)
         )
         .environmentObject(ViewModel())
     }

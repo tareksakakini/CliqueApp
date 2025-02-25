@@ -16,6 +16,7 @@ struct MainView: View {
     @State private var selectedTab = 0
     
     var body: some View {
+        
         TabView(selection: $selectedTab) {
             MyEventsView(user: user)
                 .tabItem {
@@ -55,7 +56,6 @@ struct MainView: View {
             
         }
         .navigationBarHidden(true)
-        .accentColor(Color.accentColor)
         .onAppear {
             // Change the background color of the TabBar
             let appearance = UITabBarAppearance()
@@ -63,7 +63,20 @@ struct MainView: View {
             appearance.backgroundColor = UIColor.white // Set your desired color here
             UITabBar.appearance().standardAppearance = appearance
             UITabBar.appearance().scrollEdgeAppearance = appearance
+            Task {
+                await ud.getAllUsers()
+            }
+            Task {
+                await ud.getUserFriends(user_email: user.email)
+            }
+            Task {
+                await ud.getUserFriendRequests(user_email: user.email)
+            }
+            Task {
+                await ud.getAllEvents()
+            }
         }
+        .tint(Color(.accent))
     }
 }
 

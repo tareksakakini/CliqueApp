@@ -17,10 +17,6 @@ struct UserData {
         "alikanj@gmail.com": ["tareksakakini@gmail.com"]
     ]
     
-    static var friendInviteSent: [String: [String]] = [
-        "jadyaacoub@gmail.com": ["tareksakakini@gmail.com"]
-    ]
-    
     static var friendInviteReceived: [String: [String]] = [
         "tareksakakini@gmail.com": ["jadyaacoub@gmail.com"]
     ]
@@ -28,29 +24,29 @@ struct UserData {
     static var userData: [UserModel] = [
         UserModel(
             fullname: "Tarek Sakakini",
-            userName: "tareksakakini@gmail.com",
-            password: "temp1",
+            email: "tareksakakini@gmail.com",
+            createdAt: Date(),
             profilePic: "tarek_pic"
         ),
         UserModel(
             fullname: "Ali Kanj",
-            userName: "alikanj@gmail.com",
-            password: "temp1"
+            email: "alikanj@gmail.com",
+            createdAt: Date()
         ),
         UserModel(
             fullname: "Hassan Dbouk",
-            userName: "hassandbouk@gmail.com",
-            password: "temp1"
+            email: "hassandbouk@gmail.com",
+            createdAt: Date()
         ),
         UserModel(
             fullname: "Mohamad El Hajj",
-            userName: "mohamadelhajj@gmail.com",
-            password: "temp1"
+            email: "mohamadelhajj@gmail.com",
+            createdAt: Date()
         ),
         UserModel(
             fullname: "Jad Yaacoub",
-            userName: "jadyaacoub@gmail.com",
-            password: "temp1"
+            email: "jadyaacoub@gmail.com",
+            createdAt: Date()
         )
     ]
     

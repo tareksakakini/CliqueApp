@@ -17,7 +17,7 @@ struct MyFriendsView: View {
     var body: some View {
         
         ZStack {
-            Color.accentColor.ignoresSafeArea()
+            Color(.accent).ignoresSafeArea()
             
             VStack {
                 
@@ -25,20 +25,35 @@ struct MyFriendsView: View {
                 
                 ScrollView {
                     
-                    ForEach(ud.getFriendInvites(username: user.userName), id: \.self) {friend_username in
-                        FriendRequestPillView(
+                    ForEach(ud.friendInviteReceived, id: \.self) {request_username in
+                        PersonPillView(
                             viewing_user: user,
-                            user: ud.getUser(username: friend_username)
+                            displayed_user: ud.getUser(username: request_username),
+                            personType: "requester",
+                            invitees: .constant([])
                         )
                     }
                     
-                    ForEach(ud.getFriends(username: user.userName), id: \.self) {friend_username in
-                        FriendPillView(
+                    ForEach(ud.friendship, id: \.self) {friend_username in
+                        PersonPillView(
                             viewing_user: user,
-                            user: ud.getUser(username: friend_username)
+                            displayed_user: ud.getUser(username: friend_username),
+                            personType: "friend",
+                            invitees: .constant([])
                         )
                     }
                 }
+            }
+        }
+        .onAppear {
+            Task {
+                await ud.getAllUsers()
+            }
+            Task {
+                await ud.getUserFriends(user_email: user.email)
+            }
+            Task {
+                await ud.getUserFriendRequests(user_email: user.email)
             }
         }
     }

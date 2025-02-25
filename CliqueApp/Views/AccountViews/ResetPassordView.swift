@@ -7,9 +7,11 @@
 
 import SwiftUI
 
-struct SignUpView: View {
+struct ResetPassordView: View {
     
     @EnvironmentObject private var ud: ViewModel
+    
+    @State var user = UserModel(fullname: "", email: "", createdAt: Date())
     
     @State var fullname: String = ""
     @State var username: String = ""
@@ -41,7 +43,7 @@ struct SignUpView: View {
                 Spacer()
                 Spacer()
                 
-                signup_button
+                reset_button
                 
                 Text("\(message)")
                 
@@ -51,8 +53,8 @@ struct SignUpView: View {
                 
                 
             }
-            .frame(width: 400, height: 700)
-            .background(Color.accentColor)
+            .frame(width: 400, height: 400)
+            .background(Color(.accent))
             .cornerRadius(20)
             .shadow(radius: 50)
         }
@@ -62,28 +64,28 @@ struct SignUpView: View {
 }
 
 #Preview {
-    SignUpView()
+    ResetPassordView()
         .environmentObject(ViewModel())
 }
 
-extension SignUpView {
+extension ResetPassordView {
     private var header: some View {
         HStack {
+            Image("yalla_transparent")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 70, height: 70)
+                .foregroundColor(.white)
+            
             RoundedRectangle(cornerRadius: 10)
                 .foregroundColor(.white)
                 .frame(width: 5, height: 50, alignment: .leading)
             
-            Text("Sign Up")
+            Text("Reset Password")
                 .foregroundColor(.white)
                 .font(.largeTitle)
             
             Spacer()
-            
-            Image(systemName: "bonjour")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 50, height: 50)
-                .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
@@ -92,41 +94,14 @@ extension SignUpView {
     private var user_fields: some View {
         
         VStack(alignment: .leading) {
-            Text("Full Name")
-                .padding(.top, 30)
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
             
-            TextField("Enter your name here ...", text: $fullname)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding(.horizontal)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
-            
-            Text("Username")
+            Text("Email")
                 .padding(.top, 15)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("Enter your username here ...", text: $username)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding(.horizontal)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
-            
-            Text("Password")
-                .padding(.top, 15)
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
-            
-            SecureField("Enter your password here ...", text: $password)
+            TextField("Enter your email here ...", text: $username)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
@@ -137,29 +112,31 @@ extension SignUpView {
         
     }
     
-    private var signup_button: some View {
+    private var reset_button: some View {
         
         Button {
-            AuthManager.shared.signUp(email: username, password: password, fullname: fullname) { success, error in
-                message = success ? "Sign Up Successful!" : error ?? "Unknown error"
+            Task {
+                do {
+                    try await AuthManager.shared.sendPasswordReset(email: username)
+                    print("Check your email for reset instructions.")
+                } catch {
+                    print("Failed to send password reset email: \(error.localizedDescription)")
+                }
             }
-            //ud.addUser(fullname: fullname, username: username, password: password)
-            goToMainView = true
-            
         } label: {
-            Text("Create Account")
+            Text("Reset Password")
                 .padding()
                 .padding(.horizontal)
                 .background(.white)
                 .cornerRadius(10)
-                .foregroundColor(Color.accentColor)
+                .foregroundColor(Color(.accent))
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
         .navigationDestination(isPresented: $goToMainView) {
-            if let user = ud.getUser(username: username) {
-                MainView(user: user)
-            }
+            
+            MainView(user: user)
+            
         }
     }
 }

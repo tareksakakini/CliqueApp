@@ -15,7 +15,7 @@ struct StartingView: View {
         NavigationStack {
             ZStack {
                 
-                Color.accentColor.ignoresSafeArea()
+                Color(.accent).ignoresSafeArea()
             
                 VStack {
                     Spacer()
@@ -43,22 +43,20 @@ struct StartingView: View {
 
 extension StartingView {
     private var mainpage_logo: some View {
-        Image(systemName: "bonjour")
+        //Image(systemName: "bonjour")
+        Image("yalla_transparent")
             .resizable()
             .aspectRatio(contentMode: .fit)
-            .frame(width: 150, height: 150)
+            .clipShape(Rectangle().offset(x: 0, y: 7).size(width: 400, height: 120))
+            .frame(width: 300, height: 120)
             .foregroundColor(.white)
+            
         
     }
     
     private var mainpage_subtitle: some View {
         VStack {
-            Text("Let's Clique")
-                .font(.custom("Noteworthy-Bold", size: 25))
-                .foregroundColor(.white)
-            
-            RoundedRectangle(cornerRadius: /*@START_MENU_TOKEN@*/25.0/*@END_MENU_TOKEN@*/)
-                .frame(width:120, height:3)
+            Text("Plan your next outing")
                 .foregroundColor(.white)
         }
         
@@ -72,7 +70,7 @@ extension StartingView {
             .padding(.horizontal)
             .background(.white)
             .cornerRadius(10)
-            .foregroundColor(Color.accentColor)
+            .foregroundColor(Color(.accent))
             .shadow(radius: 10)
     }
 }

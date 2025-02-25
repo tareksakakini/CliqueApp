@@ -19,21 +19,22 @@ struct MySettingsView: View {
     var body: some View {
         
         ZStack {
-            Color.accentColor.ignoresSafeArea()
+            Color(.accent).ignoresSafeArea()
             
             VStack {
-                header
+                HeaderView(user: user, title: "My Settings")
                 
                 Spacer()
                 
                 Button {
-                    AuthManager.shared.signOut { success, error in
-                        if success {
-                            //isLoggedIn = false
-                            //message = "Signed Out"
+                    
+                    Task {
+                        do {
+                            try AuthManager.shared.signOut()
                             go_to_login_screen = true
-                        } else {
-                            message = error ?? "Unknown error"
+                            print("User signed out")
+                        } catch {
+                            print("Sign out failed")
                         }
                     }
                     
@@ -43,7 +44,7 @@ struct MySettingsView: View {
                         .padding(.horizontal)
                         .background(.white)
                         .cornerRadius(10)
-                        .foregroundColor(Color.accentColor)
+                        .foregroundColor(Color(.accent))
                         .bold()
                         .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
                 }
@@ -62,35 +63,4 @@ struct MySettingsView: View {
 #Preview {
     MySettingsView(user: UserData.userData[0])
         .environmentObject(ViewModel())
-}
-
-extension MySettingsView {
-    private var header: some View {
-        HStack {
-            
-            RoundedRectangle(cornerRadius: 20)
-                .foregroundColor(.white)
-                .frame(width: 5, height: 45)
-            
-            Text("My Settings")
-                .font(.largeTitle)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            Image(user.profilePic)
-                .resizable()
-                .scaledToFit()
-                .clipShape(Circle())
-                .frame(width: 30)
-                .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                .padding(.leading)
-            
-            Text(user.userName)
-                .foregroundColor(.white)
-                .font(.subheadline)
-                .bold()
-        }
-        .padding()
-    }
 }

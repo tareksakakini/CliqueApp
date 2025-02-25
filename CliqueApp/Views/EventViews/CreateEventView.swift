@@ -23,11 +23,11 @@ struct CreateEventView: View {
     var body: some View {
         
         ZStack {
-            Color.accentColor.ignoresSafeArea()
+            Color(.accent).ignoresSafeArea()
             
             VStack {
                 
-                header
+                HeaderView(user: user, title: "New Event")
                 
                 Spacer()
                 
@@ -47,6 +47,14 @@ struct CreateEventView: View {
                 
             }
         }
+        .onAppear {
+            Task {
+                await ud.getAllUsers()
+            }
+            Task {
+                await ud.getUserFriends(user_email: user.email)
+            }
+        }
     }
 }
 
@@ -60,7 +68,18 @@ extension CreateEventView {
     private var create_button: some View {
         
         Button {
-            ud.createEvent(title: event_title, location: event_location, dateTime: event_dateTime, user: user, invitees: invitees)
+            Task {
+                do {
+                    let firestoreService = DatabaseManager()
+                    try await firestoreService.addEventToFirestore(id: UUID().uuidString, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [user.email], attendeesInvited: invitees)
+                    event_title = ""
+                    event_location = ""
+                    event_dateTime = Date()
+                    invitees = []
+                } catch {
+                    print("Failed to add event: \(error.localizedDescription)")
+                }
+            }
             selectedTab = 0
             
         } label: {
@@ -69,39 +88,10 @@ extension CreateEventView {
                 .padding(.horizontal)
                 .background(.white)
                 .cornerRadius(10)
-                .foregroundColor(Color.accentColor)
+                .foregroundColor(Color(.accent))
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
-    }
-    
-    private var header: some View {
-        HStack {
-            
-            RoundedRectangle(cornerRadius: 20)
-                .foregroundColor(.white)
-                .frame(width: 5, height: 45)
-            
-            Text("New Event")
-                .font(.largeTitle)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            Image(user.profilePic)
-                .resizable()
-                .scaledToFit()
-                .clipShape(Circle())
-                .frame(width: 30)
-                .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                .padding(.leading)
-            
-            Text(user.userName)
-                .foregroundColor(.white)
-                .font(.subheadline)
-                .bold()
-        }
-        .padding()
     }
     
     private var event_fields: some View {
@@ -114,7 +104,8 @@ extension CreateEventView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("Enter title here ...", text: $event_title)
+            TextField("", text: $event_title, prompt: Text("Enter your event title here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
@@ -128,7 +119,8 @@ extension CreateEventView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("Enter location here ...", text: $event_location)
+            TextField("", text: $event_location, prompt: Text("Enter your event location here ...").foregroundColor(Color.black.opacity(0.5)))
+                .foregroundColor(.black)
                 .padding()
                 .background(.white)
                 .cornerRadius(10)
@@ -171,7 +163,12 @@ extension CreateEventView {
             
             ForEach(invitees, id: \.self) { invitee in
                 let inviteeUser = ud.getUser(username: invitee)
-                InviteePillView(user: inviteeUser, invitees: $invitees)
+                PersonPillView(
+                    viewing_user: user,
+                    displayed_user: inviteeUser,
+                    personType: "invited",
+                    invitees: $invitees
+                )
             }
         }
         

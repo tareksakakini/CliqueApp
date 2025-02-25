@@ -1,30 +1,382 @@
 import FirebaseFirestore
+import FirebaseDatabaseInternal
+import FirebaseAuth
+import FirebaseDatabase
 
 class DatabaseManager {
-    static let shared = DatabaseManager()
     private let db = Firestore.firestore()
-
-    func addUser(uid: String, email: String, fullname: String, completion: @escaping (Bool, String?) -> Void) {
+    
+    func addUserToFirestore(uid: String, email: String, fullname: String, profilePic: String) async throws {
+        let userRef = db.collection("users").document(uid)
+        
         let userData: [String: Any] = [
             "uid": uid,
             "email": email,
-            "createdAt": Timestamp(),
+            "createdAt": Date(),
             "fullname": fullname,
-            "profilePic": "userDefault"
+            "profilePic": profilePic
         ]
-
-        db.collection("users").document(uid).setData(userData) { error in
-            completion(error == nil, error?.localizedDescription)
+        
+        do {
+            try await userRef.setData(userData)
+            print("User added successfully!")
+        } catch {
+            print("Error adding user: \(error.localizedDescription)")
+            throw error
         }
     }
-
-    func getUserInfo(uid: String, completion: @escaping ([String: Any]?, String?) -> Void) {
-        db.collection("users").document(uid).getDocument { snapshot, error in
-            if let data = snapshot?.data(), error == nil {
-                completion(data, nil)
-            } else {
-                completion(nil, error?.localizedDescription)
+    
+    func getUserFromFirestore(uid: String) async throws -> UserModel {
+        let userRef = db.collection("users").document(uid)
+        
+        do {
+            let document = try await userRef.getDocument()
+            guard let data = document.data() else {
+                throw NSError(domain: "FirestoreError", code: 404, userInfo: [NSLocalizedDescriptionKey: "User not found"])
             }
+            
+            return UserModel(
+                uid: data["uid"] as? String ?? "",
+                fullname: data["fullname"] as? String ?? "",
+                email: data["email"] as? String ?? "",
+                createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                profilePic: data["profilePic"] as? String ?? ""
+            )
+        } catch {
+            print("Error fetching user: \(error.localizedDescription)")
+            throw error
         }
     }
+    
+    func addEventToFirestore(id: String, title: String, location: String, dateTime: Date, attendeesAccepted: [String], attendeesInvited: [String]) async throws {
+        let eventRef = db.collection("events").document(id)
+        
+        let eventData: [String: Any] = [
+            "id": id,
+            "title": title,
+            "location": location,
+            "dateTime": dateTime,
+            "attendeesAccepted": attendeesAccepted,
+            "attendeesInvited": attendeesInvited
+        ]
+        
+        do {
+            try await eventRef.setData(eventData)
+            print("Event added successfully!")
+        } catch {
+            print("Error adding event: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
+    func getAllEvents() async throws -> [EventModel] {
+        let eventsRef = db.collection("events")
+        
+        do {
+            let snapshot = try await eventsRef.getDocuments()
+            let events = snapshot.documents.compactMap { document -> EventModel? in
+                let data = document.data()
+                return EventModel(
+                    id: document.documentID,
+                    title: data["title"] as? String ?? "No Name",
+                    location: data["location"] as? String ?? "No Location",
+                    dateTime: (data["dateTime"] as? Timestamp)?.dateValue() ?? Date(),
+                    attendeesAccepted: data["attendeesAccepted"] as? [String] ?? [],
+                    attendeesInvited: data["attendeesInvited"] as? [String] ?? []
+                )
+            }
+            return events
+        } catch {
+            print("Error fetching events: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
+    func getAllUsers() async throws -> [UserModel] {
+        let usersRef = db.collection("users")
+        
+        do {
+            let snapshot = try await usersRef.getDocuments()
+            let users = snapshot.documents.compactMap { document -> UserModel? in
+                let data = document.data()
+                return UserModel(
+                    uid: document.documentID,
+                    fullname: data["fullname"] as? String ?? "No Name",
+                    email: data["email"] as? String ?? "No Email",
+                    createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
+                    profilePic: data["profilePic"] as? String ?? "userDefault"
+                )
+            }
+            return users
+        } catch {
+            print("Error fetching events: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
+    func acceptInvite(eventId: String, userId: String) async throws {
+        let eventRef = db.collection("events").document(eventId)
+        
+        do {
+            _ = try await db.runTransaction { transaction, _ in
+                let eventSnapshot: DocumentSnapshot
+                do {
+                    eventSnapshot = try transaction.getDocument(eventRef)
+                } catch {
+                    return nil // Returning nil means the transaction will fail
+                }
+                
+                guard let eventData = eventSnapshot.data() else {
+                    print("Event not found")
+                    return nil
+                }
+                
+                var inviteeAttended = eventData["attendeesInvited"] as? [String] ?? []
+                var inviteeAccepted = eventData["attendeesAccepted"] as? [String] ?? []
+                
+                // Ensure user exists in inviteeAttended list
+                guard let index = inviteeAttended.firstIndex(of: userId) else {
+                    print("User not found in inviteeAttended list")
+                    return nil
+                }
+                
+                // Remove from attended and add to accepted
+                inviteeAttended.remove(at: index)
+                inviteeAccepted.append(userId)
+                
+                // Update Firestore document
+                transaction.updateData([
+                    "attendeesInvited": inviteeAttended,
+                    "attendeesAccepted": inviteeAccepted
+                ], forDocument: eventRef)
+                
+                return nil // Transaction closure must return a non-throwing value
+            }
+            print("Successfully updated invite status")
+        } catch {
+            print("Error updating invite status: \(error.localizedDescription)")
+            throw error
+        }
+        
+    }
+    
+    func rejectInvite(eventId: String, userId: String) async throws {
+        let eventRef = db.collection("events").document(eventId)
+        
+        do {
+            _ = try await db.runTransaction { transaction, _ in
+                let eventSnapshot: DocumentSnapshot
+                do {
+                    eventSnapshot = try transaction.getDocument(eventRef)
+                } catch {
+                    return nil // Returning nil means the transaction will fail
+                }
+                
+                guard let eventData = eventSnapshot.data() else {
+                    print("Event not found")
+                    return nil
+                }
+                
+                var inviteeAttended = eventData["attendeesInvited"] as? [String] ?? []
+                
+                // Ensure user exists in inviteeAttended list
+                guard let index = inviteeAttended.firstIndex(of: userId) else {
+                    print("User not found in inviteeAttended list")
+                    return nil
+                }
+                
+                // Remove from attended and add to accepted
+                inviteeAttended.remove(at: index)
+                
+                // Update Firestore document
+                transaction.updateData([
+                    "attendeesInvited": inviteeAttended,
+                ], forDocument: eventRef)
+                
+                return nil // Transaction closure must return a non-throwing value
+            }
+            print("Successfully updated invite status")
+        } catch {
+            print("Error updating invite status: \(error.localizedDescription)")
+            throw error
+        }
+        
+    }
+    
+    func leaveEvent(eventId: String, userId: String) async throws {
+        let eventRef = db.collection("events").document(eventId)
+        
+        do {
+            _ = try await db.runTransaction { transaction, _ in
+                let eventSnapshot: DocumentSnapshot
+                do {
+                    eventSnapshot = try transaction.getDocument(eventRef)
+                } catch {
+                    return nil // Returning nil means the transaction will fail
+                }
+                
+                guard let eventData = eventSnapshot.data() else {
+                    print("Event not found")
+                    return nil
+                }
+                
+                var attendeesAccepted = eventData["attendeesAccepted"] as? [String] ?? []
+                
+                // Ensure user exists in inviteeAttended list
+                guard let index = attendeesAccepted.firstIndex(of: userId) else {
+                    print("User not found in inviteeAttended list")
+                    return nil
+                }
+                
+                // Remove from attended and add to accepted
+                attendeesAccepted.remove(at: index)
+                
+                // Update Firestore document
+                transaction.updateData([
+                    "attendeesAccepted": attendeesAccepted,
+                ], forDocument: eventRef)
+                
+                return nil // Transaction closure must return a non-throwing value
+            }
+            print("Successfully updated invite status")
+        } catch {
+            print("Error updating invite status: \(error.localizedDescription)")
+            throw error
+        }
+        
+    }
+    
+    func addFriends(user1: String, user2: String) async throws {
+        let user1Ref = db.collection("friendships").document(user1)
+        let user2Ref = db.collection("friendships").document(user2)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let user1Snapshot = user1Ref.getDocument()
+            async let user2Snapshot = user2Ref.getDocument()
+            let (user1Data, user2Data) = try await (user1Snapshot, user2Snapshot)
+            
+            var user1Friends = user1Data.data()?["friends"] as? [String] ?? []
+            var user2Friends = user2Data.data()?["friends"] as? [String] ?? []
+            
+            if !user1Friends.contains(user2) {
+                user1Friends.append(user2)
+            }
+            if !user2Friends.contains(user1) {
+                user2Friends.append(user1)
+            }
+            
+            // Update Firestore in parallel
+            async let updateUser1: Void = user1Ref.setData(["friends": user1Friends], merge: true)
+            async let updateUser2: Void = user2Ref.setData(["friends": user2Friends], merge: true)
+            //try await (updateUser1, updateUser2)
+        } catch {
+            throw error
+        }
+    }
+    
+    func removeFriends(user1: String, user2: String) async throws {
+        let user1Ref = db.collection("friendships").document(user1)
+        let user2Ref = db.collection("friendships").document(user2)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let user1Snapshot = user1Ref.getDocument()
+            async let user2Snapshot = user2Ref.getDocument()
+            let (user1Data, user2Data) = try await (user1Snapshot, user2Snapshot)
+            
+            var user1Friends = user1Data.data()?["friends"] as? [String] ?? []
+            var user2Friends = user2Data.data()?["friends"] as? [String] ?? []
+            
+            if user1Friends.contains(user2) {
+                user1Friends.removeAll() { $0 == user2 }
+            }
+            if user2Friends.contains(user1) {
+                user2Friends.removeAll() { $0 == user1 }
+            }
+            
+            // Update Firestore in parallel
+            async let updateUser1: Void = user1Ref.setData(["friends": user1Friends], merge: true)
+            async let updateUser2: Void = user2Ref.setData(["friends": user2Friends], merge: true)
+            //try await (updateUser1, updateUser2)
+        } catch {
+            throw error
+        }
+    }
+    
+    func sendFriendRequest(sender: String, receiver: String) async throws {
+        let receiverRef = db.collection("friendRequests").document(receiver)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let receiverSnapshot = receiverRef.getDocument()
+            let receiverData = try await receiverSnapshot
+            
+            var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
+            
+            if !receiverRequests.contains(sender) {
+                receiverRequests.append(sender)
+            }
+            
+            // Update Firestore in parallel
+            async let updateReceiver: Void = receiverRef.setData(["requests": receiverRequests], merge: true)
+            //try await (updateUser1, updateUser2)
+        } catch {
+            throw error
+        }
+    }
+    
+    func removeFriendRequest(sender: String, receiver: String) async throws {
+        let receiverRef = db.collection("friendRequests").document(receiver)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let receiverSnapshot = receiverRef.getDocument()
+            let receiverData = try await receiverSnapshot
+            
+            var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
+            
+            if receiverRequests.contains(sender) {
+                receiverRequests.removeAll() { $0 == sender }
+            }
+            
+            // Update Firestore in parallel
+            async let updateReceiver: Void = receiverRef.setData(["requests": receiverRequests], merge: true)
+            //try await (updateUser1, updateUser2)
+        } catch {
+            throw error
+        }
+    }
+    
+    func retrieveFriendRequest(user_email: String) async throws -> [String] {
+        let receiverRef = db.collection("friendRequests").document(user_email)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let receiverSnapshot = receiverRef.getDocument()
+            let receiverData = try await receiverSnapshot
+            
+            var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
+            return receiverRequests
+        } catch {
+            throw error
+        }
+    }
+    
+    func retrieveFriends(user_email: String) async throws -> [String] {
+        let receiverRef = db.collection("friendships").document(user_email)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let receiverSnapshot = receiverRef.getDocument()
+            let receiverData = try await receiverSnapshot
+            
+            var receiverRequests = receiverData.data()?["friends"] as? [String] ?? []
+            return receiverRequests
+        } catch {
+            throw error
+        }
+    }
+    
 }
+

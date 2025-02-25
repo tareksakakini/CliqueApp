@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		E68A6E3B2D3076A200E5AF14 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */; };
+		E6D89EAE2D60833E003AB72E /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = E6D89EAD2D60833E003AB72E /* FirebaseDatabase */; };
 		E6FB31442D55358C00F76BB9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = E6FB31432D55358C00F76BB9 /* FirebaseAuth */; };
 		E6FB31DA2D57342C00F76BB9 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = E6FB31D92D57342C00F76BB9 /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
@@ -31,6 +32,7 @@
 			files = (
 				E68A6E3B2D3076A200E5AF14 /* FirebaseAnalytics in Frameworks */,
 				E6FB31442D55358C00F76BB9 /* FirebaseAuth in Frameworks */,
+				E6D89EAE2D60833E003AB72E /* FirebaseDatabase in Frameworks */,
 				E6FB31DA2D57342C00F76BB9 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -92,6 +94,7 @@
 				E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */,
 				E6FB31432D55358C00F76BB9 /* FirebaseAuth */,
 				E6FB31D92D57342C00F76BB9 /* FirebaseFirestore */,
+				E6D89EAD2D60833E003AB72E /* FirebaseDatabase */,
 			);
 			productName = CliqueApp;
 			productReference = E6DB939C2D2C5944002D6BBD /* CliqueApp.app */;
@@ -282,8 +285,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"CliqueApp/Preview Content\"";
+				DEVELOPMENT_TEAM = M6WNM23GHA;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Yalla;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -310,8 +316,11 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"CliqueApp/Preview Content\"";
+				DEVELOPMENT_TEAM = M6WNM23GHA;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Yalla;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.travel";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -369,6 +378,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAnalytics;
+		};
+		E6D89EAD2D60833E003AB72E /* FirebaseDatabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
 		};
 		E6FB31432D55358C00F76BB9 /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
