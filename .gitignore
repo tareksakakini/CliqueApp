@@ -42,5 +42,4 @@ fastlane/test_output/
 *.log
 
 # Other
-*.plist
 *.orig
