@@ -44,26 +44,4 @@ class AuthManager {
             throw error
         }
     }
-    
-    //    func deleteAccount() throws {
-    //        do {
-    //            try Auth.auth().currentUser!.delete
-    //        } catch {
-    //            throw error
-    //        }
-    //    }
-    
-    /// Deletes the currently logged-in user
-    func deleteAccount() async throws {
-        guard let user = Auth.auth().currentUser else {
-            throw NSError(domain: "AuthManager", code: 404, userInfo: [NSLocalizedDescriptionKey: "No user is currently signed in."])
-        }
-        
-        do {
-            try await user.delete()
-            print("User deleted successfully.")
-        } catch {
-            throw error
-        }
-    }
 }
