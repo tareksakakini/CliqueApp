@@ -44,4 +44,13 @@ class AuthManager {
             throw error
         }
     }
+    
+    func getSignedInUser() async -> String? {
+        let signedInUser = Auth.auth().currentUser
+        if let signedInUser = signedInUser {
+            return signedInUser.uid
+        } else {
+            return nil
+        }
+    }
 }

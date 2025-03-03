@@ -10,27 +10,26 @@ import SwiftUI
 struct StartingView: View {
     // Main View
     @EnvironmentObject private var ud: ViewModel
+    @State private var signedIn: Bool = false
+    @State private var signedInUser: UserModel? = nil
     
     var body: some View {
         NavigationStack {
-            ZStack {
-                
-                Color(.accent).ignoresSafeArea()
-            
-                VStack {
-                    Spacer()
-                    
-                    mainpage_logo
-                    
-                    mainpage_subtitle
-                    
-                    Spacer()
-                    Spacer()
-                    
-                    mainpage_button
-                    
-                    Spacer()
+            if signedIn {
+                if let signedInUser = signedInUser {
+                    MainView(user: signedInUser)
                 }
+            } else {
+                landing_view
+            }
+        }
+        .task {
+            let signedInUserUID = await AuthManager.shared.getSignedInUser()
+            if let uid = signedInUserUID {
+                print(uid)
+                let firestoreService = DatabaseManager()
+                signedInUser = try? await firestoreService.getUserFromFirestore(uid: uid)
+                signedIn = true
             }
         }
     }
@@ -42,6 +41,29 @@ struct StartingView: View {
 }
 
 extension StartingView {
+    
+    private var landing_view: some View {
+        ZStack {
+            
+            Color(.accent).ignoresSafeArea()
+            
+            VStack {
+                Spacer()
+                
+                mainpage_logo
+                
+                mainpage_subtitle
+                
+                Spacer()
+                Spacer()
+                
+                mainpage_button
+                
+                Spacer()
+            }
+        }
+    }
+    
     private var mainpage_logo: some View {
         //Image(systemName: "bonjour")
         Image("yalla_transparent")
@@ -50,7 +72,7 @@ extension StartingView {
             .clipShape(Rectangle().offset(x: 0, y: 7).size(width: 400, height: 120))
             .frame(width: 300, height: 120)
             .foregroundColor(.white)
-            
+        
         
     }
     
