@@ -35,13 +35,10 @@ struct CreateEventView: View {
                     
                     event_fields
                     
-                    
+                    create_button
+                        .padding(.vertical, 50)
                     
                 }
-                
-                Spacer()
-                
-                create_button
                 
                 Spacer()
                 
