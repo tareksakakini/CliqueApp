@@ -82,29 +82,27 @@ class ViewModel: ObservableObject {
     
     func stringMatchUsers(query: String, viewingUser: UserModel, isFriend: Bool = false) -> [UserModel] {
         var to_return: [UserModel] = []
-        var names_to_check: [String] = []
+        var users_to_check: [UserModel] = []
         
         if isFriend {
             
             for username in self.friendship {
                 if let curr_user = self.getUser(username: username) {
-                    names_to_check += [curr_user.fullname]
+                    users_to_check += [curr_user]
                 }
             }
             
         }
         else {
             for user in self.users {
-                names_to_check += [user.fullname]
+                users_to_check += [user]
             }
         }
         
         
-        for name in names_to_check {
-            if name.lowercased().contains(query.lowercased()) {
-                if let grabbed_user = self.getUserByName(name: name) {
-                    to_return += [grabbed_user]
-                }
+        for user in users_to_check {
+            if user.fullname.lowercased().contains(query.lowercased()) {
+                to_return += [user]
             }
         }
         return to_return
