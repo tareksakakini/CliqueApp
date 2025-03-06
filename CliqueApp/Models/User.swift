@@ -7,10 +7,11 @@
 
 import Foundation
 
-struct UserModel {
+struct UserModel: Hashable {
     var uid: String = ""
     var fullname: String
     var email: String
     var createdAt: Date = Date()
     var profilePic: String = "userDefault"
+    var subscriptionId: String = ""
 }

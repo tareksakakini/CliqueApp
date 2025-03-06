@@ -8,12 +8,42 @@
 
 /* Begin PBXBuildFile section */
 		E68A6E3B2D3076A200E5AF14 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */; };
+		E6D19B442D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E6D19B3D2D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		E6D19B4D2D77A5FA00684D4D /* OneSignalExtension in Frameworks */ = {isa = PBXBuildFile; productRef = E6D19B4C2D77A5FA00684D4D /* OneSignalExtension */; };
+		E6D19B4F2D77A5FA00684D4D /* OneSignalFramework in Frameworks */ = {isa = PBXBuildFile; productRef = E6D19B4E2D77A5FA00684D4D /* OneSignalFramework */; };
+		E6D19B512D77A5FA00684D4D /* OneSignalInAppMessages in Frameworks */ = {isa = PBXBuildFile; productRef = E6D19B502D77A5FA00684D4D /* OneSignalInAppMessages */; };
+		E6D19B532D77A5FA00684D4D /* OneSignalLocation in Frameworks */ = {isa = PBXBuildFile; productRef = E6D19B522D77A5FA00684D4D /* OneSignalLocation */; };
 		E6D89EAE2D60833E003AB72E /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = E6D89EAD2D60833E003AB72E /* FirebaseDatabase */; };
 		E6FB31442D55358C00F76BB9 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = E6FB31432D55358C00F76BB9 /* FirebaseAuth */; };
 		E6FB31DA2D57342C00F76BB9 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = E6FB31D92D57342C00F76BB9 /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		E6D19B422D77A4AD00684D4D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E6DB93942D2C5944002D6BBD /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E6D19B3C2D77A4AD00684D4D;
+			remoteInfo = OneSignalNotificationServiceExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E6D19B492D77A4AD00684D4D /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E6D19B442D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		E6D19B3D2D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = OneSignalNotificationServiceExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E6DB939C2D2C5944002D6BBD /* CliqueApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CliqueApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -25,9 +55,24 @@
 			);
 			target = E6DB939B2D2C5944002D6BBD /* CliqueApp */;
 		};
+		E6D19B482D77A4AD00684D4D /* Exceptions for "OneSignalNotificationServiceExtension" folder in "OneSignalNotificationServiceExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = E6D19B3C2D77A4AD00684D4D /* OneSignalNotificationServiceExtension */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		E6D19B3E2D77A4AD00684D4D /* OneSignalNotificationServiceExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				E6D19B482D77A4AD00684D4D /* Exceptions for "OneSignalNotificationServiceExtension" folder in "OneSignalNotificationServiceExtension" target */,
+			);
+			path = OneSignalNotificationServiceExtension;
+			sourceTree = "<group>";
+		};
 		E6DB939E2D2C5944002D6BBD /* CliqueApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -39,14 +84,25 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		E6D19B3A2D77A4AD00684D4D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E6D19B4D2D77A5FA00684D4D /* OneSignalExtension in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E6DB93992D2C5944002D6BBD /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E6D19B512D77A5FA00684D4D /* OneSignalInAppMessages in Frameworks */,
 				E68A6E3B2D3076A200E5AF14 /* FirebaseAnalytics in Frameworks */,
 				E6FB31442D55358C00F76BB9 /* FirebaseAuth in Frameworks */,
 				E6D89EAE2D60833E003AB72E /* FirebaseDatabase in Frameworks */,
 				E6FB31DA2D57342C00F76BB9 /* FirebaseFirestore in Frameworks */,
+				E6D19B532D77A5FA00684D4D /* OneSignalLocation in Frameworks */,
+				E6D19B4F2D77A5FA00684D4D /* OneSignalFramework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -57,6 +113,7 @@
 			isa = PBXGroup;
 			children = (
 				E6DB939E2D2C5944002D6BBD /* CliqueApp */,
+				E6D19B3E2D77A4AD00684D4D /* OneSignalNotificationServiceExtension */,
 				E6FB31422D55358C00F76BB9 /* Frameworks */,
 				E6DB939D2D2C5944002D6BBD /* Products */,
 			);
@@ -66,6 +123,7 @@
 			isa = PBXGroup;
 			children = (
 				E6DB939C2D2C5944002D6BBD /* CliqueApp.app */,
+				E6D19B3D2D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -80,6 +138,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		E6D19B3C2D77A4AD00684D4D /* OneSignalNotificationServiceExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E6D19B452D77A4AD00684D4D /* Build configuration list for PBXNativeTarget "OneSignalNotificationServiceExtension" */;
+			buildPhases = (
+				E6D19B392D77A4AD00684D4D /* Sources */,
+				E6D19B3A2D77A4AD00684D4D /* Frameworks */,
+				E6D19B3B2D77A4AD00684D4D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				E6D19B3E2D77A4AD00684D4D /* OneSignalNotificationServiceExtension */,
+			);
+			name = OneSignalNotificationServiceExtension;
+			packageProductDependencies = (
+				E6D19B4C2D77A5FA00684D4D /* OneSignalExtension */,
+			);
+			productName = OneSignalNotificationServiceExtension;
+			productReference = E6D19B3D2D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		E6DB939B2D2C5944002D6BBD /* CliqueApp */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = E6DB93AA2D2C5945002D6BBD /* Build configuration list for PBXNativeTarget "CliqueApp" */;
@@ -87,10 +168,12 @@
 				E6DB93982D2C5944002D6BBD /* Sources */,
 				E6DB93992D2C5944002D6BBD /* Frameworks */,
 				E6DB939A2D2C5944002D6BBD /* Resources */,
+				E6D19B492D77A4AD00684D4D /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				E6D19B432D77A4AD00684D4D /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				E6DB939E2D2C5944002D6BBD /* CliqueApp */,
@@ -101,6 +184,9 @@
 				E6FB31432D55358C00F76BB9 /* FirebaseAuth */,
 				E6FB31D92D57342C00F76BB9 /* FirebaseFirestore */,
 				E6D89EAD2D60833E003AB72E /* FirebaseDatabase */,
+				E6D19B4E2D77A5FA00684D4D /* OneSignalFramework */,
+				E6D19B502D77A5FA00684D4D /* OneSignalInAppMessages */,
+				E6D19B522D77A5FA00684D4D /* OneSignalLocation */,
 			);
 			productName = CliqueApp;
 			productReference = E6DB939C2D2C5944002D6BBD /* CliqueApp.app */;
@@ -116,6 +202,9 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					E6D19B3C2D77A4AD00684D4D = {
+						CreatedOnToolsVersion = 16.2;
+					};
 					E6DB939B2D2C5944002D6BBD = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -132,6 +221,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				E6D19B4B2D77A5FA00684D4D /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E6DB939D2D2C5944002D6BBD /* Products */;
@@ -139,11 +229,19 @@
 			projectRoot = "";
 			targets = (
 				E6DB939B2D2C5944002D6BBD /* CliqueApp */,
+				E6D19B3C2D77A4AD00684D4D /* OneSignalNotificationServiceExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		E6D19B3B2D77A4AD00684D4D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E6DB939A2D2C5944002D6BBD /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -154,6 +252,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		E6D19B392D77A4AD00684D4D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		E6DB93982D2C5944002D6BBD /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -163,7 +268,75 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		E6D19B432D77A4AD00684D4D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E6D19B3C2D77A4AD00684D4D /* OneSignalNotificationServiceExtension */;
+			targetProxy = E6D19B422D77A4AD00684D4D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		E6D19B462D77A4AD00684D4D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = OneSignalNotificationServiceExtension/OneSignalNotificationServiceExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M6WNM23GHA;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OneSignalNotificationServiceExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OneSignalNotificationServiceExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sakainc.CliqueApp.OneSignalNotificationServiceExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E6D19B472D77A4AD00684D4D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = OneSignalNotificationServiceExtension/OneSignalNotificationServiceExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = M6WNM23GHA;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = OneSignalNotificationServiceExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = OneSignalNotificationServiceExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sakainc.CliqueApp.OneSignalNotificationServiceExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		E6DB93A82D2C5945002D6BBD /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -288,6 +461,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = CliqueApp/CliqueApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_ASSET_PATHS = "\"CliqueApp/Preview Content\"";
@@ -300,6 +474,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -324,6 +500,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = CliqueApp/CliqueApp.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_ASSET_PATHS = "\"CliqueApp/Preview Content\"";
@@ -336,6 +513,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -358,6 +537,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		E6D19B452D77A4AD00684D4D /* Build configuration list for PBXNativeTarget "OneSignalNotificationServiceExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E6D19B462D77A4AD00684D4D /* Debug */,
+				E6D19B472D77A4AD00684D4D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		E6DB93972D2C5944002D6BBD /* Build configuration list for PBXProject "CliqueApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -387,6 +575,14 @@
 				minimumVersion = 11.6.0;
 			};
 		};
+		E6D19B4B2D77A5FA00684D4D /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/OneSignal/OneSignal-XCFramework";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.2.10;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -394,6 +590,26 @@
 			isa = XCSwiftPackageProductDependency;
 			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAnalytics;
+		};
+		E6D19B4C2D77A5FA00684D4D /* OneSignalExtension */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6D19B4B2D77A5FA00684D4D /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
+			productName = OneSignalExtension;
+		};
+		E6D19B4E2D77A5FA00684D4D /* OneSignalFramework */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6D19B4B2D77A5FA00684D4D /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
+			productName = OneSignalFramework;
+		};
+		E6D19B502D77A5FA00684D4D /* OneSignalInAppMessages */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6D19B4B2D77A5FA00684D4D /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
+			productName = OneSignalInAppMessages;
+		};
+		E6D19B522D77A5FA00684D4D /* OneSignalLocation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E6D19B4B2D77A5FA00684D4D /* XCRemoteSwiftPackageReference "OneSignal-XCFramework" */;
+			productName = OneSignalLocation;
 		};
 		E6D89EAD2D60833E003AB72E /* FirebaseDatabase */ = {
 			isa = XCSwiftPackageProductDependency;

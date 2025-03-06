@@ -13,7 +13,7 @@ struct AddInviteesView: View {
     @State private var searchEntry: String = ""
     @State var user: UserModel
     
-    @Binding var invitees: [String]
+    @Binding var invitees: [UserModel]
     
     var body: some View {
         

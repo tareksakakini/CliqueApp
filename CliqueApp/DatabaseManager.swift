@@ -40,7 +40,8 @@ class DatabaseManager {
                 fullname: data["fullname"] as? String ?? "",
                 email: data["email"] as? String ?? "",
                 createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
-                profilePic: data["profilePic"] as? String ?? ""
+                profilePic: data["profilePic"] as? String ?? "",
+                subscriptionId: data["subscriptionId"] as? String ?? ""
             )
         } catch {
             print("Error fetching user: \(error.localizedDescription)")
@@ -104,7 +105,8 @@ class DatabaseManager {
                     fullname: data["fullname"] as? String ?? "No Name",
                     email: data["email"] as? String ?? "No Email",
                     createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
-                    profilePic: data["profilePic"] as? String ?? "userDefault"
+                    profilePic: data["profilePic"] as? String ?? "userDefault",
+                    subscriptionId: data["subscriptionId"] as? String ?? ""
                 )
             }
             return users
@@ -438,8 +440,17 @@ class DatabaseManager {
             throw error
         }
     }
-
-
     
+    func updateUserSubscriptionId(uid: String, subscriptionId: String) async throws {
+        let userRef = db.collection("users").document(uid)
+        
+        do {
+            try await userRef.updateData(["subscriptionId": subscriptionId])
+            print("Subscription ID updated successfully!")
+        } catch {
+            print("Error updating subscription ID: \(error.localizedDescription)")
+            throw error
+        }
+    }
 }
 

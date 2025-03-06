@@ -14,7 +14,7 @@ struct PersonPillView: View {
     let viewing_user: UserModel?
     let displayed_user: UserModel?
     let personType: String // Possible values: ["friend", "stranger", "invitee", "invited", "requester"]
-    @Binding var invitees: [String]
+    @Binding var invitees: [UserModel]
     
     var body: some View {
         HStack {
@@ -81,6 +81,8 @@ struct PersonPillView: View {
                                     let databaseManager = DatabaseManager()
                                     try await databaseManager.addFriends(user1: displayed_user.email, user2: viewing_user.email)
                                     try await databaseManager.removeFriendRequest(sender: displayed_user.email, receiver: viewing_user.email)
+                                    let notificationText: String = "\(viewing_user.fullname) just accepted your friend request!"
+                                    sendPushNotification(notificationText: notificationText, receiverID: displayed_user.subscriptionId)
                                 } catch {
                                     print("Failed to add friendship: \(error.localizedDescription)")
                                 }
@@ -109,6 +111,8 @@ struct PersonPillView: View {
                                 do {
                                     let firestoreService = DatabaseManager()
                                     try await firestoreService.sendFriendRequest(sender: viewing_user.email, receiver: displayed_user.email)
+                                    let notificationText: String = "\(viewing_user.fullname) just sent you a friend request!"
+                                    sendPushNotification(notificationText: notificationText, receiverID: "\(displayed_user.subscriptionId)")
                                 } catch {
                                     print("Friend Request Failed: \(error.localizedDescription)")
                                 }
@@ -132,7 +136,7 @@ struct PersonPillView: View {
                 Button {
                     if let displayed_user = displayed_user {
                         
-                        invitees += [displayed_user.email]
+                        invitees += [displayed_user]
                         dismiss()
                         
                     }
@@ -151,7 +155,7 @@ struct PersonPillView: View {
             else if personType == "invited" {
                 Button {
                     if let displayed_user = displayed_user {
-                        invitees.removeAll { $0 == displayed_user.email }
+                        invitees.removeAll { $0 == displayed_user }
                     }
                     
                 } label: {

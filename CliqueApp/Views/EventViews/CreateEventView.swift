@@ -18,7 +18,7 @@ struct CreateEventView: View {
     @State var event_title: String = ""
     @State var event_location: String = ""
     @State var event_dateTime: Date = Date()
-    @State var invitees: [String] = []
+    @State var invitees: [UserModel] = []
     
     var body: some View {
         
@@ -68,7 +68,15 @@ extension CreateEventView {
             Task {
                 do {
                     let firestoreService = DatabaseManager()
-                    try await firestoreService.addEventToFirestore(id: UUID().uuidString, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [user.email], attendeesInvited: invitees)
+                    var invitee_emails: [String] = []
+                    for invitee in invitees{
+                        invitee_emails += [invitee.email]
+                    }
+                    try await firestoreService.addEventToFirestore(id: UUID().uuidString, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [user.email], attendeesInvited: invitee_emails)
+                    for invitee in invitees {
+                        let notificationText: String = "\(user.fullname) just invited you to an event!"
+                        sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                    }
                     event_title = ""
                     event_location = ""
                     event_dateTime = Date()
@@ -159,7 +167,7 @@ extension CreateEventView {
             .foregroundColor(.white)
             
             ForEach(invitees, id: \.self) { invitee in
-                let inviteeUser = ud.getUser(username: invitee)
+                let inviteeUser = ud.getUser(username: invitee.email)
                 PersonPillView(
                     viewing_user: user,
                     displayed_user: inviteeUser,

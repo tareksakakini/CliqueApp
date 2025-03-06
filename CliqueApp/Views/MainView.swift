@@ -75,6 +75,19 @@ struct MainView: View {
             Task {
                 await ud.getAllEvents()
             }
+            Task {
+                if let playerId = await getOneSignalSubscriptionId() {
+                    print("OneSignal Subscription ID: \(playerId)")
+                    do {
+                        let firestoreService = DatabaseManager()
+                        try await firestoreService.updateUserSubscriptionId(uid: user.uid, subscriptionId: playerId)
+                    } catch {
+                        print("Updating subscription id failed: \(error.localizedDescription)")
+                    }
+                } else {
+                    print("Failed to retrieve OneSignal Subscription ID.")
+                }
+            }
         }
         .tint(Color(.accent))
     }
