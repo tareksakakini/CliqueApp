@@ -43,3 +43,7 @@ fastlane/test_output/
 
 # Other
 *.orig
+
+AuthKey_S6T7UJJRWA.p8
+
+RestAPIKey.txt
