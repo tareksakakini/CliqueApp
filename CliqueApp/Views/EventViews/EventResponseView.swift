@@ -55,6 +55,10 @@ extension EventResponseView {
                         let databaseManager = DatabaseManager()
                         try await databaseManager.acceptInvite(eventId: event.id, userId: user.email)
                         print("User successfully moved from inviteeAttended to inviteeAccepted!")
+                        if let host = ud.getUser(username: event.host) {
+                            let notificationText: String = "\(user.fullname) is coming to your event!"
+                            sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                        }
                         refreshTrigger.toggle()
                     } catch {
                         print("Failed to update: \(error.localizedDescription)")
@@ -80,6 +84,10 @@ extension EventResponseView {
                         let databaseManager = DatabaseManager()
                         try await databaseManager.rejectInvite(eventId: event.id, userId: user.email)
                         print("User successfully removed from inviteeAttended!")
+                        if let host = ud.getUser(username: event.host) {
+                            let notificationText: String = "\(user.fullname) cannot make it to your event."
+                            sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                        }
                         refreshTrigger.toggle()
                     } catch {
                         print("Failed to update: \(error.localizedDescription)")
@@ -112,6 +120,10 @@ extension EventResponseView {
                         let databaseManager = DatabaseManager()
                         try await databaseManager.leaveEvent(eventId: event.id, userId: user.email)
                         print("User successfully removed from inviteeAttended!")
+                        if let host = ud.getUser(username: event.host) {
+                            let notificationText: String = "\(user.fullname) cannot make it anymore to your event."
+                            sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                        }
                         refreshTrigger.toggle()
                     } catch {
                         print("Failed to update: \(error.localizedDescription)")
