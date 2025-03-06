@@ -12,15 +12,20 @@ struct StartingView: View {
     @EnvironmentObject private var ud: ViewModel
     @State private var signedIn: Bool = false
     @State private var signedInUser: UserModel? = nil
+    @State private var boolReady: Bool = false
     
     var body: some View {
         NavigationStack {
-            if signedIn {
-                if let signedInUser = signedInUser {
-                    MainView(user: signedInUser)
+            if boolReady {
+                if signedIn {
+                    if let signedInUser = signedInUser {
+                        MainView(user: signedInUser)
+                    }
+                } else {
+                    landing_view
                 }
             } else {
-                landing_view
+                loading_view
             }
         }
         .task {
@@ -31,6 +36,7 @@ struct StartingView: View {
                 signedInUser = try? await firestoreService.getUserFromFirestore(uid: uid)
                 signedIn = true
             }
+            boolReady = true
         }
     }
 }
@@ -41,6 +47,16 @@ struct StartingView: View {
 }
 
 extension StartingView {
+    
+    private var loading_view: some View {
+        ZStack {
+            Color(.accent).ignoresSafeArea()
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle())
+                .scaleEffect(1.5)
+                .tint(.white)
+        }
+    }
     
     private var landing_view: some View {
         ZStack {
@@ -65,7 +81,6 @@ extension StartingView {
     }
     
     private var mainpage_logo: some View {
-        //Image(systemName: "bonjour")
         Image("yalla_transparent")
             .resizable()
             .aspectRatio(contentMode: .fit)
