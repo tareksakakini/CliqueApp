@@ -160,6 +160,27 @@ extension EventResponseView {
                 .font(.body)
                 
                 HStack {
+                    Image(systemName: "crown.fill")
+                    Text("Organized by")
+                }
+                .font(.body)
+                .bold()
+                .padding(.top, 15)
+                if let user = ud.getUser(username: event.host) {
+                    HStack {
+                        Image(user.profilePic)
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(Circle())
+                            .frame(width: 30)
+                            .padding(.horizontal, 3)
+                        Text("\(user.fullname)")
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.white)
+                    }
+                }
+                
+                HStack {
                     Image(systemName: "person.3.fill")
                     Text("People")
                 }

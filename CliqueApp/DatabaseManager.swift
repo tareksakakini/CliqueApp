@@ -49,7 +49,7 @@ class DatabaseManager {
         }
     }
     
-    func addEventToFirestore(id: String, title: String, location: String, dateTime: Date, attendeesAccepted: [String], attendeesInvited: [String]) async throws {
+    func addEventToFirestore(id: String, title: String, location: String, dateTime: Date, attendeesAccepted: [String], attendeesInvited: [String], host: String) async throws {
         let eventRef = db.collection("events").document(id)
         
         let eventData: [String: Any] = [
@@ -58,7 +58,8 @@ class DatabaseManager {
             "location": location,
             "dateTime": dateTime,
             "attendeesAccepted": attendeesAccepted,
-            "attendeesInvited": attendeesInvited
+            "attendeesInvited": attendeesInvited,
+            "host": host
         ]
         
         do {
@@ -83,7 +84,8 @@ class DatabaseManager {
                     location: data["location"] as? String ?? "No Location",
                     dateTime: (data["dateTime"] as? Timestamp)?.dateValue() ?? Date(),
                     attendeesAccepted: data["attendeesAccepted"] as? [String] ?? [],
-                    attendeesInvited: data["attendeesInvited"] as? [String] ?? []
+                    attendeesInvited: data["attendeesInvited"] as? [String] ?? [],
+                    host: data["host"] as? String ?? ""
                 )
             }
             return events

@@ -71,15 +71,6 @@ class ViewModel: ObservableObject {
         return nil
     }
     
-    func getUserByName(name: String) -> UserModel? {
-        for user in self.users {
-            if user.fullname == name {
-                return user
-            }
-        }
-        return nil
-    }
-    
     func stringMatchUsers(query: String, viewingUser: UserModel, isFriend: Bool = false) -> [UserModel] {
         var to_return: [UserModel] = []
         var users_to_check: [UserModel] = []
