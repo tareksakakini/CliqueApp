@@ -76,13 +76,11 @@ class ViewModel: ObservableObject {
         var users_to_check: [UserModel] = []
         
         if isFriend {
-            
             for username in self.friendship {
                 if let curr_user = self.getUser(username: username) {
                     users_to_check += [curr_user]
                 }
             }
-            
         }
         else {
             for user in self.users {

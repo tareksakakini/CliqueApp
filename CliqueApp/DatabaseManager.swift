@@ -34,15 +34,7 @@ class DatabaseManager {
             guard let data = document.data() else {
                 throw NSError(domain: "FirestoreError", code: 404, userInfo: [NSLocalizedDescriptionKey: "User not found"])
             }
-            
-            return UserModel(
-                uid: data["uid"] as? String ?? "",
-                fullname: data["fullname"] as? String ?? "",
-                email: data["email"] as? String ?? "",
-                createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
-                profilePic: data["profilePic"] as? String ?? "",
-                subscriptionId: data["subscriptionId"] as? String ?? ""
-            )
+            return UserModel().initFromFirestore(userData: data)
         } catch {
             print("Error fetching user: \(error.localizedDescription)")
             throw error
@@ -78,15 +70,7 @@ class DatabaseManager {
             let snapshot = try await eventsRef.getDocuments()
             let events = snapshot.documents.compactMap { document -> EventModel? in
                 let data = document.data()
-                return EventModel(
-                    id: document.documentID,
-                    title: data["title"] as? String ?? "No Name",
-                    location: data["location"] as? String ?? "No Location",
-                    dateTime: (data["dateTime"] as? Timestamp)?.dateValue() ?? Date(),
-                    attendeesAccepted: data["attendeesAccepted"] as? [String] ?? [],
-                    attendeesInvited: data["attendeesInvited"] as? [String] ?? [],
-                    host: data["host"] as? String ?? ""
-                )
+                return EventModel().initFromFirestore(eventData: data)
             }
             return events
         } catch {
@@ -102,14 +86,7 @@ class DatabaseManager {
             let snapshot = try await usersRef.getDocuments()
             let users = snapshot.documents.compactMap { document -> UserModel? in
                 let data = document.data()
-                return UserModel(
-                    uid: document.documentID,
-                    fullname: data["fullname"] as? String ?? "No Name",
-                    email: data["email"] as? String ?? "No Email",
-                    createdAt: (data["createdAt"] as? Timestamp)?.dateValue() ?? Date(),
-                    profilePic: data["profilePic"] as? String ?? "userDefault",
-                    subscriptionId: data["subscriptionId"] as? String ?? ""
-                )
+                return UserModel().initFromFirestore(userData: data)
             }
             return users
         } catch {
