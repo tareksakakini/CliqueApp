@@ -129,7 +129,9 @@ struct PersonPillView: View {
                 Button {
                     if let displayed_user = displayed_user {
                         
-                        invitees += [displayed_user]
+                        if !invitees.contains(displayed_user) {
+                            invitees += [displayed_user]
+                        }
                         dismiss()
                         
                     }
