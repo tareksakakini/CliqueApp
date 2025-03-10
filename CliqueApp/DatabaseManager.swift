@@ -171,9 +171,13 @@ class DatabaseManager {
             }
             
             // Update Firestore in parallel
-            async let updateUser1: Void = user1Ref.setData(["friends": user1Friends], merge: true)
-            async let updateUser2: Void = user2Ref.setData(["friends": user2Friends], merge: true)
-            //try await (updateUser1, updateUser2)
+            Task {
+                try? await user1Ref.setData(["friends": user1Friends], merge: true)
+                try? await user2Ref.setData(["friends": user2Friends], merge: true)
+            }
+//            async let updateUser1 =
+//            async let updateUser2 = user2Ref.setData(["friends": user2Friends], merge: true)
+//            try await (updateUser1, updateUser2)
         } catch {
             throw error
         }
