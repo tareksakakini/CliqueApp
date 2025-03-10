@@ -95,7 +95,7 @@ class DatabaseManager {
         }
     }
     
-    func acceptInvite(eventId: String, userId: String) async throws {
+    func respondInvite(eventId: String, userId: String, action: String) async throws {
         let eventRef = db.collection("events").document(eventId)
         
         do {
@@ -112,109 +112,32 @@ class DatabaseManager {
                     return nil
                 }
                 
-                var inviteeAttended = eventData["attendeesInvited"] as? [String] ?? []
-                var inviteeAccepted = eventData["attendeesAccepted"] as? [String] ?? []
-                
-                // Ensure user exists in inviteeAttended list
-                guard let index = inviteeAttended.firstIndex(of: userId) else {
-                    print("User not found in inviteeAttended list")
-                    return nil
-                }
-                
-                // Remove from attended and add to accepted
-                inviteeAttended.remove(at: index)
-                inviteeAccepted.append(userId)
-                
-                // Update Firestore document
-                transaction.updateData([
-                    "attendeesInvited": inviteeAttended,
-                    "attendeesAccepted": inviteeAccepted
-                ], forDocument: eventRef)
-                
-                return nil // Transaction closure must return a non-throwing value
-            }
-            print("Successfully updated invite status")
-        } catch {
-            print("Error updating invite status: \(error.localizedDescription)")
-            throw error
-        }
-        
-    }
-    
-    func rejectInvite(eventId: String, userId: String) async throws {
-        let eventRef = db.collection("events").document(eventId)
-        
-        do {
-            _ = try await db.runTransaction { transaction, _ in
-                let eventSnapshot: DocumentSnapshot
-                do {
-                    eventSnapshot = try transaction.getDocument(eventRef)
-                } catch {
-                    return nil // Returning nil means the transaction will fail
-                }
-                
-                guard let eventData = eventSnapshot.data() else {
-                    print("Event not found")
-                    return nil
-                }
-                
-                var inviteeAttended = eventData["attendeesInvited"] as? [String] ?? []
-                
-                // Ensure user exists in inviteeAttended list
-                guard let index = inviteeAttended.firstIndex(of: userId) else {
-                    print("User not found in inviteeAttended list")
-                    return nil
-                }
-                
-                // Remove from attended and add to accepted
-                inviteeAttended.remove(at: index)
-                
-                // Update Firestore document
-                transaction.updateData([
-                    "attendeesInvited": inviteeAttended,
-                ], forDocument: eventRef)
-                
-                return nil // Transaction closure must return a non-throwing value
-            }
-            print("Successfully updated invite status")
-        } catch {
-            print("Error updating invite status: \(error.localizedDescription)")
-            throw error
-        }
-        
-    }
-    
-    func leaveEvent(eventId: String, userId: String) async throws {
-        let eventRef = db.collection("events").document(eventId)
-        
-        do {
-            _ = try await db.runTransaction { transaction, _ in
-                let eventSnapshot: DocumentSnapshot
-                do {
-                    eventSnapshot = try transaction.getDocument(eventRef)
-                } catch {
-                    return nil // Returning nil means the transaction will fail
-                }
-                
-                guard let eventData = eventSnapshot.data() else {
-                    print("Event not found")
-                    return nil
-                }
-                
+                var attendeesInvited = eventData["attendeesInvited"] as? [String] ?? []
                 var attendeesAccepted = eventData["attendeesAccepted"] as? [String] ?? []
                 
-                // Ensure user exists in inviteeAttended list
-                guard let index = attendeesAccepted.firstIndex(of: userId) else {
-                    print("User not found in inviteeAttended list")
-                    return nil
+                if action == "reject" || action == "accept" {
+                    // Ensure user exists in inviteeAttended list
+                    guard let index = attendeesInvited.firstIndex(of: userId) else {
+                        print("User not found in inviteeAttended list")
+                        return nil
+                    }
+                    // Remove from attended
+                    attendeesInvited.remove(at: index)
+                    if action == "accept" {
+                        attendeesAccepted.append(userId)
+                    }
+                } else if action == "leave" {
+                    guard let index = attendeesAccepted.firstIndex(of: userId) else {
+                        print("User not found in attendeesAccepted list")
+                        return nil
+                    }
+                    attendeesAccepted.remove(at: index)
                 }
-                
-                // Remove from attended and add to accepted
-                attendeesAccepted.remove(at: index)
                 
                 // Update Firestore document
                 transaction.updateData([
-                    "attendeesAccepted": attendeesAccepted,
+                    "attendeesInvited": attendeesInvited,
+                    "attendeesAccepted": attendeesAccepted
                 ], forDocument: eventRef)
                 
                 return nil // Transaction closure must return a non-throwing value

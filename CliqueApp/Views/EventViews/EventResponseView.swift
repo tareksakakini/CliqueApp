@@ -53,7 +53,7 @@ extension EventResponseView {
                 Task {
                     do {
                         let databaseManager = DatabaseManager()
-                        try await databaseManager.acceptInvite(eventId: event.id, userId: user.email)
+                        try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "accept")
                         print("User successfully moved from inviteeAttended to inviteeAccepted!")
                         if let host = ud.getUser(username: event.host) {
                             let notificationText: String = "\(user.fullname) is coming to your event!"
@@ -82,7 +82,7 @@ extension EventResponseView {
                 Task {
                     do {
                         let databaseManager = DatabaseManager()
-                        try await databaseManager.rejectInvite(eventId: event.id, userId: user.email)
+                        try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "reject")
                         print("User successfully removed from inviteeAttended!")
                         if let host = ud.getUser(username: event.host) {
                             let notificationText: String = "\(user.fullname) cannot make it to your event."
@@ -118,7 +118,7 @@ extension EventResponseView {
                 Task {
                     do {
                         let databaseManager = DatabaseManager()
-                        try await databaseManager.leaveEvent(eventId: event.id, userId: user.email)
+                        try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "leave")
                         print("User successfully removed from inviteeAttended!")
                         if let host = ud.getUser(username: event.host) {
                             let notificationText: String = "\(user.fullname) cannot make it anymore to your event."
