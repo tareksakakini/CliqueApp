@@ -51,7 +51,7 @@ struct PersonPillView: View {
                             Task {
                                 do {
                                     let databaseManager = DatabaseManager()
-                                    try await databaseManager.removeFriends(user1: viewing_user.email, user2: displayed_user.email)
+                                    try await databaseManager.updateFriends(viewing_user: viewing_user.email, viewed_user: displayed_user.email, action: "remove")
                                 } catch {
                                     print("Failed to remove friendship: \(error.localizedDescription)")
                                 }
@@ -64,13 +64,6 @@ struct PersonPillView: View {
                     Image(systemName: "minus.circle")
                         .padding()
                 }
-//                .frame(maxWidth: .infinity, alignment: .leading)
-//                .frame(height: 70)
-//                .background(.white)
-//                .cornerRadius(20)
-//                .padding(.horizontal, 20)
-//                .padding(.vertical, 5)
-//                .shadow(color: .white.opacity(0.4), radius: 10, x: 0, y: 10)
             }
             else if personType == "requester" {
                 Button {
@@ -79,8 +72,8 @@ struct PersonPillView: View {
                             Task {
                                 do {
                                     let databaseManager = DatabaseManager()
-                                    try await databaseManager.addFriends(user1: displayed_user.email, user2: viewing_user.email)
-                                    try await databaseManager.removeFriendRequest(sender: displayed_user.email, receiver: viewing_user.email)
+                                    try await databaseManager.updateFriends(viewing_user: viewing_user.email, viewed_user: displayed_user.email, action: "add")
+                                    //try await databaseManager.removeFriendRequest(sender: displayed_user.email, receiver: viewing_user.email)
                                     let notificationText: String = "\(viewing_user.fullname) just accepted your friend request!"
                                     sendPushNotification(notificationText: notificationText, receiverID: displayed_user.subscriptionId)
                                 } catch {
@@ -177,18 +170,6 @@ struct PersonPillView: View {
 
 
 #Preview {
-    // Define the button closure separately
-    let exampleButton: () -> some View = {
-        AnyView(
-            Button("Tap Me") {
-                print("Button tapped!")
-            }
-            .padding()
-            .background(Color.blue)
-            .foregroundColor(.white)
-            .cornerRadius(8)
-        )
-    }
     
     ZStack {
         Color(.accent).ignoresSafeArea()

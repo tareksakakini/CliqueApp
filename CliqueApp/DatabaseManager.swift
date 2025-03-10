@@ -150,9 +150,9 @@ class DatabaseManager {
         
     }
     
-    func addFriends(user1: String, user2: String) async throws {
-        let user1Ref = db.collection("friendships").document(user1)
-        let user2Ref = db.collection("friendships").document(user2)
+    func updateFriends(viewing_user: String, viewed_user: String, action: String) async throws {
+        let user1Ref = db.collection("friendships").document(viewing_user)
+        let user2Ref = db.collection("friendships").document(viewed_user)
         
         do {
             // Fetch both users' current friend lists in parallel
@@ -163,50 +163,26 @@ class DatabaseManager {
             var user1Friends = user1Data.data()?["friends"] as? [String] ?? []
             var user2Friends = user2Data.data()?["friends"] as? [String] ?? []
             
-            if !user1Friends.contains(user2) {
-                user1Friends.append(user2)
-            }
-            if !user2Friends.contains(user1) {
-                user2Friends.append(user1)
-            }
-            
-            // Update Firestore in parallel
-            Task {
-                try? await user1Ref.setData(["friends": user1Friends], merge: true)
-                try? await user2Ref.setData(["friends": user2Friends], merge: true)
-            }
-//            async let updateUser1 =
-//            async let updateUser2 = user2Ref.setData(["friends": user2Friends], merge: true)
-//            try await (updateUser1, updateUser2)
-        } catch {
-            throw error
-        }
-    }
-    
-    func removeFriends(user1: String, user2: String) async throws {
-        let user1Ref = db.collection("friendships").document(user1)
-        let user2Ref = db.collection("friendships").document(user2)
-        
-        do {
-            // Fetch both users' current friend lists in parallel
-            async let user1Snapshot = user1Ref.getDocument()
-            async let user2Snapshot = user2Ref.getDocument()
-            let (user1Data, user2Data) = try await (user1Snapshot, user2Snapshot)
-            
-            var user1Friends = user1Data.data()?["friends"] as? [String] ?? []
-            var user2Friends = user2Data.data()?["friends"] as? [String] ?? []
-            
-            if user1Friends.contains(user2) {
-                user1Friends.removeAll() { $0 == user2 }
-            }
-            if user2Friends.contains(user1) {
-                user2Friends.removeAll() { $0 == user1 }
+            if action == "add" {
+                if !user1Friends.contains(viewed_user) {
+                    user1Friends.append(viewed_user)
+                }
+                if !user2Friends.contains(viewing_user) {
+                    user2Friends.append(viewing_user)
+                }
+            } else if action == "remove" {
+                if user1Friends.contains(viewed_user) {
+                    user1Friends.removeAll() { $0 == viewed_user }
+                }
+                if user2Friends.contains(viewing_user) {
+                    user2Friends.removeAll() { $0 == viewing_user }
+                }
             }
             
             // Update Firestore in parallel
-            async let updateUser1: Void = user1Ref.setData(["friends": user1Friends], merge: true)
-            async let updateUser2: Void = user2Ref.setData(["friends": user2Friends], merge: true)
-            //try await (updateUser1, updateUser2)
+            try? await user1Ref.setData(["friends": user1Friends], merge: true)
+            try? await user2Ref.setData(["friends": user2Friends], merge: true)
+            try? await self.removeFriendRequest(sender: viewed_user, receiver: viewing_user)
         } catch {
             throw error
         }
@@ -227,8 +203,7 @@ class DatabaseManager {
             }
             
             // Update Firestore in parallel
-            async let updateReceiver: Void = receiverRef.setData(["requests": receiverRequests], merge: true)
-            //try await (updateUser1, updateUser2)
+            try? await receiverRef.setData(["requests": receiverRequests], merge: true)
         } catch {
             throw error
         }
@@ -249,7 +224,7 @@ class DatabaseManager {
             }
             
             // Update Firestore in parallel
-            async let updateReceiver: Void = receiverRef.setData(["requests": receiverRequests], merge: true)
+            try? await receiverRef.setData(["requests": receiverRequests], merge: true)
             //try await (updateUser1, updateUser2)
         } catch {
             throw error
@@ -264,7 +239,7 @@ class DatabaseManager {
             async let receiverSnapshot = receiverRef.getDocument()
             let receiverData = try await receiverSnapshot
             
-            var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
+            let receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
             return receiverRequests
         } catch {
             throw error
@@ -279,7 +254,7 @@ class DatabaseManager {
             async let receiverSnapshot = receiverRef.getDocument()
             let receiverData = try await receiverSnapshot
             
-            var receiverRequests = receiverData.data()?["friends"] as? [String] ?? []
+            let receiverRequests = receiverData.data()?["friends"] as? [String] ?? []
             return receiverRequests
         } catch {
             throw error
