@@ -13,6 +13,8 @@ struct CreateEventView: View {
     @State var createEventSuccess: Bool = false
     @State var addInviteeSheet: Bool = false
     
+    @State private var showAlertTitle: Bool = false
+    
     @State var user: UserModel
     @Binding var selectedTab: Int
     @State var event_title: String = ""
@@ -43,6 +45,9 @@ struct CreateEventView: View {
                 Spacer()
                 
             }
+            .alert("Event title has to be 3 characters or longer!", isPresented: $showAlertTitle) {
+                Button("Dismiss", role: .cancel) { }
+            }
         }
         .onAppear {
             Task {
@@ -65,28 +70,31 @@ extension CreateEventView {
     private var create_button: some View {
         
         Button {
-            Task {
-                do {
-                    let firestoreService = DatabaseManager()
-                    var invitee_emails: [String] = []
-                    for invitee in invitees{
-                        invitee_emails += [invitee.email]
+            if event_title.count < 3 {
+                showAlertTitle = true
+            } else {
+                Task {
+                    do {
+                        let firestoreService = DatabaseManager()
+                        var invitee_emails: [String] = []
+                        for invitee in invitees{
+                            invitee_emails += [invitee.email]
+                        }
+                        try await firestoreService.addEventToFirestore(id: UUID().uuidString, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email)
+                        for invitee in invitees {
+                            let notificationText: String = "\(user.fullname) just invited you to an event!"
+                            sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                        }
+                        event_title = ""
+                        event_location = ""
+                        event_dateTime = Date()
+                        invitees = []
+                    } catch {
+                        print("Failed to add event: \(error.localizedDescription)")
                     }
-                    try await firestoreService.addEventToFirestore(id: UUID().uuidString, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email)
-                    for invitee in invitees {
-                        let notificationText: String = "\(user.fullname) just invited you to an event!"
-                        sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
-                    }
-                    event_title = ""
-                    event_location = ""
-                    event_dateTime = Date()
-                    invitees = []
-                } catch {
-                    print("Failed to add event: \(error.localizedDescription)")
                 }
+                selectedTab = 0
             }
-            selectedTab = 0
-            
         } label: {
             Text("Create Event")
                 .padding()
@@ -179,3 +187,6 @@ extension CreateEventView {
         
     }
 }
+
+
+

@@ -28,4 +28,11 @@ struct EventModel: Hashable {
         event.host = eventData["host"] as? String ?? ""
         return event
     }
+    
+    func sanityCheck(event: EventModel) -> Bool {
+        if self.title.count < 3 {
+            return false
+        }
+        return true
+    }
 }
