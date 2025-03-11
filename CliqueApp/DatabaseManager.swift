@@ -170,6 +170,7 @@ class DatabaseManager {
                 if !user2Friends.contains(viewing_user) {
                     user2Friends.append(viewing_user)
                 }
+                try? await self.removeFriendRequest(sender: viewed_user, receiver: viewing_user)
             } else if action == "remove" {
                 if user1Friends.contains(viewed_user) {
                     user1Friends.removeAll() { $0 == viewed_user }
@@ -182,7 +183,6 @@ class DatabaseManager {
             // Update Firestore in parallel
             try? await user1Ref.setData(["friends": user1Friends], merge: true)
             try? await user2Ref.setData(["friends": user2Friends], merge: true)
-            try? await self.removeFriendRequest(sender: viewed_user, receiver: viewing_user)
         } catch {
             throw error
         }
@@ -190,20 +190,28 @@ class DatabaseManager {
     
     func sendFriendRequest(sender: String, receiver: String) async throws {
         let receiverRef = db.collection("friendRequests").document(receiver)
+        let senderRef = db.collection("friendRequestsSent").document(sender)
         
         do {
             // Fetch both users' current friend lists in parallel
             async let receiverSnapshot = receiverRef.getDocument()
+            async let senderSnapshot = senderRef.getDocument()
             let receiverData = try await receiverSnapshot
+            let senderData = try await senderSnapshot
             
             var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
+            var senderRequests = senderData.data()?["requests"] as? [String] ?? []
             
             if !receiverRequests.contains(sender) {
                 receiverRequests.append(sender)
             }
+            if !senderRequests.contains(receiver) {
+                senderRequests.append(receiver)
+            }
             
             // Update Firestore in parallel
             try? await receiverRef.setData(["requests": receiverRequests], merge: true)
+            try? await senderRef.setData(["requests": senderRequests], merge: true)
         } catch {
             throw error
         }
@@ -211,21 +219,28 @@ class DatabaseManager {
     
     func removeFriendRequest(sender: String, receiver: String) async throws {
         let receiverRef = db.collection("friendRequests").document(receiver)
+        let senderRef = db.collection("friendRequestsSent").document(sender)
         
         do {
             // Fetch both users' current friend lists in parallel
             async let receiverSnapshot = receiverRef.getDocument()
+            async let senderSnapshot = senderRef.getDocument()
             let receiverData = try await receiverSnapshot
+            let senderData = try await senderSnapshot
             
             var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
+            var senderRequests = senderData.data()?["requests"] as? [String] ?? []
             
             if receiverRequests.contains(sender) {
                 receiverRequests.removeAll() { $0 == sender }
             }
+            if senderRequests.contains(receiver) {
+                senderRequests.removeAll() { $0 == receiver }
+            }
             
             // Update Firestore in parallel
             try? await receiverRef.setData(["requests": receiverRequests], merge: true)
-            //try await (updateUser1, updateUser2)
+            try? await senderRef.setData(["requests": senderRequests], merge: true)
         } catch {
             throw error
         }
@@ -233,6 +248,21 @@ class DatabaseManager {
     
     func retrieveFriendRequest(user_email: String) async throws -> [String] {
         let receiverRef = db.collection("friendRequests").document(user_email)
+        
+        do {
+            // Fetch both users' current friend lists in parallel
+            async let receiverSnapshot = receiverRef.getDocument()
+            let receiverData = try await receiverSnapshot
+            
+            let receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
+            return receiverRequests
+        } catch {
+            throw error
+        }
+    }
+    
+    func retrieveFriendRequestSent(user_email: String) async throws -> [String] {
+        let receiverRef = db.collection("friendRequestsSent").document(user_email)
         
         do {
             // Fetch both users' current friend lists in parallel

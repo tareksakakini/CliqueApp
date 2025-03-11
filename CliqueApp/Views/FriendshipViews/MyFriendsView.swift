@@ -55,6 +55,9 @@ struct MyFriendsView: View {
             Task {
                 await ud.getUserFriendRequests(user_email: user.email)
             }
+            Task {
+                await ud.getUserFriendRequestsSent(user_email: user.email)
+            }
         }
     }
 }

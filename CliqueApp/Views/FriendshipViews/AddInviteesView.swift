@@ -10,6 +10,8 @@ import SwiftUI
 struct AddInviteesView: View {
     
     @EnvironmentObject private var ud: ViewModel
+    @Environment(\.dismiss) var dismiss
+    
     @State private var searchEntry: String = ""
     @State var user: UserModel
     
@@ -38,13 +40,21 @@ struct AddInviteesView: View {
                     
                     ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user, isFriend: true), id: \.email)
                     {user_returned in
-                        //AddInviteePillView(userToAdd: user_returned, invitees: $invitees)
-                        PersonPillView(
-                            viewing_user: user,
-                            displayed_user: user_returned,
-                            personType: "invitee",
-                            invitees: $invitees
-                        )
+                        if invitees.contains(user_returned) {
+                            PersonPillView(
+                                viewing_user: user,
+                                displayed_user: user_returned,
+                                personType: "requestedInvitee",
+                                invitees: $invitees
+                            )
+                        } else {
+                            PersonPillView(
+                                viewing_user: user,
+                                displayed_user: user_returned,
+                                personType: "invitee",
+                                invitees: $invitees
+                            )
+                        }
                     }
                     
                 }
@@ -84,6 +94,18 @@ extension AddInviteesView {
                 .foregroundColor(.white)
             
             Spacer()
+            
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundColor(.white)
+                    .font(.caption)
+                    .frame(width: 20, height: 20)
+                    .padding()
+            }
         }
         .padding()
     }

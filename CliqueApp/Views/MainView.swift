@@ -76,6 +76,9 @@ struct MainView: View {
                 await ud.getAllEvents()
             }
             Task {
+                await ud.getUserFriendRequestsSent(user_email: user.email)
+            }
+            Task {
                 if let playerId = await getOneSignalSubscriptionId() {
                     print("OneSignal Subscription ID: \(playerId)")
                     do {

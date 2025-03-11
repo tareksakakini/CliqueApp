@@ -13,12 +13,22 @@ class ViewModel: ObservableObject {
     @Published var events: [EventModel]
     @Published var friendship: [String]
     @Published var friendInviteReceived: [String]
+    @Published var friendInviteSent: [String]
     
     init() {
         self.users = []
         self.events = []
         self.friendship = []
         self.friendInviteReceived = []
+        self.friendInviteSent = []
+    }
+    
+    func refreshData(user_email: String) async {
+        await self.getAllUsers()
+        await self.getAllEvents()
+        await self.getUserFriends(user_email: user_email)
+        await self.getUserFriendRequests(user_email: user_email)
+        await self.getUserFriendRequestsSent(user_email: user_email)
     }
     
     func getUserFriends(user_email: String) async {
@@ -36,6 +46,16 @@ class ViewModel: ObservableObject {
         do {
             let fetchedRequests = try await firestoreService.retrieveFriendRequest(user_email: user_email)
             self.friendInviteReceived = fetchedRequests
+        } catch {
+            print("Failed to fetch events: \(error.localizedDescription)")
+        }
+    }
+    
+    func getUserFriendRequestsSent(user_email: String) async {
+        let firestoreService = DatabaseManager()
+        do {
+            let fetchedRequests = try await firestoreService.retrieveFriendRequestSent(user_email: user_email)
+            self.friendInviteSent = fetchedRequests
         } catch {
             print("Failed to fetch events: \(error.localizedDescription)")
         }

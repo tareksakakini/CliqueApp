@@ -65,6 +65,39 @@ struct PersonPillView: View {
                         .padding()
                 }
             }
+            else if personType == "requestedFriend" {
+                Button {
+                    
+                } label: {
+                    Text("Sent")
+                        .foregroundColor(.white)
+                }
+                .bold()
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .background(Color(.accent))
+                .cornerRadius(10)
+                .padding()
+            }
+            else if personType == "requestedInvitee" {
+                Button {
+                    if let displayed_user = displayed_user {
+                        
+                        if invitees.contains(displayed_user) {
+                            invitees.removeAll { $0 == displayed_user }
+                        }
+                    }
+                } label: {
+                    Text("Invited")
+                        .foregroundColor(.white)
+                }
+                .bold()
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .background(Color(.accent))
+                .cornerRadius(10)
+                .padding()
+            }
             else if personType == "requester" {
                 Button {
                     if let displayed_user = displayed_user {
@@ -106,11 +139,12 @@ struct PersonPillView: View {
                                     try await firestoreService.sendFriendRequest(sender: viewing_user.email, receiver: displayed_user.email)
                                     let notificationText: String = "\(viewing_user.fullname) just sent you a friend request!"
                                     sendPushNotification(notificationText: notificationText, receiverID: "\(displayed_user.subscriptionId)")
+                                    //await ud.refreshData(user_email: viewing_user.email)
+                                    await ud.getUserFriendRequestsSent(user_email: viewing_user.email)
                                 } catch {
                                     print("Friend Request Failed: \(error.localizedDescription)")
                                 }
                             }
-                            dismiss()
                         }
                     }
                     
@@ -132,8 +166,6 @@ struct PersonPillView: View {
                         if !invitees.contains(displayed_user) {
                             invitees += [displayed_user]
                         }
-                        dismiss()
-                        
                     }
                     
                 } label: {

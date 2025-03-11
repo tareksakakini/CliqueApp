@@ -10,6 +10,8 @@ import SwiftUI
 struct AddFriendView: View {
     
     @EnvironmentObject private var ud: ViewModel
+    @Environment(\.dismiss) var dismiss
+    
     @State private var isSheetPresented: Bool = false
     @State private var searchEntry: String = ""
     
@@ -36,7 +38,14 @@ struct AddFriendView: View {
                     
                     ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user), id: \.email)
                     {user_returned in
-                        if user.email != user_returned.email && !ud.friendship.contains(user_returned.email) {
+                        if ud.friendInviteSent.contains(user_returned.email) {
+                            PersonPillView(
+                                viewing_user: user,
+                                displayed_user: user_returned,
+                                personType: "requestedFriend",
+                                invitees: .constant([])
+                            )
+                        } else if user.email != user_returned.email && !ud.friendship.contains(user_returned.email) {
                             PersonPillView(
                                 viewing_user: user,
                                 displayed_user: user_returned,
@@ -46,7 +55,6 @@ struct AddFriendView: View {
                         }
                     }
                 }
-                
                 Spacer()
             }
         }
@@ -59,6 +67,9 @@ struct AddFriendView: View {
             }
             Task {
                 await ud.getUserFriendRequests(user_email: user.email)
+            }
+            Task {
+                await ud.getUserFriendRequestsSent(user_email: user.email)
             }
         }
     }
@@ -82,6 +93,18 @@ extension AddFriendView {
                 .foregroundColor(.white)
             
             Spacer()
+            
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundColor(.white)
+                    .font(.caption)
+                    .frame(width: 20, height: 20)
+                    .padding()
+            }
         }
         .padding()
     }
