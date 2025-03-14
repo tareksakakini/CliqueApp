@@ -6,6 +6,33 @@
 //
 
 import SwiftUI
+import MapKit
+
+class LocationSearchHelper: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
+    @Published var suggestions: [MKLocalSearchCompletion] = []
+    
+    private var searchCompleter = MKLocalSearchCompleter()
+    
+    override init() {
+        super.init()
+        searchCompleter.delegate = self
+        searchCompleter.resultTypes = [.address, .pointOfInterest] // Focus only on addresses
+    }
+    
+    func updateSearchResults(for query: String) {
+        searchCompleter.queryFragment = query
+    }
+    
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        DispatchQueue.main.async {
+            self.suggestions = Array(completer.results.prefix(3))
+        }
+    }
+    
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
+        print("Error fetching suggestions: \(error.localizedDescription)")
+    }
+}
 
 struct CreateEventView: View {
     @EnvironmentObject private var ud: ViewModel
@@ -21,6 +48,9 @@ struct CreateEventView: View {
     @State var event_location: String = ""
     @State var event_dateTime: Date = Date()
     @State var invitees: [UserModel] = []
+    
+    @StateObject private var locationSearchHelper = LocationSearchHelper()
+    @State private var locationQuery = ""
     
     var body: some View {
         
@@ -132,14 +162,83 @@ extension CreateEventView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("", text: $event_location, prompt: Text("Enter your event location here ...").foregroundColor(Color.black.opacity(0.5)))
-                .foregroundColor(.black)
+            //            TextField("", text: $event_location, prompt: Text("Enter your event location here ...").foregroundColor(Color.black.opacity(0.5)))
+            //                .foregroundColor(.black)
+            //                .padding()
+            //                .background(.white)
+            //                .cornerRadius(10)
+            //                .padding(.horizontal)
+            //                .textInputAutocapitalization(.never)
+            //                .disableAutocorrection(true)
+            
+            if event_location.isEmpty {
+                TextField("", text: $locationQuery, prompt: Text("Enter your event location here ...").foregroundColor(Color.black.opacity(0.5)))
+                    .foregroundColor(.black)
+                    .padding()
+                    .background(.white)
+                    .cornerRadius(10)
+                    .padding(.horizontal)
+                    .textInputAutocapitalization(.never)
+                    .disableAutocorrection(true)
+                    .onChange(of: locationQuery) { newValue in
+                        locationSearchHelper.updateSearchResults(for: newValue)
+                    }
+                
+                if !locationSearchHelper.suggestions.isEmpty && !locationQuery.isEmpty {
+                    VStack(alignment: .leading, spacing: 5) {
+                        ForEach(locationSearchHelper.suggestions.prefix(5).indices, id: \.self) { index in
+                            let suggestion = locationSearchHelper.suggestions[index]
+                            VStack(alignment: .leading) {
+                                Text(suggestion.title)
+                                    .font(.headline)
+                                    .foregroundColor(.black)
+                                Text(suggestion.subtitle)
+                                    .font(.subheadline)
+                                    .foregroundColor(.gray)
+                            }
+                            //.padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .onTapGesture {
+                                event_location = suggestion.title
+                                locationQuery = ""
+                                locationSearchHelper.suggestions = [] // Hide suggestions after selection
+                            }
+                            
+                            if index < locationSearchHelper.suggestions.count - 1 {
+                                Divider()
+                                    .background(Color.gray.opacity(0.5))
+                            }
+                        }
+                    }
+                    //.padding(.horizontal)
+                    .padding()
+                    .background(Color.white)
+                    .cornerRadius(10)
+                    .shadow(radius: 5)
+                    .padding(.horizontal)
+                }
+                
+            } else {
+                HStack() {
+                    Text(event_location)
+                        .font(.headline)
+                        .foregroundColor(.black)
+                    Spacer()
+                    Button {
+                        event_location = ""
+                    } label: {
+                        Image(systemName: "xmark.circle")
+                    }
+                }
                 .padding()
-                .background(.white)
-                .cornerRadius(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.white)
+                .cornerRadius(8)
                 .padding(.horizontal)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
+            }
+            
             
             Text("Date and Time")
                 .padding(.top, 15)
