@@ -41,6 +41,7 @@ struct CreateEventView: View {
     @State var addInviteeSheet: Bool = false
     
     @State private var showAlertTitle: Bool = false
+    @State private var showAlertLocation: Bool = false
     
     @State var user: UserModel
     @Binding var selectedTab: Int
@@ -78,6 +79,9 @@ struct CreateEventView: View {
             .alert("Event title has to be 3 characters or longer!", isPresented: $showAlertTitle) {
                 Button("Dismiss", role: .cancel) { }
             }
+            .alert("You have to select a location first!", isPresented: $showAlertLocation) {
+                Button("Dismiss", role: .cancel) { }
+            }
         }
         .onAppear {
             Task {
@@ -102,6 +106,8 @@ extension CreateEventView {
         Button {
             if event_title.count < 3 {
                 showAlertTitle = true
+            } else if event_location.isEmpty {
+                showAlertLocation = true
             } else {
                 Task {
                     do {

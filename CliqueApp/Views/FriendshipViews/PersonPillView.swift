@@ -119,15 +119,37 @@ struct PersonPillView: View {
                         }
                     }
                 } label: {
-                    Text("Accept")
-                        .foregroundColor(.white)
+                    Image(systemName: "checkmark.square.fill")
+                        .resizable()
+                        .foregroundColor(Color(.accent))
+                        .scaledToFit()
+                        .frame(width: 35, height: 35)
                 }
-                .bold()
-                .padding(.horizontal)
-                .padding(.vertical, 10)
-                .background(Color(.accent))
-                .cornerRadius(10)
-                .padding()
+                .cornerRadius(5)
+                
+                Button {
+                    if let displayed_user = displayed_user {
+                        if let viewing_user = viewing_user {
+                            Task {
+                                do {
+                                    let databaseManager = DatabaseManager()
+                                    try await databaseManager.removeFriendRequest(sender: displayed_user.email, receiver: viewing_user.email)
+                                } catch {
+                                    print("Failed to reject friend request: \(error.localizedDescription)")
+                                }
+                            }
+                            ud.friendInviteReceived.removeAll { $0 == displayed_user.email }
+                        }
+                    }
+                } label: {
+                    Image(systemName: "xmark.square.fill")
+                        .resizable()
+                        .foregroundColor(.red.opacity(0.75))
+                        .scaledToFit()
+                        .frame(width: 35, height: 35)
+                }
+                .cornerRadius(5)
+                .padding(.trailing)
             }
             else if personType == "stranger" {
                 Button {

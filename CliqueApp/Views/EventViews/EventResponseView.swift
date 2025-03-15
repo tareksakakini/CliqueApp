@@ -85,8 +85,10 @@ extension EventResponseView {
                         try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "reject")
                         print("User successfully removed from inviteeAttended!")
                         if let host = ud.getUser(username: event.host) {
-                            let notificationText: String = "\(user.fullname) cannot make it to your event."
-                            sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                            if event.host != user.email {
+                                let notificationText: String = "\(user.fullname) cannot make it to your event."
+                                sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                            }
                         }
                         refreshTrigger.toggle()
                     } catch {
@@ -121,8 +123,10 @@ extension EventResponseView {
                         try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "leave")
                         print("User successfully removed from inviteeAttended!")
                         if let host = ud.getUser(username: event.host) {
-                            let notificationText: String = "\(user.fullname) cannot make it anymore to your event."
-                            sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                            if event.host != user.email {
+                                let notificationText: String = "\(user.fullname) cannot make it anymore to your event."
+                                sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                            }
                         }
                         refreshTrigger.toggle()
                     } catch {

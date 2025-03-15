@@ -114,6 +114,7 @@ class DatabaseManager {
                 
                 var attendeesInvited = eventData["attendeesInvited"] as? [String] ?? []
                 var attendeesAccepted = eventData["attendeesAccepted"] as? [String] ?? []
+                var host = eventData["host"] as? String ?? ""
                 
                 if action == "reject" || action == "accept" {
                     // Ensure user exists in inviteeAttended list
@@ -127,17 +128,22 @@ class DatabaseManager {
                         attendeesAccepted.append(userId)
                     }
                 } else if action == "leave" {
-                    guard let index = attendeesAccepted.firstIndex(of: userId) else {
-                        print("User not found in attendeesAccepted list")
-                        return nil
+                    if userId == host {
+                        host = ""
+                    } else {
+                        guard let index = attendeesAccepted.firstIndex(of: userId) else {
+                            print("User not found in attendeesAccepted list")
+                            return nil
+                        }
+                        attendeesAccepted.remove(at: index)
                     }
-                    attendeesAccepted.remove(at: index)
                 }
                 
                 // Update Firestore document
                 transaction.updateData([
                     "attendeesInvited": attendeesInvited,
-                    "attendeesAccepted": attendeesAccepted
+                    "attendeesAccepted": attendeesAccepted,
+                    "host": host
                 ], forDocument: eventRef)
                 
                 return nil // Transaction closure must return a non-throwing value
