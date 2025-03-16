@@ -24,6 +24,8 @@ struct SignUpView: View {
     
     @State var goToMainView: Bool = false
     
+    @State var isPasswordVisible: Bool = false
+    
     var body: some View {
         ZStack {
             Color.white.ignoresSafeArea()
@@ -170,14 +172,35 @@ extension SignUpView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            SecureField("", text: $password, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
-                .foregroundColor(.black)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding(.horizontal)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
+            HStack {
+                if isPasswordVisible {
+                    TextField("", text: $password, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
+                        .foregroundColor(.black)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                        .background(.white)
+                        .cornerRadius(10)
+                        .padding()
+                } else {
+                    SecureField("", text: $password, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
+                        .foregroundColor(.black)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                        .background(.white)
+                        .cornerRadius(10)
+                        .padding()
+                }
+                
+                Button {
+                    isPasswordVisible.toggle()
+                } label: {
+                    Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                        .foregroundColor(.gray)
+                        .padding()
+                }
+            }
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
+            .padding(.horizontal)
         }
         
     }

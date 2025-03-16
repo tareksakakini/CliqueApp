@@ -116,7 +116,9 @@ extension CreateEventView {
                         for invitee in invitees{
                             invitee_emails += [invitee.email]
                         }
-                        try await firestoreService.addEventToFirestore(id: UUID().uuidString, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email)
+                        let temp_uuid = UUID().uuidString
+                        try await firestoreService.addEventToFirestore(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email)
+                        ud.events += [EventModel(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email)]
                         for invitee in invitees {
                             let notificationText: String = "\(user.fullname) just invited you to an event!"
                             sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)

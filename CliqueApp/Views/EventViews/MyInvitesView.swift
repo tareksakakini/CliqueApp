@@ -44,6 +44,12 @@ struct MyInvitesView: View {
                 await ud.getAllEvents()
             }
         }
+        .task {
+            while true {
+                await ud.getAllEvents()
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
+        }
     }
 }
 

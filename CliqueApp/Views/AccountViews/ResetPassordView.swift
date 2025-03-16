@@ -19,7 +19,7 @@ struct ResetPassordView: View {
     @State var message: String = ""
     
     
-    @State var show_wrong_message: Bool = false
+    @State var show_confirmation_message: Bool = false
     
     @State var goToMainView: Bool = false
     
@@ -34,6 +34,7 @@ struct ResetPassordView: View {
                 Spacer()
                 
                 header
+                    .padding(.top, 20)
                 
                 Spacer()
                 
@@ -43,7 +44,15 @@ struct ResetPassordView: View {
                 Spacer()
                 Spacer()
                 
+                if show_confirmation_message {
+                    Text("Reset password email sent. Please check your inbox.")
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .padding(.bottom, 10)
+                }
+                
                 reset_button
+                    .padding(.bottom, 30)
                 
                 Text("\(message)")
                 
@@ -53,7 +62,7 @@ struct ResetPassordView: View {
                 
                 
             }
-            .frame(width: 400, height: 300)
+            .frame(width: 400, height: 400)
             .background(Color(.accent))
             .cornerRadius(20)
             .shadow(radius: 50)
@@ -120,6 +129,7 @@ extension ResetPassordView {
                 do {
                     try await AuthManager.shared.sendPasswordReset(email: username)
                     print("Check your email for reset instructions.")
+                    show_confirmation_message = true
                 } catch {
                     print("Failed to send password reset email: \(error.localizedDescription)")
                 }

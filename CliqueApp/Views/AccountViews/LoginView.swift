@@ -20,6 +20,8 @@ struct LoginView: View {
     
     @State var go_to_landing_screen: Bool = false
     
+    @State var isPasswordVisible = false
+    
     var body: some View {
         ZStack {
             Color.white.ignoresSafeArea()
@@ -135,15 +137,46 @@ extension LoginView {
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
             
-            SecureField("", text: $enteredPassword, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
-                .foregroundColor(.black)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding()
+            //            SecureField("", text: $enteredPassword, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
+            //                .foregroundColor(.black)
+            //                .textInputAutocapitalization(.never)
+            //                .disableAutocorrection(true)
+            //                .padding()
+            //                .background(.white)
+            //                .cornerRadius(10)
+            //                .padding()
+            
+            HStack {
+                if isPasswordVisible {
+                    TextField("", text: $enteredPassword, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
+                        .foregroundColor(.black)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                        .background(.white)
+                        .cornerRadius(10)
+                        .padding()
+                } else {
+                    SecureField("", text: $enteredPassword, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
+                        .foregroundColor(.black)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                        .background(.white)
+                        .cornerRadius(10)
+                        .padding()
+                }
+                
+                Button {
+                    isPasswordVisible.toggle()
+                } label: {
+                    Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                        .foregroundColor(.gray)
+                        .padding()
+                }
+            }
+            .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
+            .padding(.horizontal)
         }
+        
         
     }
     
