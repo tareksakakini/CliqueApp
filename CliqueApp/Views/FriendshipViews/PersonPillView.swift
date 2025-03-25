@@ -209,6 +209,7 @@ struct PersonPillView: View {
                     
                 } label: {
                     Image(systemName: "minus.circle")
+                        .foregroundColor(Color(.accent))
                         .padding()
                 }
             }

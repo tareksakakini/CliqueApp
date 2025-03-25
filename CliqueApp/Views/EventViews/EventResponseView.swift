@@ -16,24 +16,27 @@ struct EventResponseView: View {
     let inviteView: Bool
     @Binding var isPresented: Bool
     @Binding var refreshTrigger: Bool
+    @State var editView: Bool = false
     
     var body: some View {
-        ZStack {
-            Color(.accent).ignoresSafeArea()
-            
-            VStack {
+        NavigationStack {
+            ZStack {
+                Color(.accent).ignoresSafeArea()
                 
-                event_info
-                
-                Spacer()
-                
-                if inviteView {
-                    reponseButtons
+                VStack {
+                    
+                    event_info
+                    
+                    Spacer()
+                    
+                    if inviteView {
+                        reponseButtons
+                    }
+                    else {
+                        leaveButton
+                    }
+                    
                 }
-                else {
-                    leaveButton
-                }
-                
             }
         }
     }
@@ -153,9 +156,28 @@ extension EventResponseView {
     private var event_info: some View {
         ScrollView {
             VStack(alignment: .leading) {
-                Text("\(event.title)")
-                    .font(.largeTitle)
-                    .padding(.bottom)
+                
+                HStack {
+                    Text("\(event.title)")
+                        .font(.largeTitle)
+                        .padding(.bottom)
+                    Spacer()
+                    if event.host == user.email {
+                        Button {
+                            editView = true
+                        } label: {
+                            Image(systemName: "square.and.pencil")
+                                .resizable()
+                                .scaledToFit()
+                                .padding(.trailing)
+                                .padding(.bottom)
+                                .frame(width: 40)
+                        }
+                        .fullScreenCover(isPresented: $editView) {
+                            EditEventView(user: user, event: event)
+                        }
+                    }
+                }
                 
                 HStack {
                     Image(systemName: "calendar")

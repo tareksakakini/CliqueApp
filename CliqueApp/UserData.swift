@@ -57,7 +57,7 @@ struct UserData {
             location: "Northstar",
             dateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 5, hour: 11, minute: 10))!,
             attendeesAccepted: ["tareksakakini@gmail.com", "alikanj@gmail.com"],
-            attendeesInvited: ["jadyaacoub@gmail.com"],
+            attendeesInvited: ["jadyaacoub@gmail.com", "testing3@testing.com"],
             host: "tareksakakini@gmail.com"
         ),
         EventModel(

@@ -63,6 +63,18 @@ class DatabaseManager {
         }
     }
     
+    func deleteEventFromFirestore(id: String) async throws {
+        let eventRef = db.collection("events").document(id)
+        
+        do {
+            try await eventRef.delete()
+            print("Event deleted successfully!")
+        } catch {
+            print("Error deleting event: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
     func getAllEvents() async throws -> [EventModel] {
         let eventsRef = db.collection("events")
         

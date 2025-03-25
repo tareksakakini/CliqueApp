@@ -8,34 +8,9 @@
 import SwiftUI
 import MapKit
 
-class LocationSearchHelper: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
-    @Published var suggestions: [MKLocalSearchCompletion] = []
-    
-    private var searchCompleter = MKLocalSearchCompleter()
-    
-    override init() {
-        super.init()
-        searchCompleter.delegate = self
-        searchCompleter.resultTypes = [.address, .pointOfInterest] // Focus only on addresses
-    }
-    
-    func updateSearchResults(for query: String) {
-        searchCompleter.queryFragment = query
-    }
-    
-    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
-        DispatchQueue.main.async {
-            self.suggestions = Array(completer.results.prefix(3))
-        }
-    }
-    
-    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
-        print("Error fetching suggestions: \(error.localizedDescription)")
-    }
-}
-
-struct CreateEventView: View {
+struct EditEventView: View {
     @EnvironmentObject private var ud: ViewModel
+    @Environment(\.dismiss) var dismiss
     
     @State var createEventSuccess: Bool = false
     @State var addInviteeSheet: Bool = false
@@ -44,11 +19,13 @@ struct CreateEventView: View {
     @State private var showAlertLocation: Bool = false
     
     @State var user: UserModel
-    @Binding var selectedTab: Int
+    @State var event: EventModel
     @State var event_title: String = ""
     @State var event_location: String = ""
     @State var event_dateTime: Date = Date()
     @State var invitees: [UserModel] = []
+    @State var inviteesInvited: [UserModel] = []
+    @State var inviteesAccepted: [UserModel] = []
     
     @StateObject private var locationSearchHelper = LocationSearchHelper()
     @State private var locationQuery = ""
@@ -60,7 +37,7 @@ struct CreateEventView: View {
             
             VStack {
                 
-                HeaderView(user: user, title: "New Event")
+                header_view_local
                 
                 Spacer()
                 
@@ -68,8 +45,10 @@ struct CreateEventView: View {
                     
                     event_fields
                     
-                    create_button
-                        .padding(.vertical, 50)
+                    HStack {
+                        create_button
+                    }
+                    .padding(.vertical, 50)
                     
                 }
                 
@@ -84,22 +63,68 @@ struct CreateEventView: View {
             }
         }
         .onAppear {
+            event_title = event.title
+            event_location = event.location
+            event_dateTime = event.dateTime
             Task {
                 await ud.getAllUsers()
             }
             Task {
                 await ud.getUserFriends(user_email: user.email)
             }
+            for invitee_accepted_email in event.attendeesAccepted {
+                if let invitee_accepted = ud.getUser(username: invitee_accepted_email) {
+                    inviteesAccepted.append(invitee_accepted)
+                }
+            }
+            for invitee_email in event.attendeesInvited {
+                if let invitee = ud.getUser(username: invitee_email) {
+                    inviteesInvited.append(invitee)
+                }
+            }
+            invitees = inviteesInvited + inviteesAccepted
         }
     }
 }
 
 #Preview {
-    CreateEventView(user: UserData.userData[0], selectedTab: .constant(2))
+    EditEventView(user: UserData.userData[0], event: UserData.eventData[0])
         .environmentObject(ViewModel())
 }
 
-extension CreateEventView {
+extension EditEventView {
+    
+    private var header_view_local: some View {
+        HStack {
+            
+            RoundedRectangle(cornerRadius: 20)
+                .foregroundColor(.white)
+                .frame(width: 5, height: 45)
+            
+            Text("Edit Event")
+                .font(.largeTitle)
+                .foregroundColor(.white)
+            
+            Spacer()
+            
+            cancel_button
+        }
+        .padding()
+    }
+    
+    private var cancel_button: some View {
+        Button {
+            dismiss()
+        } label: {
+            Image(systemName: "xmark")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(.white)
+                .font(.caption)
+                .frame(width: 20, height: 20)
+                .padding()
+        }
+    }
     
     private var create_button: some View {
         
@@ -112,29 +137,44 @@ extension CreateEventView {
                 Task {
                     do {
                         let firestoreService = DatabaseManager()
-                        var invitee_emails: [String] = []
-                        for invitee in invitees{
-                            invitee_emails += [invitee.email]
-                        }
-                        let temp_uuid = UUID().uuidString
-                        try await firestoreService.addEventToFirestore(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email)
-                        //ud.events += [EventModel(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email)]
+                        var invitee_emails = invitees.map {$0.email}
+                        var inviteeAccepted_emails_old = inviteesAccepted.map {$0.email}
+                        var inviteeInvited_emails_old = inviteesInvited.map {$0.email}
+                        
+                        var inviteeAccepted_new: [UserModel] = []
+                        var inviteeInvited_new: [UserModel] = []
+                        
                         for invitee in invitees {
-                            let notificationText: String = "\(user.fullname) just invited you to an event!"
-                            sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                            if inviteeAccepted_emails_old.contains(invitee.email) {
+                                inviteeAccepted_new.append(invitee)
+                                let notificationText: String = "\(user.fullname) just updated an event you're going to!"
+                                sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                            } else if inviteeInvited_emails_old.contains(invitee.email) {
+                                inviteeInvited_new.append(invitee)
+                                let notificationText: String = "\(user.fullname) just updated an event you're invited to!"
+                                sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                            } else {
+                                inviteeInvited_new.append(invitee)
+                                let notificationText: String = "\(user.fullname) just invited you to an event!"
+                                sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                            }
                         }
-                        event_title = ""
-                        event_location = ""
-                        event_dateTime = Date()
-                        invitees = []
+                        
+                        var inviteeAccepted_new_emails = inviteeAccepted_new.map {$0.email}
+                        var inviteeInvited_new_emails = inviteeInvited_new.map {$0.email}
+                        
+                        try await firestoreService.deleteEventFromFirestore(id: event.id)
+                        try await firestoreService.addEventToFirestore(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email)
+                        //ud.events.removeAll { $0.id == event.id }
+                        //ud.events += [EventModel(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email)]
                     } catch {
-                        print("Failed to add event: \(error.localizedDescription)")
+                        print("Failed to update event: \(error.localizedDescription)")
                     }
                 }
-                selectedTab = 0
             }
+            dismiss()
         } label: {
-            Text("Create Event")
+            Text("Update Event")
                 .padding()
                 .padding(.horizontal)
                 .background(.white)
@@ -169,15 +209,6 @@ extension CreateEventView {
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
-            
-            //            TextField("", text: $event_location, prompt: Text("Enter your event location here ...").foregroundColor(Color.black.opacity(0.5)))
-            //                .foregroundColor(.black)
-            //                .padding()
-            //                .background(.white)
-            //                .cornerRadius(10)
-            //                .padding(.horizontal)
-            //                .textInputAutocapitalization(.never)
-            //                .disableAutocorrection(true)
             
             if event_location.isEmpty {
                 TextField("", text: $locationQuery, prompt: Text("Enter your event location here ...").foregroundColor(Color.black.opacity(0.5)))

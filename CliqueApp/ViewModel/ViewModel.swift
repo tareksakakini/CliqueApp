@@ -129,4 +129,13 @@ class ViewModel: ObservableObject {
         return timeFormatter.string(from: time)
     }
     
+    func deleteEvent(event_id: String) {
+        for event in self.events {
+            if event.id == event_id {
+                self.events.removeAll { $0.id == event_id }
+                return
+            }
+        }
+    }
+    
 }
