@@ -23,6 +23,8 @@ struct EditEventView: View {
     @State var event_title: String = ""
     @State var event_location: String = ""
     @State var event_dateTime: Date = Date()
+    @State var event_duration_hours: Int = 0
+    @State var event_duration_minutes: Int = 0
     @State var invitees: [UserModel] = []
     @State var inviteesInvited: [UserModel] = []
     @State var inviteesAccepted: [UserModel] = []
@@ -66,6 +68,8 @@ struct EditEventView: View {
             event_title = event.title
             event_location = event.location
             event_dateTime = event.dateTime
+            event_duration_hours = event.hours
+            event_duration_minutes = event.minutes
             Task {
                 await ud.getAllUsers()
             }
@@ -164,7 +168,7 @@ extension EditEventView {
                         var inviteeInvited_new_emails = inviteeInvited_new.map {$0.email}
                         
                         try await firestoreService.deleteEventFromFirestore(id: event.id)
-                        try await firestoreService.addEventToFirestore(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email)
+                        try await firestoreService.addEventToFirestore(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes)
                         //ud.events.removeAll { $0.id == event.id }
                         //ud.events += [EventModel(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email)]
                     } catch {
@@ -293,6 +297,48 @@ extension EditEventView {
                 .background(.white)
                 .cornerRadius(10)
                 .padding(.horizontal, 20)
+            
+            Text("Duration")
+                .padding(.top, 15)
+                .padding(.leading, 25)
+                .font(.title2)
+                .foregroundColor(.white)
+            
+            HStack {
+                    
+                Picker(
+                    selection : $event_duration_hours,
+                    label: Text("Hours"),
+                    content: {
+                        ForEach(Array(0...23), id: \.self) {hour in
+                            Text("\(hour) h").tag(hour)
+                        }
+                    }
+                )
+                .foregroundColor(.black)
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .background(.white)
+                .cornerRadius(10)
+            
+                
+                Picker(
+                    selection : $event_duration_minutes,
+                    label: Text("Minutes"),
+                    content: {
+                        ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) {minute in
+                            Text("\(minute) m").tag(minute)
+                        }
+                    }
+                )
+                .foregroundColor(.black)
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .background(.white)
+                .cornerRadius(10)
+            }
+            .padding(.top, 5)
+            .padding(.leading)
             
             HStack {
                 Text("Invitees")

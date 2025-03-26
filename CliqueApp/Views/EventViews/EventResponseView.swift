@@ -192,6 +192,12 @@ extension EventResponseView {
                 .font(.body)
                 
                 HStack {
+                    Image(systemName: "timer")
+                    Text("\(event.hours) Hours \(event.minutes) Minutes")
+                }
+                .font(.body)
+                
+                HStack {
                     Image(systemName: "map.fill")
                     Text("\(event.location)")
                 }

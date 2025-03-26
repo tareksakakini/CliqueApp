@@ -48,6 +48,8 @@ struct CreateEventView: View {
     @State var event_title: String = ""
     @State var event_location: String = ""
     @State var event_dateTime: Date = Date()
+    @State var event_duration_hours: Int = 0
+    @State var event_duration_minutes: Int = 0
     @State var invitees: [UserModel] = []
     
     @StateObject private var locationSearchHelper = LocationSearchHelper()
@@ -117,7 +119,7 @@ extension CreateEventView {
                             invitee_emails += [invitee.email]
                         }
                         let temp_uuid = UUID().uuidString
-                        try await firestoreService.addEventToFirestore(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email)
+                        try await firestoreService.addEventToFirestore(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes)
                         //ud.events += [EventModel(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email)]
                         for invitee in invitees {
                             let notificationText: String = "\(user.fullname) just invited you to an event!"
@@ -262,6 +264,49 @@ extension CreateEventView {
                 .background(.white)
                 .cornerRadius(10)
                 .padding(.horizontal, 20)
+            
+            Text("Duration")
+                .padding(.top, 15)
+                .padding(.leading, 25)
+                .font(.title2)
+                .foregroundColor(.white)
+            
+            HStack {
+                    
+                Picker(
+                    selection : $event_duration_hours,
+                    label: Text("Hours"),
+                    content: {
+                        ForEach(Array(0...23), id: \.self) {hour in
+                            Text("\(hour) h").tag(hour)
+                        }
+                    }
+                )
+                .foregroundColor(.black)
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .background(.white)
+                .cornerRadius(10)
+            
+                
+                Picker(
+                    selection : $event_duration_minutes,
+                    label: Text("Minutes"),
+                    content: {
+                        ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) {minute in
+                            Text("\(minute) m").tag(minute)
+                        }
+                    }
+                )
+                .foregroundColor(.black)
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .background(.white)
+                .cornerRadius(10)
+            }
+            .padding(.top, 5)
+            .padding(.leading)
+            
             
             HStack {
                 Text("Invitees")

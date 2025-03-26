@@ -48,7 +48,7 @@ struct SignUpView: View {
                     
                     user_fields
                     
-                    VStack {
+                    VStack(alignment: .leading) {
                         HStack() {
                             Image(systemName: isAgeChecked ? "checkmark.square.fill" : "square.fill")
                                 .foregroundColor(isAgeChecked ? .blue.opacity(0.5) : .white)
@@ -61,7 +61,6 @@ struct SignUpView: View {
                             Text("I am 16 years or older.")
                                 .foregroundColor(.white)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                         
                         HStack() {
                             Image(systemName: isAgreePolicy ? "checkmark.square.fill" : "square.fill")
@@ -82,7 +81,6 @@ struct SignUpView: View {
                             }
                             
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     .padding()
                     
