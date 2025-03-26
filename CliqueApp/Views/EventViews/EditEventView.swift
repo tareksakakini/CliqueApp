@@ -23,8 +23,8 @@ struct EditEventView: View {
     @State var event_title: String = ""
     @State var event_location: String = ""
     @State var event_dateTime: Date = Date()
-    @State var event_duration_hours: Int = 0
-    @State var event_duration_minutes: Int = 0
+    @State var event_duration_hours: String = ""
+    @State var event_duration_minutes: String = ""
     @State var invitees: [UserModel] = []
     @State var inviteesInvited: [UserModel] = []
     @State var inviteesAccepted: [UserModel] = []
@@ -298,11 +298,18 @@ extension EditEventView {
                 .cornerRadius(10)
                 .padding(.horizontal, 20)
             
-            Text("Duration")
-                .padding(.top, 15)
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
+            HStack {
+                Text("Duration")
+                    .padding(.top, 15)
+                    .padding(.leading, 25)
+                    .font(.title2)
+                    .foregroundColor(.white)
+                
+                Text("(Optional)")
+                    .padding(.top, 20)
+                    .font(.caption)
+                    .foregroundColor(.white)
+            }
             
             HStack {
                     
@@ -310,6 +317,7 @@ extension EditEventView {
                     selection : $event_duration_hours,
                     label: Text("Hours"),
                     content: {
+                        Text("").tag("")
                         ForEach(Array(0...23), id: \.self) {hour in
                             Text("\(hour) h").tag(hour)
                         }
@@ -326,6 +334,7 @@ extension EditEventView {
                     selection : $event_duration_minutes,
                     label: Text("Minutes"),
                     content: {
+                        Text("").tag("")
                         ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) {minute in
                             Text("\(minute) m").tag(minute)
                         }
