@@ -15,6 +15,8 @@ struct UserModel: Hashable {
     var createdAt: Date = Date()
     var profilePic: String = "userDefault"
     var subscriptionId: String = ""
+    var gender: String = ""
+    var birthdate: Date = Date()
     
     func initFromFirestore(userData: [String: Any]) -> UserModel {
         var user = UserModel()
@@ -24,6 +26,8 @@ struct UserModel: Hashable {
         user.createdAt = (userData["createdAt"] as? Timestamp)?.dateValue() ?? Date()
         user.profilePic = userData["profilePic"] as? String ?? ""
         user.subscriptionId = userData["subscriptionId"] as? String ?? ""
+        user.gender = userData["gender"] as? String ?? ""
+        user.birthdate = (userData["birthdate"] as? Timestamp)?.dateValue() ?? Date()
         return user
     }
 }
