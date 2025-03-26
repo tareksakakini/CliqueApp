@@ -19,6 +19,7 @@ struct LoginView: View {
     @State var show_wrong_message: Bool = false
     
     @State var go_to_landing_screen: Bool = false
+    @State var go_to_verification_screen: Bool = false
     
     @State var isPasswordVisible = false
     
@@ -190,7 +191,12 @@ extension LoginView {
                     let firestoreService = DatabaseManager()
                     user = try await firestoreService.getUserFromFirestore(uid: authenticated_user.uid)
                     print("User fetched: \(user.fullname), Email: \(user.email)")
-                    go_to_landing_screen = true
+                    if await AuthManager.shared.getEmailVerified() {
+                        go_to_landing_screen = true
+                    } else {
+                        go_to_verification_screen = true
+                    }
+                    
                     show_wrong_message = false
                     print("User signed in: \(authenticated_user.uid)")
                 } catch {
@@ -210,6 +216,9 @@ extension LoginView {
         }
         .navigationDestination(isPresented: $go_to_landing_screen) {
             MainView(user: user)
+        }
+        .navigationDestination(isPresented: $go_to_verification_screen) {
+            VerifyEmailView(user: user)
         }
     }
 }

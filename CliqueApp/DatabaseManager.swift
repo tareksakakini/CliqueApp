@@ -332,6 +332,14 @@ class DatabaseManager {
                 ])
             }
             
+            let hostingSnapshot = try await db.collection("events").whereField("host", isEqualTo: email).getDocuments()
+            for document in hostingSnapshot.documents {
+                let eventRef = db.collection("events").document(document.documentID)
+                try await eventRef.updateData([
+                    "host": ""
+                ])
+            }
+            
             // Remove user from all friends' lists
             let friendshipsSnapshot = try await userFriendRef.getDocument()
             if let friendsList = friendshipsSnapshot.data()?["friends"] as? [String] {

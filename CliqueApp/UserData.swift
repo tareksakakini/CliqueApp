@@ -24,7 +24,7 @@ struct UserData {
     static var userData: [UserModel] = [
         UserModel(
             fullname: "Tarek Sakakini",
-            email: "tareksakakini@gmail.com",
+            email: "tarek.sakakini@gmail.com",
             createdAt: Date(),
             profilePic: "tarek_pic"
         ),

@@ -53,4 +53,18 @@ class AuthManager {
             return nil
         }
     }
+    
+    func getEmailVerified() async -> Bool {
+        guard let user = Auth.auth().currentUser else { return false }
+        
+        do {
+            try await user.reload() // Refresh user data from Firebase
+            print("User Email Verified Status: \(user.isEmailVerified)")
+            return user.isEmailVerified
+        } catch {
+            print("Error reloading user: \(error.localizedDescription)")
+            return false
+        }
+    }
+
 }

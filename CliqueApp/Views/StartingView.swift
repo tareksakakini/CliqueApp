@@ -13,13 +13,19 @@ struct StartingView: View {
     @State private var signedIn: Bool = false
     @State private var signedInUser: UserModel? = nil
     @State private var boolReady: Bool = false
+    @State private var emailVerified: Bool = false
     
     var body: some View {
         NavigationStack {
             if boolReady {
                 if signedIn {
                     if let signedInUser = signedInUser {
-                        MainView(user: signedInUser)
+                        if emailVerified {
+                            MainView(user: signedInUser)
+                        } else {
+                            VerifyEmailView(user: signedInUser)
+                        }
+                        
                     }
                 } else {
                     landing_view
@@ -37,6 +43,9 @@ struct StartingView: View {
                 signedIn = true
             }
             boolReady = true
+        }
+        .task {
+            emailVerified = await AuthManager.shared.getEmailVerified()
         }
     }
 }

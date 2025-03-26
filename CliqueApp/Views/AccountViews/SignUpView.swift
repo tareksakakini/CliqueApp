@@ -235,7 +235,8 @@ extension SignUpView {
         .disabled(!isAgeChecked || !isAgreePolicy)
         .navigationDestination(isPresented: $goToMainView) {
             
-            MainView(user: user)
+            //MainView(user: user)
+            VerifyEmailView(user: user)
             
         }
         
