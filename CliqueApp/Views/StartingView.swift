@@ -23,7 +23,7 @@ struct StartingView: View {
                         if emailVerified {
                             MainView(user: signedInUser)
                         } else {
-                            VerifyEmailView(user: signedInUser)
+                            landing_view
                         }
                         
                     }
