@@ -59,12 +59,12 @@ struct MyFriendsView: View {
                 await ud.getUserFriendRequestsSent(user_email: user.email)
             }
         }
-        .task {
-            while true {
-                await ud.getUserFriendRequests(user_email: user.email)
-                try? await Task.sleep(nanoseconds: 500_000_000)
-            }
-        }
+//        .task {
+//            while true {
+//                await ud.getUserFriendRequests(user_email: user.email)
+//                try? await Task.sleep(nanoseconds: 500_000_000)
+//            }
+//        }
     }
 }
 

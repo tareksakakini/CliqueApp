@@ -10,16 +10,6 @@ import Firebase
 import OneSignalFramework
 import FirebaseAuth
 
-//@main
-//struct CliqueAppApp: App {
-//    
-//    var body: some Scene {
-//        WindowGroup {
-//            LocationPickerView()
-//        }
-//    }
-//}
-
 @main
 struct CliqueAppApp: App {
     

@@ -138,15 +138,6 @@ extension LoginView {
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
             
-            //            SecureField("", text: $enteredPassword, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
-            //                .foregroundColor(.black)
-            //                .textInputAutocapitalization(.never)
-            //                .disableAutocorrection(true)
-            //                .padding()
-            //                .background(.white)
-            //                .cornerRadius(10)
-            //                .padding()
-            
             HStack {
                 if isPasswordVisible {
                     TextField("", text: $enteredPassword, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
