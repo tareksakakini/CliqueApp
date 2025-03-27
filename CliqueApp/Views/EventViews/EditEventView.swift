@@ -319,7 +319,7 @@ extension EditEventView {
                     content: {
                         Text("").tag("")
                         ForEach(Array(0...23), id: \.self) {hour in
-                            Text("\(hour) h").tag(hour)
+                            Text("\(hour) h").tag(String(hour))
                         }
                     }
                 )
@@ -336,7 +336,7 @@ extension EditEventView {
                     content: {
                         Text("").tag("")
                         ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) {minute in
-                            Text("\(minute) m").tag(minute)
+                            Text("\(minute) m").tag(String(minute))
                         }
                     }
                 )

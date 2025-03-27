@@ -65,8 +65,10 @@ class ViewModel: ObservableObject {
         let firestoreService = DatabaseManager()
         do {
             let fetchedEvents = try await firestoreService.getAllEvents()
-            let ordered_fetchedEvents = fetchedEvents.sorted { $0.dateTime < $1.dateTime }
-            self.events = ordered_fetchedEvents
+            let currentDate = Date()
+            let upcomingEvents = fetchedEvents.filter { $0.dateTime >= currentDate }
+            let orderedUpcomingEvents = upcomingEvents.sorted { $0.dateTime < $1.dateTime }
+            self.events = orderedUpcomingEvents
         } catch {
             print("Failed to fetch events: \(error.localizedDescription)")
         }
