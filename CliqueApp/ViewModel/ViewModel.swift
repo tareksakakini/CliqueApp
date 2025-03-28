@@ -66,7 +66,8 @@ class ViewModel: ObservableObject {
         do {
             let fetchedEvents = try await firestoreService.getAllEvents()
             let currentDate = Date()
-            let upcomingEvents = fetchedEvents.filter { $0.dateTime >= currentDate }
+            let oneDayAgo = Calendar.current.date(byAdding: .day, value: -1, to: currentDate)!
+            let upcomingEvents = fetchedEvents.filter { $0.dateTime >= oneDayAgo }
             let orderedUpcomingEvents = upcomingEvents.sorted { $0.dateTime < $1.dateTime }
             self.events = orderedUpcomingEvents
         } catch {
