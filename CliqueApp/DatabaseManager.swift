@@ -2,6 +2,7 @@ import FirebaseFirestore
 import FirebaseDatabaseInternal
 import FirebaseAuth
 import FirebaseDatabase
+import FirebaseStorage
 
 class DatabaseManager {
     private let db = Firestore.firestore()
@@ -393,5 +394,36 @@ class DatabaseManager {
             throw error
         }
     }
+    
+    func uploadProfileImage(_ image: UIImage) {
+        guard let imageData = image.jpegData(compressionQuality: 0.4) else { return }
+        let storageRef = Storage.storage().reference()
+        let userId = Auth.auth().currentUser?.uid ?? UUID().uuidString
+        let fileRef = storageRef.child("profile_pictures/\(userId).jpg")
+        
+        fileRef.putData(imageData, metadata: nil) { _, error in
+            if let error = error {
+                print("Upload failed: \(error.localizedDescription)")
+                return
+            }
+            
+            fileRef.downloadURL { url, error in
+                guard let downloadURL = url else { return }
+                self.saveImageURLToFirestore(url: downloadURL.absoluteString)
+            }
+        }
+    }
+    
+    func saveImageURLToFirestore(url: String) {
+            let db = Firestore.firestore()
+            let userId = Auth.auth().currentUser?.uid ?? UUID().uuidString
+            db.collection("users").document(userId).setData(["profilePic": url], merge: true) { error in
+                if let error = error {
+                    print("Error updating Firestore: \(error.localizedDescription)")
+                } else {
+                    print("Profile picture updated successfully!")
+                }
+            }
+        }
 }
 

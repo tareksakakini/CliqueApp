@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E686B0E02D9D96960099B41C /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = E686B0DF2D9D96960099B41C /* FirebaseStorage */; };
 		E68A6E3B2D3076A200E5AF14 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */; };
 		E6D19B442D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E6D19B3D2D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E6D19B4D2D77A5FA00684D4D /* OneSignalExtension in Frameworks */ = {isa = PBXBuildFile; productRef = E6D19B4C2D77A5FA00684D4D /* OneSignalExtension */; };
@@ -101,6 +102,7 @@
 				E6FB31442D55358C00F76BB9 /* FirebaseAuth in Frameworks */,
 				E6D89EAE2D60833E003AB72E /* FirebaseDatabase in Frameworks */,
 				E6FB31DA2D57342C00F76BB9 /* FirebaseFirestore in Frameworks */,
+				E686B0E02D9D96960099B41C /* FirebaseStorage in Frameworks */,
 				E6D19B532D77A5FA00684D4D /* OneSignalLocation in Frameworks */,
 				E6D19B4F2D77A5FA00684D4D /* OneSignalFramework in Frameworks */,
 			);
@@ -187,6 +189,7 @@
 				E6D19B4E2D77A5FA00684D4D /* OneSignalFramework */,
 				E6D19B502D77A5FA00684D4D /* OneSignalInAppMessages */,
 				E6D19B522D77A5FA00684D4D /* OneSignalLocation */,
+				E686B0DF2D9D96960099B41C /* FirebaseStorage */,
 			);
 			productName = CliqueApp;
 			productReference = E6DB939C2D2C5944002D6BBD /* CliqueApp.app */;
@@ -288,7 +291,7 @@
 				INFOPLIST_FILE = OneSignalNotificationServiceExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = OneSignalNotificationServiceExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -319,7 +322,7 @@
 				INFOPLIST_FILE = OneSignalNotificationServiceExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = OneSignalNotificationServiceExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -480,7 +483,7 @@
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -520,7 +523,7 @@
 				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -590,6 +593,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		E686B0DF2D9D96960099B41C /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
 		E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

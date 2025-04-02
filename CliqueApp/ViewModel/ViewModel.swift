@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 @MainActor
 class ViewModel: ObservableObject {
@@ -14,6 +15,7 @@ class ViewModel: ObservableObject {
     @Published var friendship: [String]
     @Published var friendInviteReceived: [String]
     @Published var friendInviteSent: [String]
+    @Published var userProfilePic: Image?
     
     init() {
         self.users = []
@@ -21,6 +23,7 @@ class ViewModel: ObservableObject {
         self.friendship = []
         self.friendInviteReceived = []
         self.friendInviteSent = []
+        self.userProfilePic = nil
     }
     
     func refreshData(user_email: String) async {
@@ -141,4 +144,18 @@ class ViewModel: ObservableObject {
         }
     }
     
+    func loadImage(imageUrl: String) async {
+        guard let url = URL(string: imageUrl) else { return }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            if let uiImage = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    self.userProfilePic = Image(uiImage: uiImage)
+                }
+            }
+        } catch {
+            print("Error loading image: \(error)")
+        }
+    }
 }

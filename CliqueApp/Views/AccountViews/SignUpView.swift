@@ -12,7 +12,6 @@ struct SignUpView: View {
     @EnvironmentObject private var ud: ViewModel
     
     @State var user = UserModel(fullname: "", email: "", createdAt: Date())
-    
     @State var fullname: String = ""
     @State var gender: String = "Male"
     @State var birthdate: Date = Date()
@@ -20,12 +19,8 @@ struct SignUpView: View {
     @State var password: String = ""
     @State var isAgeChecked: Bool = false
     @State var isAgreePolicy: Bool = false
-    
-    
     @State var show_wrong_message: Bool = false
-    
     @State var goToMainView: Bool = false
-    
     @State var isPasswordVisible: Bool = false
     
     let genderOptions = ["Male", "Female", "Other"]
@@ -38,13 +33,7 @@ struct SignUpView: View {
             ScrollView {
                 VStack() {
                     
-                    
-                    
-                    //Spacer()
-                    
                     header
-                    
-                    //Spacer()
                     
                     user_fields
                     

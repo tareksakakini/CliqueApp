@@ -79,6 +79,9 @@ struct MainView: View {
             Task {
                 await ud.getUserFriendRequestsSent(user_email: user.email)
             }
+//            Task {
+//                await ud.loadImage(imageUrl: user.profilePic)
+//            }
             Task {
                 if let playerId = await getOneSignalSubscriptionId() {
                     print("OneSignal Subscription ID: \(playerId)")

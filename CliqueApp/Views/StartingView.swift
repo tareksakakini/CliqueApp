@@ -14,6 +14,7 @@ struct StartingView: View {
     @State private var signedInUser: UserModel? = nil
     @State private var boolReady: Bool = false
     @State private var emailVerified: Bool = false
+    @State private var profileImage: Image = Image(systemName: "person.crop.circle.fill")
     
     var body: some View {
         NavigationStack {
@@ -40,12 +41,32 @@ struct StartingView: View {
                 print(uid)
                 let firestoreService = DatabaseManager()
                 signedInUser = try? await firestoreService.getUserFromFirestore(uid: uid)
+                if let signedInUser {
+                    await ud.loadImage(imageUrl: signedInUser.profilePic)
+                }
                 signedIn = true
+                boolReady = true
+            } else {
+                boolReady = true
             }
-            boolReady = true
         }
         .task {
             emailVerified = await AuthManager.shared.getEmailVerified()
+        }
+    }
+    
+    private func loadImage(imageUrl: String) async {
+        guard let url = URL(string: imageUrl) else { return }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            if let uiImage = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    profileImage = Image(uiImage: uiImage)
+                }
+            }
+        } catch {
+            print("Error loading image: \(error)")
         }
     }
 }

@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import PhotosUI
 
 struct MySettingsView: View {
     
@@ -17,6 +18,8 @@ struct MySettingsView: View {
     @State var go_to_account_deleted_screen: Bool = false
     @State var message: String = ""
     @State private var navigationPath = NavigationPath()
+    @State private var imageSelection: PhotosPickerItem? = nil
+    @State private var selectedImage: UIImage? = nil
     
     var body: some View {
         
@@ -27,6 +30,24 @@ struct MySettingsView: View {
                 HeaderView(user: user, title: "My Settings")
                 
                 Spacer()
+                
+                if let selectedImage {
+                    Image(uiImage: selectedImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 200, height: 200)
+                        .cornerRadius(10)
+                }
+                
+                PhotosPicker(selection: $imageSelection, matching: .images) {
+                    Text("Add Profile Picture")
+                        .frame(width: 200, height: 60)
+                        .background(.white)
+                        .cornerRadius(10)
+                        .foregroundColor(Color(.accent))
+                        .bold()
+                        .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
+                }
                 
                 Button {
                     
@@ -55,15 +76,6 @@ struct MySettingsView: View {
                 
                 Button {
                     
-//                    Task {
-//                        do {
-//                            try await AuthManager.shared.deleteAccount()
-//                            go_to_account_deleted_screen = true
-//                            print("User deleted account")
-//                        } catch {
-//                            print("Account deletion failed")
-//                        }
-//                    }
                     Task {
                         do {
                             let databaseManager = DatabaseManager()
@@ -89,6 +101,20 @@ struct MySettingsView: View {
                 }
                 
                 Spacer()
+            }
+        }
+        .onChange(of: imageSelection) {
+            Task {
+                if let imageSelection {
+                    if let data = try? await imageSelection.loadTransferable(type: Data.self) {
+                        if let uiImage = UIImage(data: data) {
+                            selectedImage = uiImage
+                            
+                            let databaseManager = DatabaseManager()
+                            databaseManager.uploadProfileImage(uiImage)
+                        }
+                    }
+                }
             }
         }
     }
