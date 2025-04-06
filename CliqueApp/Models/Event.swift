@@ -18,6 +18,7 @@ struct EventModel: Hashable {
     var host: String = ""
     var hours: String = ""
     var minutes: String = ""
+    var eventPic: String = ""
     
     func initFromFirestore(eventData: [String: Any]) -> EventModel {
         var event = EventModel()
@@ -30,6 +31,7 @@ struct EventModel: Hashable {
         event.host = eventData["host"] as? String ?? ""
         event.hours = eventData["hours"] as? String ?? ""
         event.minutes = eventData["minutes"] as? String ?? ""
+        event.eventPic = eventData["eventPic"] as? String ?? ""
         return event
     }
 }

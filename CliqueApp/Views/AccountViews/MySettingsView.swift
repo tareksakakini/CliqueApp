@@ -31,13 +31,33 @@ struct MySettingsView: View {
                 
                 Spacer()
                 
-                if let selectedImage {
-                    Image(uiImage: selectedImage)
+                if let profileImage = ud.userProfilePic {
+                    profileImage
                         .resizable()
-                        .scaledToFill()
-                        .frame(width: 200, height: 200)
-                        .cornerRadius(10)
+                        .scaledToFit()
+                        .clipShape(Circle())
+                        .frame(width: 250)
+                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                } else {
+                    Image(systemName: "person.crop.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 250)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.gray, .white)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
                 }
+                
+                Spacer()
+                
+//                if let selectedImage {
+//                    Image(uiImage: selectedImage)
+//                        .resizable()
+//                        .scaledToFill()
+//                        .frame(width: 200, height: 200)
+//                        .cornerRadius(10)
+//                }
                 
                 PhotosPicker(selection: $imageSelection, matching: .images) {
                     Text("Add Profile Picture")

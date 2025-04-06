@@ -7,6 +7,7 @@
 
 import SwiftUI
 import MapKit
+import PhotosUI
 
 class LocationSearchHelper: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
     @Published var suggestions: [MKLocalSearchCompletion] = []
@@ -55,6 +56,9 @@ struct CreateEventView: View {
     @StateObject private var locationSearchHelper = LocationSearchHelper()
     @State private var locationQuery = ""
     
+    @State private var imageSelection: PhotosPickerItem? = nil
+    @State private var selectedImage: UIImage? = nil
+    
     var body: some View {
         
         ZStack {
@@ -93,6 +97,17 @@ struct CreateEventView: View {
                 await ud.getUserFriends(user_email: user.email)
             }
         }
+        .onChange(of: imageSelection) {
+            Task {
+                if let imageSelection {
+                    if let data = try? await imageSelection.loadTransferable(type: Data.self) {
+                        if let uiImage = UIImage(data: data) {
+                            selectedImage = uiImage
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -120,7 +135,9 @@ extension CreateEventView {
                         }
                         let temp_uuid = UUID().uuidString
                         try await firestoreService.addEventToFirestore(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes)
-                        //ud.events += [EventModel(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email)]
+                        if let selectedImage {
+                            firestoreService.uploadEventImage(image: selectedImage, event_id: temp_uuid)
+                        }
                         for invitee in invitees {
                             let notificationText: String = "\(user.fullname) just invited you to an event!"
                             sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
@@ -151,8 +168,39 @@ extension CreateEventView {
         
         VStack(alignment: .leading) {
             
+            if let selectedImage = selectedImage {
+                Image(uiImage: selectedImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                    .cornerRadius(10)
+                    .padding()
+            } else {
+                PhotosPicker(selection: $imageSelection, matching: .images) {
+                    ZStack {
+                        Color(.white.opacity(0.7))
+                        VStack {
+                            Image(systemName: "plus")
+                                .resizable()
+                                .frame(width: 50, height: 50)
+                                .padding()
+                            Text("Add Event Picture")
+                                .bold()
+                                .font(.caption)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                    .cornerRadius(10)
+                    .foregroundColor(Color(.accent))
+                    .padding()
+                    .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
+                }
+            }
+            
+            
+            
             Text("Event Title")
-                .padding(.top, 30)
+                //.padding(.top, 30)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
@@ -171,15 +219,6 @@ extension CreateEventView {
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
-            
-            //            TextField("", text: $event_location, prompt: Text("Enter your event location here ...").foregroundColor(Color.black.opacity(0.5)))
-            //                .foregroundColor(.black)
-            //                .padding()
-            //                .background(.white)
-            //                .cornerRadius(10)
-            //                .padding(.horizontal)
-            //                .textInputAutocapitalization(.never)
-            //                .disableAutocorrection(true)
             
             if event_location.isEmpty {
                 TextField("", text: $locationQuery, prompt: Text("Enter your event location here ...").foregroundColor(Color.black.opacity(0.5)))

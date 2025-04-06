@@ -395,6 +395,35 @@ class DatabaseManager {
         }
     }
     
+    func uploadEventImage(image: UIImage, event_id: String) {
+        guard let imageData = image.jpegData(compressionQuality: 0.4) else { return }
+        let storageRef = Storage.storage().reference()
+        let fileRef = storageRef.child("event_images/\(event_id).jpg")
+        
+        fileRef.putData(imageData, metadata: nil) { _, error in
+            if let error = error {
+                print("Upload failed: \(error.localizedDescription)")
+                return
+            }
+            
+            fileRef.downloadURL { url, error in
+                guard let downloadURL = url else { return }
+                self.saveEventImageURLToFirestore(url: downloadURL.absoluteString, event_id: event_id)
+            }
+        }
+    }
+    
+    func saveEventImageURLToFirestore(url: String, event_id: String) {
+            let db = Firestore.firestore()
+            db.collection("events").document(event_id).setData(["eventPic": url], merge: true) { error in
+                if let error = error {
+                    print("Error updating Firestore: \(error.localizedDescription)")
+                } else {
+                    print("Event picture updated successfully!")
+                }
+            }
+        }
+    
     func uploadProfileImage(_ image: UIImage) {
         guard let imageData = image.jpegData(compressionQuality: 0.4) else { return }
         let storageRef = Storage.storage().reference()

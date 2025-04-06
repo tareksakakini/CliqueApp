@@ -26,7 +26,8 @@ struct MyEventsView: View {
                 
                 ScrollView {
                     
-                    ForEach(ud.events, id: \.self) {event in
+                    ForEach(ud.events.indices, id: \.self) {event_index in
+                        let event = ud.events[event_index]
                         if event.attendeesAccepted.contains(user.email) || event.host == user.email {
                             EventPillView(
                                 event: event,
