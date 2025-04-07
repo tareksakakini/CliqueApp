@@ -41,9 +41,9 @@ struct StartingView: View {
                 print(uid)
                 let firestoreService = DatabaseManager()
                 signedInUser = try? await firestoreService.getUserFromFirestore(uid: uid)
-                if let signedInUser {
-                    await ud.loadImage(imageUrl: signedInUser.profilePic)
-                }
+//                if let signedInUser {
+//                    await ud.loadImage(imageUrl: signedInUser.profilePic)
+//                }
                 signedIn = true
                 boolReady = true
             } else {

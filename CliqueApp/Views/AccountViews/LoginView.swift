@@ -181,7 +181,7 @@ extension LoginView {
                     let authenticated_user = try await AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword)
                     let firestoreService = DatabaseManager()
                     user = try await firestoreService.getUserFromFirestore(uid: authenticated_user.uid)
-                    await ud.loadImage(imageUrl: user.profilePic)
+                    //await ud.loadImage(imageUrl: user.profilePic)
                     print("User fetched: \(user.fullname), Email: \(user.email)")
                     if await AuthManager.shared.getEmailVerified() {
                         go_to_landing_screen = true

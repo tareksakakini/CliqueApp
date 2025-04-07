@@ -136,7 +136,7 @@ extension CreateEventView {
                         let temp_uuid = UUID().uuidString
                         try await firestoreService.addEventToFirestore(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes)
                         if let selectedImage {
-                            firestoreService.uploadEventImage(image: selectedImage, event_id: temp_uuid)
+                            await firestoreService.uploadEventImage(image: selectedImage, event_id: temp_uuid)
                         }
                         for invitee in invitees {
                             let notificationText: String = "\(user.fullname) just invited you to an event!"
@@ -146,6 +146,9 @@ extension CreateEventView {
                         event_location = ""
                         event_dateTime = Date()
                         invitees = []
+                        imageSelection = nil
+                        selectedImage = nil
+                        print("updated tab")
                     } catch {
                         print("Failed to add event: \(error.localizedDescription)")
                     }
@@ -169,12 +172,15 @@ extension CreateEventView {
         VStack(alignment: .leading) {
             
             if let selectedImage = selectedImage {
-                Image(uiImage: selectedImage)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
-                    .cornerRadius(10)
-                    .padding()
+                PhotosPicker(selection: $imageSelection, matching: .images) {
+                    Image(uiImage: selectedImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                        .cornerRadius(10)
+                        .padding()
+                }
+                
             } else {
                 PhotosPicker(selection: $imageSelection, matching: .images) {
                     ZStack {

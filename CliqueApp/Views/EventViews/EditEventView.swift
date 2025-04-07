@@ -7,6 +7,7 @@
 
 import SwiftUI
 import MapKit
+import PhotosUI
 
 struct EditEventView: View {
     @EnvironmentObject private var ud: ViewModel
@@ -28,6 +29,9 @@ struct EditEventView: View {
     @State var invitees: [UserModel] = []
     @State var inviteesInvited: [UserModel] = []
     @State var inviteesAccepted: [UserModel] = []
+    @State private var imageSelection: PhotosPickerItem? = nil
+    @State private var selectedImage: UIImage? = nil
+    
     
     @StateObject private var locationSearchHelper = LocationSearchHelper()
     @State private var locationQuery = ""
@@ -71,6 +75,9 @@ struct EditEventView: View {
             event_duration_hours = event.hours
             event_duration_minutes = event.minutes
             Task {
+                await loadEventImage(imageUrl: event.eventPic)
+            }
+            Task {
                 await ud.getAllUsers()
             }
             Task {
@@ -87,6 +94,32 @@ struct EditEventView: View {
                 }
             }
             invitees = inviteesInvited + inviteesAccepted
+        }
+        .onChange(of: imageSelection) {
+            Task {
+                if let imageSelection {
+                    if let data = try? await imageSelection.loadTransferable(type: Data.self) {
+                        if let uiImage = UIImage(data: data) {
+                            selectedImage = uiImage
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    func loadEventImage(imageUrl: String) async {
+        guard let url = URL(string: imageUrl) else { return }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            if let uiImage = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    selectedImage = uiImage
+                }
+            }
+        } catch {
+            print("Error loading image: \(error)")
         }
     }
 }
@@ -169,8 +202,9 @@ extension EditEventView {
                         
                         try await firestoreService.deleteEventFromFirestore(id: event.id)
                         try await firestoreService.addEventToFirestore(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes)
-                        //ud.events.removeAll { $0.id == event.id }
-                        //ud.events += [EventModel(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email)]
+                        if let selectedImage {
+                            await firestoreService.uploadEventImage(image: selectedImage, event_id: event.id)
+                        }
                     } catch {
                         print("Failed to update event: \(error.localizedDescription)")
                     }
@@ -193,8 +227,39 @@ extension EditEventView {
         
         VStack(alignment: .leading) {
             
+            if let selectedImage = selectedImage {
+                PhotosPicker(selection: $imageSelection, matching: .images) {
+                    Image(uiImage: selectedImage)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                        .cornerRadius(10)
+                        .padding()
+                }
+                
+            } else {
+                PhotosPicker(selection: $imageSelection, matching: .images) {
+                    ZStack {
+                        Color(.white.opacity(0.7))
+                        VStack {
+                            Image(systemName: "plus")
+                                .resizable()
+                                .frame(width: 50, height: 50)
+                                .padding()
+                            Text("Add Event Picture")
+                                .bold()
+                                .font(.caption)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                    .cornerRadius(10)
+                    .foregroundColor(Color(.accent))
+                    .padding()
+                    .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
+                }
+            }
+            
             Text("Event Title")
-                .padding(.top, 30)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)

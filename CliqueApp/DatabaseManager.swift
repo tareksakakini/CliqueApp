@@ -80,6 +80,7 @@ class DatabaseManager {
         }
     }
     
+    @MainActor
     func getAllEvents() async throws -> [EventModel] {
         let eventsRef = db.collection("events")
         
@@ -395,7 +396,7 @@ class DatabaseManager {
         }
     }
     
-    func uploadEventImage(image: UIImage, event_id: String) {
+    func uploadEventImage(image: UIImage, event_id: String) async {
         guard let imageData = image.jpegData(compressionQuality: 0.4) else { return }
         let storageRef = Storage.storage().reference()
         let fileRef = storageRef.child("event_images/\(event_id).jpg")

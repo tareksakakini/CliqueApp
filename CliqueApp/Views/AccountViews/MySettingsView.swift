@@ -20,6 +20,7 @@ struct MySettingsView: View {
     @State private var navigationPath = NavigationPath()
     @State private var imageSelection: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage? = nil
+    @State private var profilePic: Image? = nil
     
     var body: some View {
         
@@ -31,7 +32,7 @@ struct MySettingsView: View {
                 
                 Spacer()
                 
-                if let profileImage = ud.userProfilePic {
+                if let profileImage = profilePic {
                     profileImage
                         .resizable()
                         .scaledToFit()
@@ -136,6 +137,24 @@ struct MySettingsView: View {
                     }
                 }
             }
+        }
+        .task {
+            await loadImage(imageUrl: user.profilePic)
+        }
+    }
+    
+    func loadImage(imageUrl: String) async {
+        guard let url = URL(string: imageUrl) else { return }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            if let uiImage = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    profilePic = Image(uiImage: uiImage)
+                }
+            }
+        } catch {
+            print("Error loading image: \(error)")
         }
     }
 }

@@ -89,6 +89,12 @@ struct EventPillView: View {
             .task {
                 await loadEventImage(imageUrl: event.eventPic)
             }
+            .onChange(of: refreshTrigger) { _ in
+                print("variable changed")
+                Task {
+                    await loadEventImage(imageUrl: event.eventPic)
+                }
+            }
         }
     }
     

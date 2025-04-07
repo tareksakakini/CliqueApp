@@ -13,6 +13,7 @@ struct HeaderView: View {
     //@State private var profileImage: Image? = nil
     let user: UserModel
     let title: String
+    @State private var profilePic: Image? = nil
     var body: some View {
         HStack {
             
@@ -26,7 +27,7 @@ struct HeaderView: View {
             
             Spacer()
             
-            if let profileImage = ud.userProfilePic {
+            if let profileImage = profilePic {
                 profileImage
                     .resizable()
                     .scaledToFit()
@@ -52,6 +53,25 @@ struct HeaderView: View {
                 .bold()
         }
         .padding()
+        .task {
+            await loadImage(imageUrl: user.profilePic)
+        }
+    }
+        
+    
+    func loadImage(imageUrl: String) async {
+        guard let url = URL(string: imageUrl) else { return }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            if let uiImage = UIImage(data: data) {
+                DispatchQueue.main.async {
+                    profilePic = Image(uiImage: uiImage)
+                }
+            }
+        } catch {
+            print("Error loading image: \(error)")
+        }
     }
 }
 
