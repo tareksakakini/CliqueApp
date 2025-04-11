@@ -8,6 +8,8 @@
 import SwiftUI
 import MapKit
 import PhotosUI
+import MessageUI
+import ContactsUI
 
 class LocationSearchHelper: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
     @Published var suggestions: [MKLocalSearchCompletion] = []
@@ -59,6 +61,18 @@ struct CreateEventView: View {
     @State private var imageSelection: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage? = nil
     
+    @State var selectedPhoneNumbers: [String] = []
+    
+//    @State private var showContactPicker = false
+    @State private var showMessageComposer = false
+    @State var message_event_id: String = ""
+//    @State private var selectedPhoneNumber: String?
+//    
+//    @State private var showNumberSelection = false
+//    @State private var phoneOptions: [String] = []
+//    
+    //let sample_event_id: String = "74641C1B-E210-4FF7-AB88-AF5D563A4A36"
+//
     var body: some View {
         
         ZStack {
@@ -69,6 +83,19 @@ struct CreateEventView: View {
                 HeaderView(user: user, title: "New Event")
                 
                 Spacer()
+                
+//                Button(action: {
+//                    showContactPicker = true
+//                }) {
+//                    Text("Choose Contact & Send Message")
+//                        .fontWeight(.medium)
+//                        .padding()
+//                        .frame(maxWidth: .infinity)
+//                        .background(Color.blue.opacity(0.8))
+//                        .foregroundColor(.white)
+//                        .cornerRadius(10)
+//                }
+//                .padding(.horizontal)
                 
                 ScrollView() {
                     
@@ -82,11 +109,20 @@ struct CreateEventView: View {
                 Spacer()
                 
             }
+            .navigationTitle("Message Sender")
             .alert("Event title has to be 3 characters or longer!", isPresented: $showAlertTitle) {
                 Button("Dismiss", role: .cancel) { }
             }
             .alert("You have to select a location first!", isPresented: $showAlertLocation) {
                 Button("Dismiss", role: .cancel) { }
+            }
+            .sheet(isPresented: $showMessageComposer) {
+                if MFMessageComposeViewController.canSendText() {
+                    MessageComposer(recipients: selectedPhoneNumbers, body: "https://cliqueapp-3834b.web.app/?eventId=\(message_event_id)")
+                }  else {
+                    Text("This device can't send SMS messages.")
+                        .padding()
+                }
             }
         }
         .onAppear {
@@ -134,13 +170,17 @@ extension CreateEventView {
                             invitee_emails += [invitee.email]
                         }
                         let temp_uuid = UUID().uuidString
-                        try await firestoreService.addEventToFirestore(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes)
+                        try await firestoreService.addEventToFirestore(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes, invitedPhoneNumbers: selectedPhoneNumbers, acceptedPhoneNumbers: [])
                         if let selectedImage {
                             await firestoreService.uploadEventImage(image: selectedImage, event_id: temp_uuid)
                         }
                         for invitee in invitees {
                             let notificationText: String = "\(user.fullname) just invited you to an event!"
                             sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                        }
+                        message_event_id = temp_uuid
+                        if selectedPhoneNumbers.count > 0 {
+                            showMessageComposer = true
                         }
                         event_title = ""
                         event_location = ""
@@ -373,7 +413,7 @@ extension CreateEventView {
                     Image(systemName: "plus.circle")
                 }
                 .sheet(isPresented: $addInviteeSheet) {
-                    AddInviteesView(user: user, invitees: $invitees)
+                    AddInviteesView(user: user, invitees: $invitees, selectedPhoneNumbers: $selectedPhoneNumbers)
                         .presentationDetents([.fraction(0.9)])
                 }
             }
@@ -389,6 +429,13 @@ extension CreateEventView {
                     displayed_user: inviteeUser,
                     personType: "invited",
                     invitees: $invitees
+                )
+            }
+            
+            ForEach(selectedPhoneNumbers, id: \.self) { number in
+                NumberPillView(
+                    phoneNumber: number,
+                    selectedPhoneNumbers: $selectedPhoneNumbers
                 )
             }
         }

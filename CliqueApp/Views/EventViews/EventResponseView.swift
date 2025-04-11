@@ -250,6 +250,22 @@ extension EventResponseView {
                     }
                 }
                 
+                ForEach(event.acceptedPhoneNumbers, id: \.self) {phone_number in
+                    
+                    HStack {
+                        Image(systemName: "phone")
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(Circle())
+                            .frame(width: 30)
+                            .padding(.horizontal, 3)
+                        Text("\(phone_number)")
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.white)
+                    }
+                    
+                }
+                
                 ForEach(event.attendeesInvited, id: \.self) {username in
                     if let user = ud.getUser(username: username) {
                         HStack {
@@ -264,6 +280,22 @@ extension EventResponseView {
                                 .foregroundColor(.white)
                         }
                     }
+                }
+                
+                ForEach(event.invitedPhoneNumbers, id: \.self) {phone_number in
+                    
+                    HStack {
+                        Image(systemName: "phone")
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(Circle())
+                            .frame(width: 30)
+                            .padding(.horizontal, 3)
+                        Text("\(phone_number)")
+                        Image(systemName: "questionmark.circle")
+                            .foregroundColor(.white)
+                    }
+                    
                 }
                 
                 

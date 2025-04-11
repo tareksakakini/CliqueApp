@@ -141,37 +141,4 @@ class ViewModel: ObservableObject {
             }
         }
     }
-    
-//    func loadImage(imageUrl: String) async {
-//        guard let url = URL(string: imageUrl) else { return }
-//        
-//        do {
-//            let (data, _) = try await URLSession.shared.data(from: url)
-//            if let uiImage = UIImage(data: data) {
-//                DispatchQueue.main.async {
-//                    self.userProfilePic = Image(uiImage: uiImage)
-//                }
-//            }
-//        } catch {
-//            print("Error loading image: \(error)")
-//        }
-//    }
-    
-//    func loadEventImage(imageUrl: String) async -> Image? {
-//        var to_return: Image? = nil
-//        guard let url = URL(string: imageUrl) else { return to_return }
-//        
-//        do {
-//            let (data, _) = try await URLSession.shared.data(from: url)
-//            if let uiImage = UIImage(data: data) {
-//                DispatchQueue.main.async {
-//                    to_return = Image(uiImage: uiImage)
-//                    print("Image loaded successfully")
-//                }
-//            }
-//        } catch {
-//            print("Error loading image: \(error)")
-//        }
-//        return to_return
-//    }
 }

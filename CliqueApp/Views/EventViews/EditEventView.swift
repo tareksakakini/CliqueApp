@@ -8,6 +8,8 @@
 import SwiftUI
 import MapKit
 import PhotosUI
+import MessageUI
+import ContactsUI
 
 struct EditEventView: View {
     @EnvironmentObject private var ud: ViewModel
@@ -29,12 +31,18 @@ struct EditEventView: View {
     @State var invitees: [UserModel] = []
     @State var inviteesInvited: [UserModel] = []
     @State var inviteesAccepted: [UserModel] = []
+    @State var newlyInvitedPhoneNumbers: [String] = []
+    @State var invitedPhoneNumbers: [String] = []
+    @State var acceptedPhoneNumbers: [String] = []
+    //@State var selectedPhoneNumbers: [String] = []
     @State private var imageSelection: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage? = nil
     
     
     @StateObject private var locationSearchHelper = LocationSearchHelper()
     @State private var locationQuery = ""
+    
+    @State var showMessageComposer: Bool = false
     
     var body: some View {
         
@@ -68,12 +76,22 @@ struct EditEventView: View {
                 Button("Dismiss", role: .cancel) { }
             }
         }
+        .sheet(isPresented: $showMessageComposer, onDismiss: {dismiss()}) {
+            if MFMessageComposeViewController.canSendText() {
+                MessageComposer(recipients: newlyInvitedPhoneNumbers, body: "https://cliqueapp-3834b.web.app/?eventId=\(event.id)")
+            }  else {
+                Text("This device can't send SMS messages.")
+                    .padding()
+            }
+        }
         .onAppear {
             event_title = event.title
             event_location = event.location
             event_dateTime = event.dateTime
             event_duration_hours = event.hours
             event_duration_minutes = event.minutes
+            invitedPhoneNumbers = event.invitedPhoneNumbers
+            acceptedPhoneNumbers = event.acceptedPhoneNumbers
             Task {
                 await loadEventImage(imageUrl: event.eventPic)
             }
@@ -201,16 +219,26 @@ extension EditEventView {
                         var inviteeInvited_new_emails = inviteeInvited_new.map {$0.email}
                         
                         try await firestoreService.deleteEventFromFirestore(id: event.id)
-                        try await firestoreService.addEventToFirestore(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes)
+                        try await firestoreService.addEventToFirestore(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes, invitedPhoneNumbers: invitedPhoneNumbers+newlyInvitedPhoneNumbers, acceptedPhoneNumbers: acceptedPhoneNumbers)
+                        print(invitedPhoneNumbers)
+                        print(newlyInvitedPhoneNumbers)
+                        if newlyInvitedPhoneNumbers.count > 0 {
+                            print("\(newlyInvitedPhoneNumbers.count) new numbers")
+                            showMessageComposer = true
+                        } else {
+                            dismiss()
+                        }
+                                
+                        
                         if let selectedImage {
                             await firestoreService.uploadEventImage(image: selectedImage, event_id: event.id)
                         }
                     } catch {
                         print("Failed to update event: \(error.localizedDescription)")
+                        dismiss()
                     }
                 }
             }
-            dismiss()
         } label: {
             Text("Update Event")
                 .padding()
@@ -423,7 +451,7 @@ extension EditEventView {
                     Image(systemName: "plus.circle")
                 }
                 .sheet(isPresented: $addInviteeSheet) {
-                    AddInviteesView(user: user, invitees: $invitees)
+                    AddInviteesView(user: user, invitees: $invitees, selectedPhoneNumbers: $newlyInvitedPhoneNumbers)
                         .presentationDetents([.fraction(0.9)])
                 }
             }
@@ -439,6 +467,27 @@ extension EditEventView {
                     displayed_user: inviteeUser,
                     personType: "invited",
                     invitees: $invitees
+                )
+            }
+            
+            ForEach(invitedPhoneNumbers, id: \.self) { number in
+                NumberPillView(
+                    phoneNumber: number,
+                    selectedPhoneNumbers: $invitedPhoneNumbers
+                )
+            }
+            
+            ForEach(newlyInvitedPhoneNumbers, id: \.self) { number in
+                NumberPillView(
+                    phoneNumber: number,
+                    selectedPhoneNumbers: $newlyInvitedPhoneNumbers
+                )
+            }
+            
+            ForEach(acceptedPhoneNumbers, id: \.self) { number in
+                NumberPillView(
+                    phoneNumber: number,
+                    selectedPhoneNumbers: $acceptedPhoneNumbers
                 )
             }
         }

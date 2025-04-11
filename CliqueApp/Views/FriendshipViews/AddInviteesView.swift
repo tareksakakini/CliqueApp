@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import MessageUI
+import ContactsUI
 
 struct AddInviteesView: View {
     
@@ -16,6 +18,17 @@ struct AddInviteesView: View {
     @State var user: UserModel
     
     @Binding var invitees: [UserModel]
+    @Binding var selectedPhoneNumbers: [String]
+    
+    @State private var showContactPicker = false
+    @State private var showMessageComposer = false
+    @State private var selectedPhoneNumber: String?
+    
+    @State private var showNumberSelection = false
+    @State private var phoneOptions: [String] = []
+    
+    let sample_event_id: String = "74641C1B-E210-4FF7-AB88-AF5D563A4A36"
+    
     
     var body: some View {
         
@@ -26,6 +39,23 @@ struct AddInviteesView: View {
                 
                 header
                 
+                HStack {
+                    Button(action: {
+                        showContactPicker = true
+                    }) {
+                        Text("Not a user?")
+                            .fontWeight(.medium)
+                            .foregroundColor(.blue)
+                            .underline()
+                            .font(.title3)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.horizontal)
+                
+                
+                
                 TextField("", text: $searchEntry, prompt: Text("Search for friends to invite ...").foregroundColor(Color.black.opacity(0.5)))
                     .foregroundColor(.black)
                     .padding()
@@ -35,6 +65,8 @@ struct AddInviteesView: View {
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
                     .foregroundStyle(.black)
+                
+                
                 
                 ScrollView {
                     
@@ -62,6 +94,42 @@ struct AddInviteesView: View {
                 Spacer()
             }
         }
+        .sheet(isPresented: $showContactPicker) {
+            ContactPicker { selectedNumbers in
+                if selectedNumbers.count == 1 {
+                    selectedPhoneNumber = selectedNumbers[0]
+                    if let selectedPhoneNumber = selectedPhoneNumber  {
+                        selectedPhoneNumbers.append(selectedPhoneNumber)
+                    }
+                    //showMessageComposer = true
+                } else if selectedNumbers.count > 1 {
+                    self.phoneOptions = selectedNumbers
+                    self.showNumberSelection = true
+                }
+                showContactPicker = false
+            }
+        }
+        .sheet(isPresented: $showMessageComposer) {
+            if let number = selectedPhoneNumber, MFMessageComposeViewController.canSendText() {
+                MessageComposer(recipients: [number], body: "https://cliqueapp-3834b.web.app/?eventId=\(sample_event_id)")
+            } else {
+                Text("This device can't send SMS messages.")
+                    .padding()
+            }
+        }
+        .actionSheet(isPresented: $showNumberSelection) {
+            ActionSheet(
+                title: Text("Choose a number"),
+                message: Text("This contact has multiple numbers"),
+                buttons: phoneOptions.map { number in
+                    .default(Text(number)) {
+                        selectedPhoneNumber = number
+                        selectedPhoneNumbers.append(number)
+                        //showMessageComposer = true
+                    }
+                } + [.cancel()]
+            )
+        }
         .onAppear {
             Task {
                 await ud.getAllUsers()
@@ -77,7 +145,7 @@ struct AddInviteesView: View {
 }
 
 #Preview {
-    AddInviteesView(user: UserData.userData[0], invitees: .constant([]))
+    AddInviteesView(user: UserData.userData[0], invitees: .constant([]), selectedPhoneNumbers: .constant([]))
         .environmentObject(ViewModel())
 }
 
