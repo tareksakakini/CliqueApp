@@ -12,8 +12,7 @@ struct MainView: View {
     @EnvironmentObject private var ud: ViewModel
     
     @State var user: UserModel
-    
-    @State private var selectedTab = 0
+    @State var selectedTab = 0
     
     var body: some View {
         NavigationStack {
@@ -49,7 +48,6 @@ struct MainView: View {
                 MySettingsView(user: user)
                     .tabItem {
                         Image(systemName: "gearshape.fill")
-                        //                          "gear")
                         Text("My Settings")
                     }
                     .tag(4)
@@ -57,41 +55,17 @@ struct MainView: View {
             }
         }
         .navigationBarHidden(true)
+        .task {
+            await ud.refreshData(user_email: user.email)
+            await ud.updateOneSignalSubscriptionId(user: user)
+        }
         .onAppear {
             // Change the background color of the TabBar
             let appearance = UITabBarAppearance()
             appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = UIColor.white // Set your desired color here
+            appearance.backgroundColor = UIColor.white
             UITabBar.appearance().standardAppearance = appearance
             UITabBar.appearance().scrollEdgeAppearance = appearance
-            Task {
-                await ud.getAllUsers()
-            }
-            Task {
-                await ud.getUserFriends(user_email: user.email)
-            }
-            Task {
-                await ud.getUserFriendRequests(user_email: user.email)
-            }
-            Task {
-                await ud.getAllEvents()
-            }
-            Task {
-                await ud.getUserFriendRequestsSent(user_email: user.email)
-            }
-            Task {
-                if let playerId = await getOneSignalSubscriptionId() {
-                    print("OneSignal Subscription ID: \(playerId)")
-                    do {
-                        let firestoreService = DatabaseManager()
-                        try await firestoreService.updateUserSubscriptionId(uid: user.uid, subscriptionId: playerId)
-                    } catch {
-                        print("Updating subscription id failed: \(error.localizedDescription)")
-                    }
-                } else {
-                    print("Failed to retrieve OneSignal Subscription ID.")
-                }
-            }
         }
         .tint(Color(.accent))
     }
