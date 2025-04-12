@@ -14,7 +14,6 @@ struct EventPillView: View {
     let event: EventModel
     let user: UserModel
     let inviteView: Bool
-    @Binding var refreshTrigger: Bool
     @State private var eventImage: Image? = nil
     var body: some View {
         
@@ -83,17 +82,11 @@ struct EventPillView: View {
             .padding(.vertical, 5)
             .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 15)
             .sheet(isPresented: $showSheet) {
-                EventResponseView(user: user, event: event, inviteView: inviteView, isPresented: $showSheet, refreshTrigger: $refreshTrigger)
+                EventResponseView(user: user, event: event, inviteView: inviteView, isPresented: $showSheet)
                     .presentationDetents([.fraction(0.5)])
             }
             .task {
                 await loadEventImage(imageUrl: event.eventPic)
-            }
-            .onChange(of: refreshTrigger) { _ in
-                print("variable changed")
-                Task {
-                    await loadEventImage(imageUrl: event.eventPic)
-                }
             }
         }
     }
@@ -121,8 +114,7 @@ struct EventPillView: View {
         EventPillView(
             event: UserData.eventData[0],
             user: UserData.userData[0],
-            inviteView: false,
-            refreshTrigger: .constant(false)
+            inviteView: false
         )
         .environmentObject(ViewModel())
     }

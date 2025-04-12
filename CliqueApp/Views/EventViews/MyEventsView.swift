@@ -9,51 +9,16 @@ import SwiftUI
 
 struct MyEventsView: View {
     
-    @EnvironmentObject private var ud: ViewModel
+    @EnvironmentObject private var vm: ViewModel
     
     @State var user: UserModel
-    @State private var refreshTrigger = false
     
     var body: some View {
-        
         ZStack {
-            
             Color(.accent).ignoresSafeArea()
-            
             VStack {
-                
                 HeaderView(user: user, title: "My Events")
-                
-                ScrollView {
-                    
-                    ForEach(ud.events, id: \.self) {event in
-                        if event.attendeesAccepted.contains(user.email) || event.host == user.email {
-                            EventPillView(
-                                event: event,
-                                user: user,
-                                inviteView: false,
-                                refreshTrigger: $refreshTrigger
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        .onAppear {
-            Task {
-                await ud.getAllEvents()
-            }
-        }
-        .onAppear {
-            Task {
-                try? await Task.sleep(nanoseconds: 2_000_000_000) // 2 seconds
-                await ud.getAllEvents()
-            }
-        }
-        .onChange(of: refreshTrigger) { _ in
-            print("variable changed")
-            Task {
-                await ud.getAllEvents()
+                EventScrollView
             }
         }
     }
@@ -62,4 +27,23 @@ struct MyEventsView: View {
 #Preview {
     MyEventsView(user: UserData.userData[0])
         .environmentObject(ViewModel())
+}
+
+extension MyEventsView {
+    private var EventScrollView: some View {
+        ScrollView {
+            ForEach(vm.events, id: \.self) {event in
+                if event.attendeesAccepted.contains(user.email) || event.host == user.email {
+                    EventPillView(
+                        event: event,
+                        user: user,
+                        inviteView: false
+                    )
+                }
+            }
+        }
+        .refreshable {
+            await vm.getAllEvents()
+        }
+    }
 }

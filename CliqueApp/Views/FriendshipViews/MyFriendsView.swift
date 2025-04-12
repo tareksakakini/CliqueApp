@@ -45,26 +45,12 @@ struct MyFriendsView: View {
                 }
             }
         }
-        .onAppear {
-            Task {
-                await ud.getAllUsers()
-            }
-            Task {
-                await ud.getUserFriends(user_email: user.email)
-            }
-            Task {
-                await ud.getUserFriendRequests(user_email: user.email)
-            }
-            Task {
-                await ud.getUserFriendRequestsSent(user_email: user.email)
-            }
+        .task {
+            await ud.getAllUsers()
+            await ud.getUserFriends(user_email: user.email)
+            await ud.getUserFriendRequests(user_email: user.email)
+            await ud.getUserFriendRequestsSent(user_email: user.email)
         }
-//        .task {
-//            while true {
-//                await ud.getUserFriendRequests(user_email: user.email)
-//                try? await Task.sleep(nanoseconds: 500_000_000)
-//            }
-//        }
     }
 }
 

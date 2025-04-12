@@ -15,7 +15,6 @@ struct EventResponseView: View {
     @State var event: EventModel
     let inviteView: Bool
     @Binding var isPresented: Bool
-    @Binding var refreshTrigger: Bool
     @State var editView: Bool = false
     
     var body: some View {
@@ -43,7 +42,7 @@ struct EventResponseView: View {
 }
 
 #Preview {
-    EventResponseView(user: UserData.userData[0], event: UserData.eventData[0], inviteView: false, isPresented: .constant(true), refreshTrigger: .constant(false))
+    EventResponseView(user: UserData.userData[0], event: UserData.eventData[0], inviteView: false, isPresented: .constant(true))
         .environmentObject(ViewModel())
 }
 
@@ -62,7 +61,6 @@ extension EventResponseView {
                             let notificationText: String = "\(user.fullname) is coming to your event!"
                             sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
                         }
-                        refreshTrigger.toggle()
                     } catch {
                         print("Failed to update: \(error.localizedDescription)")
                     }
@@ -93,7 +91,6 @@ extension EventResponseView {
                                 sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
                             }
                         }
-                        refreshTrigger.toggle()
                     } catch {
                         print("Failed to update: \(error.localizedDescription)")
                     }
@@ -131,7 +128,6 @@ extension EventResponseView {
                                 sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
                             }
                         }
-                        refreshTrigger.toggle()
                     } catch {
                         print("Failed to update: \(error.localizedDescription)")
                     }

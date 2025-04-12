@@ -9,7 +9,7 @@ import SwiftUI
 
 struct MainView: View {
     
-    @EnvironmentObject private var ud: ViewModel
+    @EnvironmentObject private var vm: ViewModel
     
     @State var user: UserModel
     @State var selectedTab = 0
@@ -56,8 +56,8 @@ struct MainView: View {
         }
         .navigationBarHidden(true)
         .task {
-            await ud.refreshData(user_email: user.email)
-            await ud.updateOneSignalSubscriptionId(user: user)
+            await vm.refreshData(user_email: user.email)
+            await vm.updateOneSignalSubscriptionId(user: user)
         }
         .onAppear {
             // Change the background color of the TabBar

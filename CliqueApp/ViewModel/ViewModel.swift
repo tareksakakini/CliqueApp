@@ -15,6 +15,7 @@ class ViewModel: ObservableObject {
     @Published var friendship: [String]
     @Published var friendInviteReceived: [String]
     @Published var friendInviteSent: [String]
+    @Published var eventRefreshTrigger: Bool
     
     init() {
         self.users = []
@@ -22,6 +23,7 @@ class ViewModel: ObservableObject {
         self.friendship = []
         self.friendInviteReceived = []
         self.friendInviteSent = []
+        self.eventRefreshTrigger = false
     }
     
     func refreshData(user_email: String) async {
