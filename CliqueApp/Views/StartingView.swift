@@ -18,18 +18,13 @@ struct StartingView: View {
         NavigationStack {
             
             if isLoading {
-                loading_view
+                LoadingView
+            } else if let user = signedInUser, isEmailVerified {
+                MainView(user: user)
             } else {
-                if let signedInUser = signedInUser {
-                    if isEmailVerified {
-                        MainView(user: signedInUser)
-                    } else {
-                        landing_view
-                    }
-                } else {
-                    landing_view
-                }
+                LandingView
             }
+            
         }
         .task {
             signedInUser = await vm.getSignedInUser()
@@ -46,7 +41,7 @@ struct StartingView: View {
 
 extension StartingView {
     
-    private var loading_view: some View {
+    private var LoadingView: some View {
         ZStack {
             Color(.accent).ignoresSafeArea()
             ProgressView()
@@ -56,7 +51,7 @@ extension StartingView {
         }
     }
     
-    private var landing_view: some View {
+    private var LandingView: some View {
         ZStack {
             
             //Plain color background

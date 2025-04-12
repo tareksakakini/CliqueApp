@@ -153,4 +153,18 @@ class ViewModel: ObservableObject {
             return nil
         }
     }
+    
+    func signUpUserAndAddToFireStore(email: String, password: String, fullname: String, profilePic: String, gender: String) async -> UserModel? {
+        do {
+            let signup_user = try await AuthManager.shared.signUp(email: email, password: password)
+            let firestoreService = DatabaseManager()
+            try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: email, fullname: fullname, profilePic: "userDefault", gender: gender)
+            let user = try await firestoreService.getUserFromFirestore(uid: signup_user.uid)
+            return user
+        } catch {
+            print("Sign up failed: \(error.localizedDescription)")
+            return nil
+        }
+        
+    }
 }

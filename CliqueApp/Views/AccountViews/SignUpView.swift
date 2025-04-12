@@ -9,18 +9,16 @@ import SwiftUI
 
 struct SignUpView: View {
     
-    @EnvironmentObject private var ud: ViewModel
-    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var vm: ViewModel
     
-    @State var user = UserModel(fullname: "", email: "", createdAt: Date())
+    @State var user: UserModel? = nil
     @State var fullname: String = ""
     @State var gender: String = "Male"
-    @State var username: String = ""
+    @State var email: String = ""
     @State var password: String = ""
     @State var isAgeChecked: Bool = false
     @State var isAgreePolicy: Bool = false
-    @State var show_wrong_message: Bool = false
-    @State var goToMainView: Bool = false
+    @State var goToVerifyView: Bool = false
     @State var isPasswordVisible: Bool = false
     
     let genderOptions = ["Male", "Female", "Other"]
@@ -28,63 +26,11 @@ struct SignUpView: View {
     var body: some View {
         ZStack {
             Color(.accent).ignoresSafeArea()
-            
-            
             VStack {
                 BackNavigation()
-                
-                ScrollView {
-                    VStack() {
-                        
-                        header
-                        
-                        user_fields
-                        
-                        VStack(alignment: .leading) {
-                            HStack() {
-                                Image(systemName: isAgeChecked ? "checkmark.square.fill" : "square.fill")
-                                    .foregroundColor(isAgeChecked ? .blue.opacity(0.5) : .white)
-                                    .background(Color.white) // White background for checkbox
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                                    .onTapGesture {
-                                        isAgeChecked.toggle()
-                                    }
-                                
-                                Text("I am 16 years or older.")
-                                    .foregroundColor(.white)
-                            }
-                            
-                            HStack() {
-                                Image(systemName: isAgreePolicy ? "checkmark.square.fill" : "square.fill")
-                                    .foregroundColor(isAgreePolicy ? .blue.opacity(0.5) : .white)
-                                    .background(Color.white) // White background for checkbox
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                                    .onTapGesture {
-                                        isAgreePolicy.toggle()
-                                    }
-                                
-                                Text("I have read and agree to the").foregroundColor(.white)
-                                
-                                NavigationLink(destination: PrivacyPolicyView()) {
-                                    Text("Privacy Policy")
-                                        .foregroundColor(Color(#colorLiteral(red: 0, green: 0.9914394021, blue: 1, alpha: 1)))
-                                        .underline()
-                                        .bold()
-                                }
-                                
-                            }
-                        }
-                        .padding()
-                        
-                        Spacer()
-                        Spacer()
-                        Spacer()
-                        
-                        signup_button
-                    }
-                }
+                TitleBar
+                SignUpSheet
             }
-            
         }
         .navigationBarHidden(true)
     }
@@ -95,11 +41,11 @@ struct SignUpView: View {
         SignUpView()
             .environmentObject(ViewModel())
     }
-    
 }
 
 extension SignUpView {
-    private var header: some View {
+    
+    private var TitleBar: some View {
         HStack {
             Image("yalla_transparent")
                 .resizable()
@@ -121,11 +67,28 @@ extension SignUpView {
         .padding()
     }
     
-    private var user_fields: some View {
-        
+    private var SignUpSheet: some View {
+        ScrollView {
+            VStack() {
+                UserFields
+                CheckBoxes
+                SignupButton
+            }
+        }
+    }
+    
+    private var UserFields: some View {
+        VStack(alignment: .leading) {
+            NameField
+            GenderField
+            EmailField
+            PasswordField
+        }
+    }
+    
+    private var NameField: some View {
         VStack(alignment: .leading) {
             Text("Full Name")
-            //.padding(.top, 30)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
@@ -138,7 +101,11 @@ extension SignUpView {
                 .padding(.horizontal)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
-            
+        }
+    }
+    
+    private var GenderField: some View {
+        VStack(alignment: .leading) {
             Text("Gender")
                 .padding(.top, 15)
                 .padding(.leading, 25)
@@ -160,14 +127,18 @@ extension SignUpView {
             .background(.white)
             .cornerRadius(10)
             .padding(.horizontal)
-            
+        }
+    }
+    
+    private var EmailField: some View {
+        VStack(alignment: .leading) {
             Text("Email")
                 .padding(.top, 15)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("", text: $username, prompt: Text("Enter your email here ...").foregroundColor(Color.black.opacity(0.5)))
+            TextField("", text: $email, prompt: Text("Enter your email here ...").foregroundColor(Color.black.opacity(0.5)))
                 .foregroundColor(.black)
                 .padding()
                 .background(.white)
@@ -175,7 +146,11 @@ extension SignUpView {
                 .padding(.horizontal)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
-            
+        }
+    }
+    
+    private var PasswordField: some View {
+        VStack(alignment: .leading) {
             Text("Password")
                 .padding(.top, 15)
                 .padding(.leading, 25)
@@ -204,7 +179,7 @@ extension SignUpView {
                 Button {
                     isPasswordVisible.toggle()
                 } label: {
-                    Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                    Image(systemName: isPasswordVisible ? "eye.fill" : "eye.slash.fill")
                         .foregroundColor(.gray)
                         .padding()
                 }
@@ -212,22 +187,58 @@ extension SignUpView {
             .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
             .padding(.horizontal)
         }
-        
     }
     
-    private var signup_button: some View {
-        
+    private var CheckBoxes: some View {
+        VStack(alignment: .leading) {
+            HStack() {
+                Image(systemName: isAgeChecked ? "checkmark.square.fill" : "square.fill")
+                    .foregroundColor(isAgeChecked ? .blue.opacity(0.5) : .white)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .onTapGesture {
+                        isAgeChecked.toggle()
+                    }
+                
+                Text("I am 16 years or older.")
+                    .foregroundColor(.white)
+            }
+            
+            HStack() {
+                Image(systemName: isAgreePolicy ? "checkmark.square.fill" : "square.fill")
+                    .foregroundColor(isAgreePolicy ? .blue.opacity(0.5) : .white)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .onTapGesture {
+                        isAgreePolicy.toggle()
+                    }
+                
+                Text("I have read and agree to the").foregroundColor(.white)
+                
+                NavigationLink(destination: PrivacyPolicyView()) {
+                    Text("Privacy Policy")
+                        .foregroundColor(Color(#colorLiteral(red: 0, green: 0.9914394021, blue: 1, alpha: 1)))
+                        .underline()
+                        .bold()
+                }
+            }
+        }
+        .padding()
+    }
+    
+    private var SignupButton: some View {
         Button {
             Task {
-                do {
-                    let signup_user = try await AuthManager.shared.signUp(email: username, password: password)
-                    let firestoreService = DatabaseManager()
-                    try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: username, fullname: fullname, profilePic: "userDefault", gender: gender)
-                    user = try await firestoreService.getUserFromFirestore(uid: signup_user.uid)
+                user = await vm.signUpUserAndAddToFireStore(
+                    email: email,
+                    password: password,
+                    fullname: fullname,
+                    profilePic: "userDefault",
+                    gender: gender
+                )
+                if let user = user {
                     print("User signed up: \(user.uid)")
-                    goToMainView = true
-                } catch {
-                    print("Sign up failed: \(error.localizedDescription)")
+                    goToVerifyView = true
                 }
             }
         } label: {
@@ -241,8 +252,10 @@ extension SignUpView {
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
         .disabled(!isAgeChecked || !isAgreePolicy)
-        .navigationDestination(isPresented: $goToMainView) {
-            VerifyEmailView(user: user)
+        .navigationDestination(isPresented: $goToVerifyView) {
+            if let user = user {
+                VerifyEmailView(user: user)
+            }
         }
     }
 }

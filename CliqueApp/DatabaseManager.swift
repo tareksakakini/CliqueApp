@@ -322,6 +322,11 @@ class DatabaseManager {
         let friendRequestRef = db.collection("friendRequests").document(email)
         
         do {
+            // Delete the user's authentication account
+            if let user = Auth.auth().currentUser {
+                try await user.delete()
+            }
+            
             // Fetch all events where the user is an attendee
             let eventSnapshot = try await db.collection("events").whereField("attendeesAccepted", arrayContains: email).getDocuments()
             for document in eventSnapshot.documents {
@@ -372,11 +377,6 @@ class DatabaseManager {
             try await userRef.delete()
             try await userFriendRef.delete()
             try await friendRequestRef.delete()
-            
-            // Delete the user's authentication account
-            if let user = Auth.auth().currentUser {
-                try await user.delete()
-            }
             
             print("User account and associated data deleted successfully.")
         } catch {

@@ -12,15 +12,11 @@ struct LoginView: View {
     @EnvironmentObject private var ud: ViewModel
     
     @State var user: UserModel = UserModel(uid: "", fullname: "", email: "", createdAt: Date(), profilePic: "userDefault")
-    
     @State var enteredUsername: String = ""
     @State var enteredPassword: String = ""
-    
-    @State var show_wrong_message: Bool = false
-    
-    @State var go_to_landing_screen: Bool = false
-    @State var go_to_verification_screen: Bool = false
-    
+    @State var showWrongMessage: Bool = false
+    @State var goToLandingScreen: Bool = false
+    @State var goToVerificationScreen: Bool = false
     @State var isPasswordVisible = false
     
     var body: some View {
@@ -28,62 +24,15 @@ struct LoginView: View {
             Color.white.ignoresSafeArea()
             
             VStack {
-                
-                
-                
-                Spacer()
-                
-                header
-                
-                Spacer()
-                
-                user_fields
-                
-                if show_wrong_message {
-                    Text("Wrong username/password. Try again").font(.caption)
+                Title
+                UserFields
+                if showWrongMessage {
+                    Text("Wrong username/password. Try again")
+                        .font(.caption)
                         .foregroundColor(.white)
                 }
-                
-                
-                
-                Spacer()
-                
+                AccountManagement
                 signin_button
-                
-                
-                VStack {
-                    HStack {
-                        Text("Don't have an account?")
-                            .font(.caption)
-                            .foregroundColor(.white)
-                        NavigationLink {
-                            SignUpView()
-                        } label: {
-                            Text("Create Account")
-                                .font(.caption)
-                                .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
-                        }
-                        .tint(.white)
-                        
-                    }
-                    HStack {
-                        Text("Forgot your password?")
-                            .font(.caption)
-                            .foregroundColor(.white)
-                        NavigationLink {
-                            ResetPassordView()
-                        } label: {
-                            Text("Reset Password")
-                                .font(.caption)
-                                .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
-                        }
-                        
-                    }
-                }
-                
-                .padding()
-                
-                
                 
             }
             .frame(width: 300, height: 500)
@@ -92,8 +41,6 @@ struct LoginView: View {
             .shadow(radius: 50)
         }
         .navigationBarHidden(true)
-        
-        
     }
 }
 
@@ -103,7 +50,7 @@ struct LoginView: View {
 }
 
 extension LoginView {
-    private var header: some View {
+    private var Title: some View {
         HStack {
             Image("yalla_transparent")
                 .resizable()
@@ -120,14 +67,12 @@ extension LoginView {
                 .font(.largeTitle)
             
             Spacer()
-            
-            
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
     }
     
-    private var user_fields: some View {
+    private var UserFields: some View {
         
         VStack {
             TextField("", text: $enteredUsername, prompt: Text("Enter your email here ...").foregroundColor(Color.black.opacity(0.5)))
@@ -161,7 +106,7 @@ extension LoginView {
                 Button {
                     isPasswordVisible.toggle()
                 } label: {
-                    Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                    Image(systemName: isPasswordVisible ? "eye.fill" : "eye.slash.fill")
                         .foregroundColor(.gray)
                         .padding()
                 }
@@ -169,8 +114,39 @@ extension LoginView {
             .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
             .padding(.horizontal)
         }
-        
-        
+    }
+    
+    private var AccountManagement: some View {
+        VStack {
+            HStack {
+                Text("Don't have an account?")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                NavigationLink {
+                    SignUpView()
+                } label: {
+                    Text("Create Account")
+                        .font(.caption)
+                        .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
+                }
+                .tint(.white)
+                
+            }
+            HStack {
+                Text("Forgot your password?")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                NavigationLink {
+                    ResetPassordView()
+                } label: {
+                    Text("Reset Password")
+                        .font(.caption)
+                        .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
+                }
+                
+            }
+        }
+        .padding()
     }
     
     private var signin_button: some View {
@@ -182,19 +158,18 @@ extension LoginView {
                     let authenticated_user = try await AuthManager.shared.signIn(email: enteredUsername, password: enteredPassword)
                     let firestoreService = DatabaseManager()
                     user = try await firestoreService.getUserFromFirestore(uid: authenticated_user.uid)
-                    //await ud.loadImage(imageUrl: user.profilePic)
                     print("User fetched: \(user.fullname), Email: \(user.email)")
                     if await AuthManager.shared.getEmailVerified() {
-                        go_to_landing_screen = true
+                        goToLandingScreen = true
                     } else {
-                        go_to_verification_screen = true
+                        goToVerificationScreen = true
                     }
                     
-                    show_wrong_message = false
+                    showWrongMessage = false
                     print("User signed in: \(authenticated_user.uid)")
                 } catch {
                     print("Sign in failed: \(error.localizedDescription)")
-                    show_wrong_message = true
+                    showWrongMessage = true
                 }
             }
         } label: {
@@ -207,10 +182,10 @@ extension LoginView {
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
-        .navigationDestination(isPresented: $go_to_landing_screen) {
+        .navigationDestination(isPresented: $goToLandingScreen) {
             MainView(user: user)
         }
-        .navigationDestination(isPresented: $go_to_verification_screen) {
+        .navigationDestination(isPresented: $goToVerificationScreen) {
             VerifyEmailView(user: user)
         }
     }
