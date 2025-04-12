@@ -6,7 +6,7 @@ class AuthManager {
     
     private init() {}
     
-    /// Signs up a new user with email and password
+    // Signs up a new user with email and password
     func signUp(email: String, password: String) async throws -> User {
         do {
             let authResult = try await Auth.auth().createUser(withEmail: email, password: password)
@@ -17,7 +17,7 @@ class AuthManager {
         }
     }
     
-    /// Signs in an existing user with email and password
+    // Signs in an existing user with email and password
     func signIn(email: String, password: String) async throws -> User {
         do {
             let authResult = try await Auth.auth().signIn(withEmail: email, password: password)
@@ -27,7 +27,7 @@ class AuthManager {
         }
     }
     
-    /// Signs out the currently logged-in user
+    // Signs out the currently logged-in user
     func signOut() throws {
         do {
             try Auth.auth().signOut()
@@ -45,7 +45,7 @@ class AuthManager {
         }
     }
     
-    func getSignedInUser() async -> String? {
+    func getSignedInUserID() async -> String? {
         let signedInUser = Auth.auth().currentUser
         if let signedInUser = signedInUser {
             return signedInUser.uid

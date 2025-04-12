@@ -141,4 +141,16 @@ class ViewModel: ObservableObject {
             }
         }
     }
+    
+    func getSignedInUser() async -> UserModel? {
+        let signedInUserUID = await AuthManager.shared.getSignedInUserID()
+        if let signedInUserUID = signedInUserUID {
+            let firestoreService = DatabaseManager()
+            let signedInUser = try? await firestoreService.getUserFromFirestore(uid: signedInUserUID)
+            return signedInUser
+        }
+        else {
+            return nil
+        }
+    }
 }

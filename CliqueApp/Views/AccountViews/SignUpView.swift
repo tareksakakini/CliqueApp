@@ -10,11 +10,11 @@ import SwiftUI
 struct SignUpView: View {
     
     @EnvironmentObject private var ud: ViewModel
+    @Environment(\.dismiss) var dismiss
     
     @State var user = UserModel(fullname: "", email: "", createdAt: Date())
     @State var fullname: String = ""
     @State var gender: String = "Male"
-    @State var birthdate: Date = Date()
     @State var username: String = ""
     @State var password: String = ""
     @State var isAgeChecked: Bool = false
@@ -30,57 +30,63 @@ struct SignUpView: View {
             Color(.accent).ignoresSafeArea()
             
             
-            ScrollView {
-                VStack() {
-                    
-                    header
-                    
-                    user_fields
-                    
-                    VStack(alignment: .leading) {
-                        HStack() {
-                            Image(systemName: isAgeChecked ? "checkmark.square.fill" : "square.fill")
-                                .foregroundColor(isAgeChecked ? .blue.opacity(0.5) : .white)
-                                .background(Color.white) // White background for checkbox
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                                .onTapGesture {
-                                    isAgeChecked.toggle()
-                                }
-                            
-                            Text("I am 16 years or older.")
-                                .foregroundColor(.white)
-                        }
+            VStack {
+                BackNavigation()
+                
+                ScrollView {
+                    VStack() {
                         
-                        HStack() {
-                            Image(systemName: isAgreePolicy ? "checkmark.square.fill" : "square.fill")
-                                .foregroundColor(isAgreePolicy ? .blue.opacity(0.5) : .white)
-                                .background(Color.white) // White background for checkbox
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                                .onTapGesture {
-                                    isAgreePolicy.toggle()
-                                }
-                            
-                            Text("I have read and agree to the").foregroundColor(.white)
-                            
-                            NavigationLink(destination: PrivacyPolicyView()) {
-                                Text("Privacy Policy")
-                                    .foregroundColor(Color(#colorLiteral(red: 0, green: 0.9914394021, blue: 1, alpha: 1)))
-                                    .underline()
-                                    .bold()
+                        header
+                        
+                        user_fields
+                        
+                        VStack(alignment: .leading) {
+                            HStack() {
+                                Image(systemName: isAgeChecked ? "checkmark.square.fill" : "square.fill")
+                                    .foregroundColor(isAgeChecked ? .blue.opacity(0.5) : .white)
+                                    .background(Color.white) // White background for checkbox
+                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    .onTapGesture {
+                                        isAgeChecked.toggle()
+                                    }
+                                
+                                Text("I am 16 years or older.")
+                                    .foregroundColor(.white)
                             }
                             
+                            HStack() {
+                                Image(systemName: isAgreePolicy ? "checkmark.square.fill" : "square.fill")
+                                    .foregroundColor(isAgreePolicy ? .blue.opacity(0.5) : .white)
+                                    .background(Color.white) // White background for checkbox
+                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                                    .onTapGesture {
+                                        isAgreePolicy.toggle()
+                                    }
+                                
+                                Text("I have read and agree to the").foregroundColor(.white)
+                                
+                                NavigationLink(destination: PrivacyPolicyView()) {
+                                    Text("Privacy Policy")
+                                        .foregroundColor(Color(#colorLiteral(red: 0, green: 0.9914394021, blue: 1, alpha: 1)))
+                                        .underline()
+                                        .bold()
+                                }
+                                
+                            }
                         }
+                        .padding()
+                        
+                        Spacer()
+                        Spacer()
+                        Spacer()
+                        
+                        signup_button
                     }
-                    .padding()
-                    
-                    Spacer()
-                    Spacer()
-                    Spacer()
-                    
-                    signup_button
                 }
             }
+            
         }
+        .navigationBarHidden(true)
     }
 }
 
@@ -119,7 +125,7 @@ extension SignUpView {
         
         VStack(alignment: .leading) {
             Text("Full Name")
-                //.padding(.top, 30)
+            //.padding(.top, 30)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
@@ -154,21 +160,6 @@ extension SignUpView {
             .background(.white)
             .cornerRadius(10)
             .padding(.horizontal)
-            
-            Text("Birth Date")
-                .padding(.top, 15)
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
-            
-            DatePicker("", selection: $birthdate, displayedComponents: [.date])
-                .foregroundColor(.white)
-                .labelsHidden()
-                .tint(.white)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding(.horizontal, 20)
             
             Text("Email")
                 .padding(.top, 15)
@@ -227,12 +218,11 @@ extension SignUpView {
     private var signup_button: some View {
         
         Button {
-            
             Task {
                 do {
                     let signup_user = try await AuthManager.shared.signUp(email: username, password: password)
                     let firestoreService = DatabaseManager()
-                    try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: username, fullname: fullname, profilePic: "userDefault", gender: gender, birthdate: birthdate)
+                    try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: username, fullname: fullname, profilePic: "userDefault", gender: gender)
                     user = try await firestoreService.getUserFromFirestore(uid: signup_user.uid)
                     print("User signed up: \(user.uid)")
                     goToMainView = true
@@ -249,15 +239,10 @@ extension SignUpView {
                 .foregroundColor(Color(.accent))
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-            
         }
         .disabled(!isAgeChecked || !isAgreePolicy)
         .navigationDestination(isPresented: $goToMainView) {
-            
-            //MainView(user: user)
             VerifyEmailView(user: user)
-            
         }
-        
     }
 }

@@ -63,6 +63,7 @@ struct LoginView: View {
                                 .font(.caption)
                                 .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
                         }
+                        .tint(.white)
                         
                     }
                     HStack {

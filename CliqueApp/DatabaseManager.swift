@@ -7,7 +7,7 @@ import FirebaseStorage
 class DatabaseManager {
     private let db = Firestore.firestore()
     
-    func addUserToFirestore(uid: String, email: String, fullname: String, profilePic: String, gender: String, birthdate: Date) async throws {
+    func addUserToFirestore(uid: String, email: String, fullname: String, profilePic: String, gender: String) async throws {
         let userRef = db.collection("users").document(uid)
         
         let userData: [String: Any] = [
@@ -16,8 +16,7 @@ class DatabaseManager {
             "createdAt": Date(),
             "fullname": fullname,
             "profilePic": profilePic,
-            "gender": gender,
-            "birthdate": birthdate
+            "gender": gender
         ]
         
         do {
