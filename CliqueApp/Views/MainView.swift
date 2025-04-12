@@ -94,26 +94,6 @@ struct MainView: View {
             }
         }
         .tint(Color(.accent))
-//        .onChange(of: selectedTab) { _ in
-//            print("tab changed")
-//            Task {
-//                print("Waiting")
-//                try? await Task.sleep(nanoseconds: 5_000_000_000) // 1 second
-//                print("Doing")
-//                await ud.getAllEvents()
-//            }
-//        }
-//        .onChange(of: selectedTab) { _ in
-//            print("tab changed")
-//            timerTask?.cancel() // Cancel existing task if any
-//            timerTask = Task {
-//                while !Task.isCancelled {
-//                    print("Checking again")
-//                    await ud.getAllEvents()
-//                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-//                }
-//            }
-//        }
     }
 }
 

@@ -11,64 +11,21 @@ struct ResetPassordView: View {
     
     @EnvironmentObject private var ud: ViewModel
     
-    @State var user = UserModel(fullname: "", email: "", createdAt: Date())
-    
-    @State var fullname: String = ""
     @State var username: String = ""
-    @State var password: String = ""
-    @State var message: String = ""
-    
-    
-    @State var show_confirmation_message: Bool = false
-    
-    @State var goToMainView: Bool = false
+    @State var confirmationMessage: String = " "
     
     var body: some View {
         ZStack {
             Color.white.ignoresSafeArea()
-            
             VStack {
-                
-                
-                
+                BackNavigation(foregroundColor: Color(.accent))
                 Spacer()
-                
-                header
-                    .padding(.top, 20)
-                
+                ResetPasswordSheet
                 Spacer()
-                
-                user_fields
-                
-                Spacer()
-                Spacer()
-                Spacer()
-                
-                if show_confirmation_message {
-                    Text("Reset password email sent. Please check your inbox.")
-                        .font(.subheadline)
-                        .foregroundColor(.white)
-                        .padding(.bottom, 10)
-                }
-                
-                reset_button
-                    .padding(.bottom, 30)
-                
-                Text("\(message)")
-                
-                Spacer()
-                Spacer()
-                Spacer()
-                
-                
             }
-            .frame(width: 400, height: 400)
-            .background(Color(.accent))
-            .cornerRadius(20)
-            .shadow(radius: 50)
+            
         }
-        
-        
+        .navigationBarHidden(true)
     }
 }
 
@@ -78,7 +35,19 @@ struct ResetPassordView: View {
 }
 
 extension ResetPassordView {
-    private var header: some View {
+    private var ResetPasswordSheet: some View {
+        VStack {
+            Title
+            EmailField
+            ConfirmationMessage
+            ResetButton
+        }
+        .frame(width: 300, height: 350)
+        .background(Color(.accent))
+        .cornerRadius(20)
+        .shadow(radius: 50)
+    }
+    private var Title: some View {
         HStack {
             Image("yalla_transparent")
                 .resizable()
@@ -92,7 +61,7 @@ extension ResetPassordView {
             
             Text("Reset Password")
                 .foregroundColor(.white)
-                .font(.largeTitle)
+                .font(.title2)
             
             Spacer()
         }
@@ -100,10 +69,16 @@ extension ResetPassordView {
         .padding()
     }
     
-    private var user_fields: some View {
+    private var ConfirmationMessage: some View {
+        Text(confirmationMessage)
+            .font(.subheadline)
+            .foregroundColor(.white)
+            .padding(2)
+    }
+    
+    private var EmailField: some View {
         
         VStack(alignment: .leading) {
-            
             Text("Email")
                 .padding(.top, 15)
                 .padding(.leading, 25)
@@ -119,17 +94,15 @@ extension ResetPassordView {
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
         }
-        
     }
     
-    private var reset_button: some View {
+    private var ResetButton: some View {
         
         Button {
             Task {
                 do {
                     try await AuthManager.shared.sendPasswordReset(email: username)
-                    print("Check your email for reset instructions.")
-                    show_confirmation_message = true
+                    confirmationMessage = "Reset password email sent"
                 } catch {
                     print("Failed to send password reset email: \(error.localizedDescription)")
                 }
@@ -144,10 +117,6 @@ extension ResetPassordView {
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
-        .navigationDestination(isPresented: $goToMainView) {
-            
-            MainView(user: user)
-            
-        }
+        .padding(.bottom, 30)
     }
 }

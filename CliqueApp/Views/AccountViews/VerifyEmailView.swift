@@ -8,16 +8,14 @@
 import SwiftUI
 
 struct VerifyEmailView: View {
-    @EnvironmentObject private var ud: ViewModel
-    
-    @State private var isVerified: Bool = false
     @State var user: UserModel
+    @State var isVerified: Bool = false
+    let message: String = "A verification link has been sent to your email. Please verify to continue."
     
     var body: some View {
         ZStack {
             if !isVerified {
-                Text("A verification link has been sent to your email. Please verify to continue.")
-                    .padding()
+                VerificationViewContent
             } else {
                 MainView(user: user)
             }
@@ -25,22 +23,35 @@ struct VerifyEmailView: View {
         .task {
             await checkEmailVerification()
         }
+        .navigationBarHidden(true)
     }
     
     @MainActor
     private func checkEmailVerification() async {
         while !isVerified {
             isVerified = await AuthManager.shared.getEmailVerified()
-            print("Email Verified: \(isVerified)")
-            
-            if isVerified { break } // Exit loop if verified
-            
-            try? await Task.sleep(nanoseconds: 2_000_000_000) // Sleep for 2 seconds
+            if isVerified { break }
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
         }
     }
 }
 
 #Preview {
     VerifyEmailView(user: UserData.userData[0])
-        .environmentObject(ViewModel())
+}
+
+extension VerifyEmailView {
+    private var VerificationViewContent: some View {
+        ZStack {
+            Color(.accent).ignoresSafeArea()
+            VStack {
+                BackNavigation(foregroundColor: .white)
+                Spacer()
+                Text(message)
+                    .foregroundColor(.white)
+                    .padding()
+                Spacer()
+            }
+        }
+    }
 }
