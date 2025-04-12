@@ -9,81 +9,41 @@ import SwiftUI
 import PhotosUI
 
 struct EventPillView: View {
-    @EnvironmentObject private var ud: ViewModel
-    @State var showSheet: Bool = false
+    @EnvironmentObject private var vm: ViewModel
+    
     let event: EventModel
     let user: UserModel
     let inviteView: Bool
+    
+    @State var showSheet: Bool = false
     @State private var eventImage: Image? = nil
+    
     var body: some View {
         
         Button {
             showSheet = true
         } label: {
-            
             ZStack {
                 Color(.white)
-                
                 VStack {
-                    
-                    if let eventImage {
-                        eventImage
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxHeight: 140)
-                            .clipped()
-                    } else {
-                        ZStack {
-                            Color(.white)
-                            ProgressView()
-                        }
-                        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
-                    }
-                    
-                    HStack {
-                        VStack(alignment: .leading) {
-                            Text("\(event.title)")
-                                .foregroundColor(Color(.accent))
-                                .padding(.horizontal)
-                                .font(.title3)
-                                .bold()
-                            
-                            
-                            Text("\(event.location)")
-                                .foregroundColor(Color(.accent))
-                                .padding(.horizontal)
-                                .font(.subheadline)
-                        }
-                        
-                        Spacer()
-                        
-                        VStack(alignment: .trailing) {
-                            Text("\(ud.formatDate(date: event.dateTime))")
-                                .foregroundColor(Color(.accent))
-                                .padding(.horizontal)
-                                .font(.title3)
-                                .bold()
-                            
-                            
-                            Text("\(ud.formatTime(time: event.dateTime))")
-                                .foregroundColor(Color(.accent))
-                                .padding(.horizontal)
-                                .font(.subheadline)
-                        }
-                    }
-                    .padding(.bottom)
+                    EventImage
+                    EventInfo
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity)
             .frame(height: 200)
-            .background(.white)
             .cornerRadius(20)
             .padding(.horizontal, 20)
             .padding(.vertical, 5)
             .shadow(color: .black.opacity(0.3), radius: 20, x: 0, y: 15)
             .sheet(isPresented: $showSheet) {
-                EventResponseView(user: user, event: event, inviteView: inviteView, isPresented: $showSheet)
-                    .presentationDetents([.fraction(0.5)])
+                EventResponseView(
+                    user: user,
+                    event: event,
+                    inviteView: inviteView,
+                    isPresented: $showSheet
+                )
+                .presentationDetents([.fraction(0.5)])
             }
             .task {
                 await loadEventImage(imageUrl: event.eventPic)
@@ -107,7 +67,6 @@ struct EventPillView: View {
     }
 }
 
-
 #Preview {
     ZStack {
         Color(.accent).ignoresSafeArea()
@@ -119,4 +78,79 @@ struct EventPillView: View {
         .environmentObject(ViewModel())
     }
     
+}
+
+extension EventPillView {
+    private var EventTitle: some View {
+        Text("\(event.title)")
+            .foregroundColor(Color(.accent))
+            .font(.title3)
+            .bold()
+    }
+    
+    private var EventLocation: some View {
+        Text("\(event.location)")
+            .foregroundColor(Color(.accent))
+            .font(.subheadline)
+    }
+    
+    private var EventDate: some View {
+        Text("\(vm.formatDate(date: event.dateTime))")
+            .foregroundColor(Color(.accent))
+            .font(.title3)
+            .bold()
+    }
+    
+    private var EventTime: some View {
+        Text("\(vm.formatTime(time: event.dateTime))")
+            .foregroundColor(Color(.accent))
+            .font(.subheadline)
+    }
+    
+    private var EventInfo: some View {
+        HStack(alignment: .center) {
+            VStack(alignment: .leading) {
+                EventTitle
+                EventLocation
+            }
+            Spacer()
+            VStack(alignment: .trailing) {
+                EventDate
+                EventTime
+            }
+        }
+        .padding()
+        .padding(.bottom)
+        .frame(height: 60)
+    }
+    
+    private var EventImage: some View {
+        VStack {
+            if event.eventPic == "" {
+                ZStack {
+                    Color(.gray.opacity(0.4))
+                    Image(systemName: "photo.on.rectangle.angled.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .padding(20)
+                    
+                }
+                .frame(height: 140)
+            }
+            else if let eventImage {
+                eventImage
+                    .resizable()
+                    .scaledToFill()
+                    .frame(height: 140)
+                    .clipped()
+            } else {
+                ZStack {
+                    Color(.gray.opacity(0.4))
+                    ProgressView()
+                        .foregroundColor(Color(.accent))
+                }
+                .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+            }
+        }
+    }
 }

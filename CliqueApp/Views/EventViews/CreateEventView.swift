@@ -84,19 +84,6 @@ struct CreateEventView: View {
                 
                 Spacer()
                 
-//                Button(action: {
-//                    showContactPicker = true
-//                }) {
-//                    Text("Choose Contact & Send Message")
-//                        .fontWeight(.medium)
-//                        .padding()
-//                        .frame(maxWidth: .infinity)
-//                        .background(Color.blue.opacity(0.8))
-//                        .foregroundColor(.white)
-//                        .cornerRadius(10)
-//                }
-//                .padding(.horizontal)
-                
                 ScrollView() {
                     
                     event_fields
