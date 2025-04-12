@@ -27,7 +27,7 @@ struct SignUpView: View {
         ZStack {
             Color(.accent).ignoresSafeArea()
             VStack {
-                BackNavigation()
+                BackNavigation(foregroundColor: .white)
                 TitleBar
                 SignUpSheet
             }

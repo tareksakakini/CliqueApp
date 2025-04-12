@@ -10,6 +10,7 @@ import SwiftUI
 struct BackNavigation: View {
     
     @Environment(\.dismiss) var dismiss
+    let foregroundColor: Color
     
     var body: some View {
         HStack {
@@ -22,7 +23,7 @@ struct BackNavigation: View {
                     Text("Back")
                         .font(.system(size: 20))
                 }
-                .foregroundColor(.white)
+                .foregroundColor(foregroundColor)
             }
             .padding(.horizontal)
             
@@ -32,5 +33,5 @@ struct BackNavigation: View {
 }
 
 #Preview {
-    BackNavigation()
+    BackNavigation(foregroundColor: .white)
 }

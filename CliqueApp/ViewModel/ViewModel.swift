@@ -167,4 +167,17 @@ class ViewModel: ObservableObject {
         }
         
     }
+    
+    func signInUser(email: String, password: String) async -> UserModel? {
+        do {
+            let signedInUser = try await AuthManager.shared.signIn(email: email, password: password)
+            let firestoreService = DatabaseManager()
+            let user = try await firestoreService.getUserFromFirestore(uid: signedInUser.uid)
+            print("User signed in: \(user.uid)")
+            return user
+        } catch {
+            print("Sign in failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
 }
