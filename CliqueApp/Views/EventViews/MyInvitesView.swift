@@ -9,45 +9,16 @@ import SwiftUI
 
 struct MyInvitesView: View {
     
-    @EnvironmentObject private var ud: ViewModel
+    @EnvironmentObject private var vm: ViewModel
     
-
     @State var user: UserModel
-    @State var refreshTrigger: Bool = false
     
     var body: some View {
-        
         ZStack {
             Color(.accent).ignoresSafeArea()
-            
             VStack {
-                
                 HeaderView(user: user, title: "My Invites")
-                
-                ScrollView {
-                    ForEach(ud.events, id: \.self) {event in
-                        if event.attendeesInvited .contains(user.email) {
-                            EventPillView(
-                                event: event,
-                                user: user,
-                                inviteView: true,
-                                refreshTrigger: $refreshTrigger
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        .onChange(of: refreshTrigger) { _ in
-            print("variable changed")
-            Task {
-                await ud.getAllEvents()
-            }
-        }
-        .task {
-            while true {
-                await ud.getAllEvents()
-                try? await Task.sleep(nanoseconds: 500_000_000)
+                MyInviteScrollView
             }
         }
     }
@@ -56,4 +27,23 @@ struct MyInvitesView: View {
 #Preview {
     MyInvitesView(user: UserData.userData[0])
         .environmentObject(ViewModel())
+}
+
+extension MyInvitesView {
+    private var MyInviteScrollView: some View {
+        ScrollView {
+            ForEach(vm.events, id: \.self) {event in
+                if event.attendeesInvited .contains(user.email) {
+                    EventPillView(
+                        event: event,
+                        user: user,
+                        inviteView: true
+                    )
+                }
+            }
+        }
+        .refreshable {
+            await vm.getAllEvents()
+        }
+    }
 }
