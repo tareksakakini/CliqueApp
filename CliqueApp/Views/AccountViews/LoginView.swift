@@ -174,7 +174,7 @@ extension LoginView {
             Task {
                 user = await vm.signInUser(email: email, password: password)
                 isVerified = await AuthManager.shared.getEmailVerified()
-                if let user {
+                if user != nil {
                     goToNextScreen = true
                 } else {
                     wrongMessage = "Email or password is incorrect"

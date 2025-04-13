@@ -38,6 +38,44 @@ struct EventResponseView: View {
 }
 
 extension EventResponseView {
+    private var EventInfo: some View {
+        ScrollView {
+            VStack(alignment: .leading) {
+                EventHeader
+                EventDate
+                EventTime
+                
+                if event.hours != "" && event.minutes != "" {
+                    EventDuration
+                }
+                
+                EventLocation
+                EventOrganizer
+                EventAttendees
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundColor(.white)
+            .padding()
+        }
+    }
+    
+    private var EventAttendees: some View {
+        VStack {
+            HStack {
+                Image(systemName: "person.3.fill")
+                Text("People")
+            }
+            .font(.body)
+            .bold()
+            .padding(.top, 15)
+            
+            EventAttendeesAccepted
+            EventAttendeesAcceptedPhone
+            EventAttendeesInvited
+            EventAttendeesInvitedPhone
+        }
+    }
+    
     private var AcceptButton: some View {
         Button {
             Task {
@@ -128,27 +166,6 @@ extension EventResponseView {
         }
     }
     
-    private var EventInfo: some View {
-        ScrollView {
-            VStack(alignment: .leading) {
-                EventHeader
-                EventDate
-                EventTime
-                
-                if event.hours != "" && event.minutes != "" {
-                    EventDuration
-                }
-                
-                EventLocation
-                EventOrganizer
-                EventAttendees
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .foregroundColor(.white)
-            .padding()
-        }
-    }
-    
     private var EventHeader: some View {
         HStack {
             EventTitle
@@ -212,54 +229,50 @@ extension EventResponseView {
         }
     }
     
-    private var EventAttendees: some View {
-        VStack {
-            HStack {
-                Image(systemName: "person.3.fill")
-                Text("People")
-            }
-            .font(.body)
-            .bold()
-            .padding(.top, 15)
-            
-            ForEach(event.attendeesAccepted, id: \.self) {username in
-                if let user = vm.getUser(username: username) {
-                    HStack {
-                        ProfilePictureView(user: user, diameter: 30, isPhone: false)
-                        Text("\(user.fullname)")
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.white)
-                    }
-                }
-            }
-            
-            ForEach(event.acceptedPhoneNumbers, id: \.self) {phone_number in
+    private var EventAttendeesAccepted: some View {
+        ForEach(event.attendeesAccepted, id: \.self) {username in
+            if let user = vm.getUser(username: username) {
                 HStack {
-                    ProfilePictureView(user: nil, diameter: 30, isPhone: true)
-                    Text("\(phone_number)")
+                    ProfilePictureView(user: user, diameter: 30, isPhone: false)
+                    Text("\(user.fullname)")
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.white)
                 }
             }
-            
-            ForEach(event.attendeesInvited, id: \.self) {username in
-                if let user = vm.getUser(username: username) {
-                    HStack {
-                        ProfilePictureView(user: user, diameter: 30, isPhone: false)
-                        Text("\(user.fullname)")
-                        Image(systemName: "questionmark.circle")
-                            .foregroundColor(.white)
-                    }
-                }
-            }
-            
-            ForEach(event.invitedPhoneNumbers, id: \.self) {phone_number in
+        }
+    }
+    
+    private var EventAttendeesInvited: some View {
+        ForEach(event.attendeesInvited, id: \.self) {username in
+            if let user = vm.getUser(username: username) {
                 HStack {
-                    ProfilePictureView(user: nil, diameter: 30, isPhone: true)
-                    Text("\(phone_number)")
+                    ProfilePictureView(user: user, diameter: 30, isPhone: false)
+                    Text("\(user.fullname)")
                     Image(systemName: "questionmark.circle")
                         .foregroundColor(.white)
                 }
+            }
+        }
+    }
+    
+    private var EventAttendeesAcceptedPhone: some View {
+        ForEach(event.acceptedPhoneNumbers, id: \.self) {phone_number in
+            HStack {
+                ProfilePictureView(user: nil, diameter: 30, isPhone: true)
+                Text("\(phone_number)")
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundColor(.white)
+            }
+        }
+    }
+    
+    private var EventAttendeesInvitedPhone: some View {
+        ForEach(event.invitedPhoneNumbers, id: \.self) {phone_number in
+            HStack {
+                ProfilePictureView(user: nil, diameter: 30, isPhone: true)
+                Text("\(phone_number)")
+                Image(systemName: "questionmark.circle")
+                    .foregroundColor(.white)
             }
         }
     }

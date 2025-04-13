@@ -192,9 +192,8 @@ extension EditEventView {
                 Task {
                     do {
                         let firestoreService = DatabaseManager()
-                        var invitee_emails = invitees.map {$0.email}
-                        var inviteeAccepted_emails_old = inviteesAccepted.map {$0.email}
-                        var inviteeInvited_emails_old = inviteesInvited.map {$0.email}
+                        let inviteeAccepted_emails_old = inviteesAccepted.map {$0.email}
+                        let inviteeInvited_emails_old = inviteesInvited.map {$0.email}
                         
                         var inviteeAccepted_new: [UserModel] = []
                         var inviteeInvited_new: [UserModel] = []
@@ -215,8 +214,8 @@ extension EditEventView {
                             }
                         }
                         
-                        var inviteeAccepted_new_emails = inviteeAccepted_new.map {$0.email}
-                        var inviteeInvited_new_emails = inviteeInvited_new.map {$0.email}
+                        let inviteeAccepted_new_emails = inviteeAccepted_new.map {$0.email}
+                        let inviteeInvited_new_emails = inviteeInvited_new.map {$0.email}
                         
                         try await firestoreService.deleteEventFromFirestore(id: event.id)
                         try await firestoreService.addEventToFirestore(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes, invitedPhoneNumbers: invitedPhoneNumbers+newlyInvitedPhoneNumbers, acceptedPhoneNumbers: acceptedPhoneNumbers)
