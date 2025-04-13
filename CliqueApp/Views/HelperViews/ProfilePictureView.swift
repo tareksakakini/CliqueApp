@@ -16,7 +16,7 @@ struct ProfilePictureView: View {
     var body: some View {
         ZStack {
             if let user {
-                if user.profilePic != "" {
+                if user.profilePic != "" && user.profilePic != "userDefault" {
                     CustomImage
                 } else {
                     DefaultImage
@@ -107,9 +107,10 @@ extension ProfilePictureView {
     
     private var ProgressViewImage: some View {
         ZStack {
-            Color(.gray)
+            Color(.white)
+            Color(.gray.opacity(0.6))
             ProgressView()
-                .foregroundColor(.white)
+                .tint(.white)
         }
     }
 }
