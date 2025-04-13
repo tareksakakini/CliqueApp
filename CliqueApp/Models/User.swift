@@ -13,7 +13,7 @@ struct UserModel: Hashable {
     var fullname: String = ""
     var email: String = ""
     var createdAt: Date = Date()
-    var profilePic: String = "userDefault"
+    var profilePic: String = ""
     var subscriptionId: String = ""
     var gender: String = ""
     

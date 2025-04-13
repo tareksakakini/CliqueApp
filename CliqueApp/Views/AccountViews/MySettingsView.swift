@@ -32,33 +32,9 @@ struct MySettingsView: View {
                 
                 Spacer()
                 
-                if let profileImage = profilePic {
-                    profileImage
-                        .resizable()
-                        .scaledToFit()
-                        .clipShape(Circle())
-                        .frame(width: 250)
-                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                } else {
-                    Image(systemName: "person.crop.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 250)
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.gray, .white)
-                        .clipShape(Circle())
-                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                }
+                ProfilePictureView(user: user, diameter: 250, isPhone: false)
                 
                 Spacer()
-                
-//                if let selectedImage {
-//                    Image(uiImage: selectedImage)
-//                        .resizable()
-//                        .scaledToFill()
-//                        .frame(width: 200, height: 200)
-//                        .cornerRadius(10)
-//                }
                 
                 PhotosPicker(selection: $imageSelection, matching: .images) {
                     Text("Add Profile Picture")
@@ -137,24 +113,6 @@ struct MySettingsView: View {
                     }
                 }
             }
-        }
-        .task {
-            await loadImage(imageUrl: user.profilePic)
-        }
-    }
-    
-    func loadImage(imageUrl: String) async {
-        guard let url = URL(string: imageUrl) else { return }
-        
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let uiImage = UIImage(data: data) {
-                DispatchQueue.main.async {
-                    profilePic = Image(uiImage: uiImage)
-                }
-            }
-        } catch {
-            print("Error loading image: \(error)")
         }
     }
 }

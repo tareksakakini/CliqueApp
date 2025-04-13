@@ -21,11 +21,7 @@ struct PersonPillView: View {
             
             if let currentUser = displayed_user {
                 
-                Image(currentUser.profilePic)
-                    .resizable()
-                    .scaledToFit()
-                    .clipShape(Circle())
-                    .frame(width: 50)
+                ProfilePictureView(user: currentUser, diameter: 50, isPhone: false)
                     .padding(.leading)
                 
                 VStack(alignment: .leading) {

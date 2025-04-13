@@ -26,7 +26,7 @@ struct UserData {
             fullname: "Tarek Sakakini",
             email: "tarek.sakakini@gmail.com",
             createdAt: Date(),
-            profilePic: "tarek_pic"
+            profilePic: "https://firebasestorage.googleapis.com:443/v0/b/cliqueapp-3834b.firebasestorage.app/o/profile_pictures%2FdWqRV0mlUWMCipVVAOp2NuADoBE3.jpg?alt=media&token=5be91c8f-2960-40a3-ae63-f511fc612a75"
         ),
         UserModel(
             fullname: "Ali Kanj",

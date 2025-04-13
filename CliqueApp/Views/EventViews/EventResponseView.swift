@@ -203,12 +203,7 @@ extension EventResponseView {
             
             if let user = vm.getUser(username: event.host) {
                 HStack {
-                    Image(user.profilePic)
-                        .resizable()
-                        .scaledToFit()
-                        .clipShape(Circle())
-                        .frame(width: 30)
-                        .padding(.horizontal, 3)
+                    ProfilePictureView(user: user, diameter: 30, isPhone: false)
                     Text("\(user.fullname)")
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.white)
@@ -230,12 +225,7 @@ extension EventResponseView {
             ForEach(event.attendeesAccepted, id: \.self) {username in
                 if let user = vm.getUser(username: username) {
                     HStack {
-                        Image(user.profilePic)
-                            .resizable()
-                            .scaledToFit()
-                            .clipShape(Circle())
-                            .frame(width: 30)
-                            .padding(.horizontal, 3)
+                        ProfilePictureView(user: user, diameter: 30, isPhone: false)
                         Text("\(user.fullname)")
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundColor(.white)
@@ -244,30 +234,18 @@ extension EventResponseView {
             }
             
             ForEach(event.acceptedPhoneNumbers, id: \.self) {phone_number in
-                
                 HStack {
-                    Image(systemName: "phone")
-                        .resizable()
-                        .scaledToFit()
-                        .clipShape(Circle())
-                        .frame(width: 30)
-                        .padding(.horizontal, 3)
+                    ProfilePictureView(user: nil, diameter: 30, isPhone: true)
                     Text("\(phone_number)")
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundColor(.white)
                 }
-                
             }
             
             ForEach(event.attendeesInvited, id: \.self) {username in
                 if let user = vm.getUser(username: username) {
                     HStack {
-                        Image(user.profilePic)
-                            .resizable()
-                            .scaledToFit()
-                            .clipShape(Circle())
-                            .frame(width: 30)
-                            .padding(.horizontal, 3)
+                        ProfilePictureView(user: user, diameter: 30, isPhone: false)
                         Text("\(user.fullname)")
                         Image(systemName: "questionmark.circle")
                             .foregroundColor(.white)
@@ -276,19 +254,12 @@ extension EventResponseView {
             }
             
             ForEach(event.invitedPhoneNumbers, id: \.self) {phone_number in
-                
                 HStack {
-                    Image(systemName: "phone")
-                        .resizable()
-                        .scaledToFit()
-                        .clipShape(Circle())
-                        .frame(width: 30)
-                        .padding(.horizontal, 3)
+                    ProfilePictureView(user: nil, diameter: 30, isPhone: true)
                     Text("\(phone_number)")
                     Image(systemName: "questionmark.circle")
                         .foregroundColor(.white)
                 }
-                
             }
         }
     }
