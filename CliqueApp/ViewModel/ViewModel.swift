@@ -196,4 +196,50 @@ class ViewModel: ObservableObject {
             print("Failed to retrieve OneSignal Subscription ID.")
         }
     }
+    
+    func acceptButtonPressed(user: UserModel, event: EventModel) async {
+        do {
+            let databaseManager = DatabaseManager()
+            try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "accept")
+            print("User successfully moved from inviteeAttended to inviteeAccepted!")
+            if let host = self.getUser(username: event.host) {
+                let notificationText: String = "\(user.fullname) is coming to your event!"
+                sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+            }
+        } catch {
+            print("Failed to update: \(error.localizedDescription)")
+        }
+    }
+    
+    func declineButtonPressed(user: UserModel, event: EventModel) async {
+        do {
+            let databaseManager = DatabaseManager()
+            try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "reject")
+            print("User successfully removed from inviteeAttended!")
+            if let host = self.getUser(username: event.host) {
+                if event.host != user.email {
+                    let notificationText: String = "\(user.fullname) cannot make it to your event."
+                    sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                }
+            }
+        } catch {
+            print("Failed to update: \(error.localizedDescription)")
+        }
+    }
+    
+    func leaveButtonPressed(user: UserModel, event: EventModel) async {
+        do {
+            let databaseManager = DatabaseManager()
+            try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "leave")
+            print("User successfully removed from inviteeAttended!")
+            if let host = self.getUser(username: event.host) {
+                if event.host != user.email {
+                    let notificationText: String = "\(user.fullname) cannot make it anymore to your event."
+                    sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                }
+            }
+        } catch {
+            print("Failed to update: \(error.localizedDescription)")
+        }
+    }
 }
