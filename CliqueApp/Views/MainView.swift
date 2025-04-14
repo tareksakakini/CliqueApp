@@ -31,7 +31,7 @@ struct MainView: View {
                     }
                     .tag(1)
                 
-                CreateEventView(user: user, selectedTab: $selectedTab)
+                CreateEventView(user: user, selectedTab: $selectedTab, event: EventModel())
                     .tabItem {
                         Image(systemName: "plus.square.fill")
                         Text("New Event")

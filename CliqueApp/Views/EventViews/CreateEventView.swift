@@ -15,13 +15,8 @@ struct CreateEventView: View {
     
     @State var user: UserModel
     @Binding var selectedTab: Int
-    
-    @State var eventTitle: String = ""
-    @State var eventLocation: String = ""
-    @State var eventDateTime: Date = Date()
-    @State var eventDurationHours: String = ""
-    @State var eventDurationMinutes: String = ""
-    @State var invitees: [UserModel] = []
+    @State var event: EventModel
+    @State var inviteesUserModels: [UserModel] = []
     
     @State var imageSelection: PhotosPickerItem? = nil
     @State var selectedImage: UIImage? = nil
@@ -30,7 +25,6 @@ struct CreateEventView: View {
     @State var showAlert: Bool = false
     @State var alertMessage: String = ""
     
-    @State var selectedPhoneNumbers: [String] = []
     @State var showMessageComposer = false
     @State var messageEventID: String = ""
 
@@ -53,7 +47,7 @@ struct CreateEventView: View {
             }
             .sheet(isPresented: $showMessageComposer) {
                 if MFMessageComposeViewController.canSendText() {
-                    MessageComposer(recipients: selectedPhoneNumbers, body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)")
+                    MessageComposer(recipients: event.invitedPhoneNumbers, body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)")
                 }  else {
                     Text("This device can't send SMS messages.")
                         .padding()
@@ -68,7 +62,7 @@ struct CreateEventView: View {
 }
 
 #Preview {
-    CreateEventView(user: UserData.userData[0], selectedTab: .constant(2))
+    CreateEventView(user: UserData.userData[0], selectedTab: .constant(2), event: EventModel())
         .environmentObject(ViewModel())
 }
 
@@ -77,29 +71,32 @@ extension CreateEventView {
     private var CreateButton: some View {
         
         Button {
-            if eventTitle.count < 3 {
+            if event.title.count < 3 {
                 alertMessage = "Event title has to be 3 characters or longer!"
                 showAlert = true
-            } else if eventLocation.isEmpty {
+            } else if event.location.isEmpty {
                 alertMessage = "You have to select a location first!"
                 showAlert = true
             } else {
                 Task {
                     let temp_uuid = UUID().uuidString
                     messageEventID = temp_uuid
+                    event.attendeesInvited = inviteesUserModels.map({$0.email})
                     
-                    await vm.createEventButtonPressed(eventID: temp_uuid, eventTitle: eventTitle, eventLocation: eventLocation, eventDateTime: eventDateTime, invitees: invitees, user: user, eventDurationHours: eventDurationHours, eventDurationMinutes: eventDurationMinutes, selectedPhoneNumbers: selectedPhoneNumbers, selectedImage: selectedImage)
+                    await vm.createEventButtonPressed(eventID: temp_uuid, eventTitle: event.title, eventLocation: event.location, eventDateTime: event.dateTime, invitees: event.attendeesInvited, user: user, eventDurationHours: event.hours, eventDurationMinutes: event.minutes, selectedPhoneNumbers: event.invitedPhoneNumbers, selectedImage: selectedImage)
                     
-                    eventTitle = ""
-                    eventLocation = ""
-                    eventDateTime = Date()
-                    invitees = []
-                    imageSelection = nil
-                    selectedImage = nil
-                    selectedPhoneNumbers = []
-                    if selectedPhoneNumbers.count > 0 {
+                    if event.invitedPhoneNumbers.count > 0 {
                         showMessageComposer = true
                     }
+                    event.title = ""
+                    event.location = ""
+                    event.dateTime = Date()
+                    event.attendeesInvited = []
+                    inviteesUserModels = []
+                    imageSelection = nil
+                    selectedImage = nil
+                    event.invitedPhoneNumbers = []
+                    
                     
                 }
                 selectedTab = 0
@@ -127,7 +124,7 @@ extension CreateEventView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("", text: $eventTitle, prompt: Text("Enter your event title here ...").foregroundColor(Color.black.opacity(0.5)))
+            TextField("", text: $event.title, prompt: Text("Enter your event title here ...").foregroundColor(Color.black.opacity(0.5)))
                 .foregroundColor(.black)
                 .padding()
                 .background(.white)
@@ -146,7 +143,7 @@ extension CreateEventView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            LocationSearchField(eventLocation: $eventLocation)
+            LocationSearchField(eventLocation: $event.location)
         }
     }
     
@@ -158,7 +155,7 @@ extension CreateEventView {
                 .font(.title2)
                 .foregroundColor(.white)
             
-            DatePicker("", selection: $eventDateTime, displayedComponents: [.date, .hourAndMinute])
+            DatePicker("", selection: $event.dateTime, displayedComponents: [.date, .hourAndMinute])
                 .foregroundColor(.white)
                 .labelsHidden()
                 .tint(.white)
@@ -186,7 +183,7 @@ extension CreateEventView {
     
             HStack {
                 Picker(
-                    selection : $eventDurationHours,
+                    selection : $event.hours,
                     label: Text("Hours"),
                     content: {
                         Text("").tag("")
@@ -203,7 +200,7 @@ extension CreateEventView {
             
                 
                 Picker(
-                    selection : $eventDurationMinutes,
+                    selection : $event.minutes,
                     label: Text("Minutes"),
                     content: {
                         Text("").tag("")
@@ -234,7 +231,7 @@ extension CreateEventView {
                     Image(systemName: "plus.circle")
                 }
                 .sheet(isPresented: $addInviteeSheet) {
-                    AddInviteesView(user: user, invitees: $invitees, selectedPhoneNumbers: $selectedPhoneNumbers)
+                    AddInviteesView(user: user, invitees: $inviteesUserModels, selectedPhoneNumbers: $event.invitedPhoneNumbers)
                         .presentationDetents([.fraction(0.9)])
                 }
             }
@@ -243,20 +240,20 @@ extension CreateEventView {
             .font(.title2)
             .foregroundColor(.white)
             
-            ForEach(invitees, id: \.self) { invitee in
+            ForEach(inviteesUserModels, id: \.self) { invitee in
                 let inviteeUser = vm.getUser(username: invitee.email)
                 PersonPillView(
                     viewing_user: user,
                     displayed_user: inviteeUser,
                     personType: "invited",
-                    invitees: $invitees
+                    invitees: $inviteesUserModels
                 )
             }
             
-            ForEach(selectedPhoneNumbers, id: \.self) { number in
+            ForEach(event.invitedPhoneNumbers, id: \.self) { number in
                 NumberPillView(
                     phoneNumber: number,
-                    selectedPhoneNumbers: $selectedPhoneNumbers
+                    selectedPhoneNumbers: $event.invitedPhoneNumbers
                 )
             }
         }
