@@ -6,130 +6,63 @@
 //
 
 import SwiftUI
-import MapKit
 import PhotosUI
 import MessageUI
 import ContactsUI
 
-class LocationSearchHelper: NSObject, ObservableObject, MKLocalSearchCompleterDelegate {
-    @Published var suggestions: [MKLocalSearchCompletion] = []
-    
-    private var searchCompleter = MKLocalSearchCompleter()
-    
-    override init() {
-        super.init()
-        searchCompleter.delegate = self
-        searchCompleter.resultTypes = [.address, .pointOfInterest] // Focus only on addresses
-    }
-    
-    func updateSearchResults(for query: String) {
-        searchCompleter.queryFragment = query
-    }
-    
-    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
-        DispatchQueue.main.async {
-            self.suggestions = Array(completer.results.prefix(3))
-        }
-    }
-    
-    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
-        print("Error fetching suggestions: \(error.localizedDescription)")
-    }
-}
-
 struct CreateEventView: View {
-    @EnvironmentObject private var ud: ViewModel
-    
-    @State var createEventSuccess: Bool = false
-    @State var addInviteeSheet: Bool = false
-    
-    @State private var showAlertTitle: Bool = false
-    @State private var showAlertLocation: Bool = false
+    @EnvironmentObject private var vm: ViewModel
     
     @State var user: UserModel
     @Binding var selectedTab: Int
-    @State var event_title: String = ""
-    @State var event_location: String = ""
-    @State var event_dateTime: Date = Date()
-    @State var event_duration_hours: String = ""
-    @State var event_duration_minutes: String = ""
+    
+    @State var eventTitle: String = ""
+    @State var eventLocation: String = ""
+    @State var eventDateTime: Date = Date()
+    @State var eventDurationHours: String = ""
+    @State var eventDurationMinutes: String = ""
     @State var invitees: [UserModel] = []
     
-    @StateObject private var locationSearchHelper = LocationSearchHelper()
-    @State private var locationQuery = ""
+    @State var imageSelection: PhotosPickerItem? = nil
+    @State var selectedImage: UIImage? = nil
     
-    @State private var imageSelection: PhotosPickerItem? = nil
-    @State private var selectedImage: UIImage? = nil
+    @State var addInviteeSheet: Bool = false
+    @State var showAlert: Bool = false
+    @State var alertMessage: String = ""
     
     @State var selectedPhoneNumbers: [String] = []
-    
-//    @State private var showContactPicker = false
-    @State private var showMessageComposer = false
-    @State var message_event_id: String = ""
-//    @State private var selectedPhoneNumber: String?
-//    
-//    @State private var showNumberSelection = false
-//    @State private var phoneOptions: [String] = []
-//    
-    //let sample_event_id: String = "74641C1B-E210-4FF7-AB88-AF5D563A4A36"
-//
+    @State var showMessageComposer = false
+    @State var messageEventID: String = ""
+
     var body: some View {
         
         ZStack {
             Color(.accent).ignoresSafeArea()
-            
             VStack {
-                
                 HeaderView(user: user, title: "New Event")
-                
                 Spacer()
-                
                 ScrollView() {
-                    
-                    event_fields
-                    
-                    create_button
+                    EventFields
+                    CreateButton
                         .padding(.vertical, 50)
-                    
                 }
-                
                 Spacer()
-                
             }
-            .navigationTitle("Message Sender")
-            .alert("Event title has to be 3 characters or longer!", isPresented: $showAlertTitle) {
-                Button("Dismiss", role: .cancel) { }
-            }
-            .alert("You have to select a location first!", isPresented: $showAlertLocation) {
+            .alert(alertMessage, isPresented: $showAlert) {
                 Button("Dismiss", role: .cancel) { }
             }
             .sheet(isPresented: $showMessageComposer) {
                 if MFMessageComposeViewController.canSendText() {
-                    MessageComposer(recipients: selectedPhoneNumbers, body: "https://cliqueapp-3834b.web.app/?eventId=\(message_event_id)")
+                    MessageComposer(recipients: selectedPhoneNumbers, body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)")
                 }  else {
                     Text("This device can't send SMS messages.")
                         .padding()
                 }
             }
         }
-        .onAppear {
-            Task {
-                await ud.getAllUsers()
-            }
-            Task {
-                await ud.getUserFriends(user_email: user.email)
-            }
-        }
-        .onChange(of: imageSelection) {
-            Task {
-                if let imageSelection {
-                    if let data = try? await imageSelection.loadTransferable(type: Data.self) {
-                        if let uiImage = UIImage(data: data) {
-                            selectedImage = uiImage
-                        }
-                    }
-                }
-            }
+        .task {
+            await vm.getAllUsers()
+            await vm.getUserFriends(user_email: user.email)
         }
     }
 }
@@ -141,44 +74,33 @@ struct CreateEventView: View {
 
 extension CreateEventView {
     
-    private var create_button: some View {
+    private var CreateButton: some View {
         
         Button {
-            if event_title.count < 3 {
-                showAlertTitle = true
-            } else if event_location.isEmpty {
-                showAlertLocation = true
+            if eventTitle.count < 3 {
+                alertMessage = "Event title has to be 3 characters or longer!"
+                showAlert = true
+            } else if eventLocation.isEmpty {
+                alertMessage = "You have to select a location first!"
+                showAlert = true
             } else {
                 Task {
-                    do {
-                        let firestoreService = DatabaseManager()
-                        var invitee_emails: [String] = []
-                        for invitee in invitees{
-                            invitee_emails += [invitee.email]
-                        }
-                        let temp_uuid = UUID().uuidString
-                        try await firestoreService.addEventToFirestore(id: temp_uuid, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes, invitedPhoneNumbers: selectedPhoneNumbers, acceptedPhoneNumbers: [])
-                        if let selectedImage {
-                            await firestoreService.uploadEventImage(image: selectedImage, event_id: temp_uuid)
-                        }
-                        for invitee in invitees {
-                            let notificationText: String = "\(user.fullname) just invited you to an event!"
-                            sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
-                        }
-                        message_event_id = temp_uuid
-                        if selectedPhoneNumbers.count > 0 {
-                            showMessageComposer = true
-                        }
-                        event_title = ""
-                        event_location = ""
-                        event_dateTime = Date()
-                        invitees = []
-                        imageSelection = nil
-                        selectedImage = nil
-                        print("updated tab")
-                    } catch {
-                        print("Failed to add event: \(error.localizedDescription)")
+                    let temp_uuid = UUID().uuidString
+                    messageEventID = temp_uuid
+                    
+                    await vm.createEventButtonPressed(eventID: temp_uuid, eventTitle: eventTitle, eventLocation: eventLocation, eventDateTime: eventDateTime, invitees: invitees, user: user, eventDurationHours: eventDurationHours, eventDurationMinutes: eventDurationMinutes, selectedPhoneNumbers: selectedPhoneNumbers, selectedImage: selectedImage)
+                    
+                    eventTitle = ""
+                    eventLocation = ""
+                    eventDateTime = Date()
+                    invitees = []
+                    imageSelection = nil
+                    selectedImage = nil
+                    selectedPhoneNumbers = []
+                    if selectedPhoneNumbers.count > 0 {
+                        showMessageComposer = true
                     }
+                    
                 }
                 selectedTab = 0
             }
@@ -194,51 +116,18 @@ extension CreateEventView {
         }
     }
     
-    private var event_fields: some View {
-        
+    private var ImageSelector: some View {
+        ImageSelectionField(imageSelection: $imageSelection, selectedImage: $selectedImage)
+    }
+    
+    private var TitleField: some View {
         VStack(alignment: .leading) {
-            
-            if let selectedImage = selectedImage {
-                PhotosPicker(selection: $imageSelection, matching: .images) {
-                    Image(uiImage: selectedImage)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
-                        .cornerRadius(10)
-                        .padding()
-                }
-                
-            } else {
-                PhotosPicker(selection: $imageSelection, matching: .images) {
-                    ZStack {
-                        Color(.white.opacity(0.7))
-                        VStack {
-                            Image(systemName: "plus")
-                                .resizable()
-                                .frame(width: 50, height: 50)
-                                .padding()
-                            Text("Add Event Picture")
-                                .bold()
-                                .font(.caption)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
-                    .cornerRadius(10)
-                    .foregroundColor(Color(.accent))
-                    .padding()
-                    .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-                }
-            }
-            
-            
-            
             Text("Event Title")
-                //.padding(.top, 30)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
             
-            TextField("", text: $event_title, prompt: Text("Enter your event title here ...").foregroundColor(Color.black.opacity(0.5)))
+            TextField("", text: $eventTitle, prompt: Text("Enter your event title here ...").foregroundColor(Color.black.opacity(0.5)))
                 .foregroundColor(.black)
                 .padding()
                 .background(.white)
@@ -246,89 +135,30 @@ extension CreateEventView {
                 .padding(.horizontal)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
-            
+        }
+    }
+    
+    private var LocationSelector: some View {
+        VStack(alignment: .leading) {
             Text("Location")
                 .padding(.top, 15)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
             
-            if event_location.isEmpty {
-                TextField("", text: $locationQuery, prompt: Text("Enter your event location here ...").foregroundColor(Color.black.opacity(0.5)))
-                    .foregroundColor(.black)
-                    .padding()
-                    .background(.white)
-                    .cornerRadius(10)
-                    .padding(.horizontal)
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-                    .onChange(of: locationQuery) { newValue in
-                        locationSearchHelper.updateSearchResults(for: newValue)
-                    }
-                
-                if !locationSearchHelper.suggestions.isEmpty && !locationQuery.isEmpty {
-                    VStack(alignment: .leading, spacing: 5) {
-                        ForEach(locationSearchHelper.suggestions.prefix(5).indices, id: \.self) { index in
-                            let suggestion = locationSearchHelper.suggestions[index]
-                            VStack(alignment: .leading) {
-                                Text(suggestion.title)
-                                    .font(.headline)
-                                    .foregroundColor(.black)
-                                Text(suggestion.subtitle)
-                                    .font(.subheadline)
-                                    .foregroundColor(.gray)
-                            }
-                            //.padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color.white)
-                            .cornerRadius(8)
-                            .onTapGesture {
-                                event_location = suggestion.title
-                                locationQuery = ""
-                                locationSearchHelper.suggestions = [] // Hide suggestions after selection
-                            }
-                            
-                            if index < locationSearchHelper.suggestions.count - 1 {
-                                Divider()
-                                    .background(Color.gray.opacity(0.5))
-                            }
-                        }
-                    }
-                    //.padding(.horizontal)
-                    .padding()
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .shadow(radius: 5)
-                    .padding(.horizontal)
-                }
-                
-            } else {
-                HStack() {
-                    Text(event_location)
-                        .font(.headline)
-                        .foregroundColor(.black)
-                    Spacer()
-                    Button {
-                        event_location = ""
-                    } label: {
-                        Image(systemName: "xmark.circle")
-                    }
-                }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.white)
-                .cornerRadius(8)
-                .padding(.horizontal)
-            }
-            
-            
+            LocationSearchField(eventLocation: $eventLocation)
+        }
+    }
+    
+    private var DateTimeSelector: some View {
+        VStack(alignment: .leading) {
             Text("Date and Time")
                 .padding(.top, 15)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
             
-            DatePicker("", selection: $event_dateTime, displayedComponents: [.date, .hourAndMinute])
+            DatePicker("", selection: $eventDateTime, displayedComponents: [.date, .hourAndMinute])
                 .foregroundColor(.white)
                 .labelsHidden()
                 .tint(.white)
@@ -336,7 +166,11 @@ extension CreateEventView {
                 .background(.white)
                 .cornerRadius(10)
                 .padding(.horizontal, 20)
-            
+        }
+    }
+    
+    private var DurationSelector: some View {
+        VStack(alignment: .leading) {
             HStack {
                 Text("Duration")
                     .padding(.top, 15)
@@ -349,13 +183,10 @@ extension CreateEventView {
                     .font(.caption)
                     .foregroundColor(.white)
             }
-            
-            
-            
+    
             HStack {
-                    
                 Picker(
-                    selection : $event_duration_hours,
+                    selection : $eventDurationHours,
                     label: Text("Hours"),
                     content: {
                         Text("").tag("")
@@ -372,7 +203,7 @@ extension CreateEventView {
             
                 
                 Picker(
-                    selection : $event_duration_minutes,
+                    selection : $eventDurationMinutes,
                     label: Text("Minutes"),
                     content: {
                         Text("").tag("")
@@ -389,8 +220,11 @@ extension CreateEventView {
             }
             .padding(.top, 5)
             .padding(.leading)
-            
-            
+        }
+    }
+    
+    private var InviteesSelector: some View {
+        VStack(alignment: .leading) {
             HStack {
                 Text("Invitees")
                 
@@ -410,7 +244,7 @@ extension CreateEventView {
             .foregroundColor(.white)
             
             ForEach(invitees, id: \.self) { invitee in
-                let inviteeUser = ud.getUser(username: invitee.email)
+                let inviteeUser = vm.getUser(username: invitee.email)
                 PersonPillView(
                     viewing_user: user,
                     displayed_user: inviteeUser,
@@ -426,7 +260,18 @@ extension CreateEventView {
                 )
             }
         }
+    }
+    
+    private var EventFields: some View {
         
+        VStack(alignment: .leading) {
+            ImageSelector
+            TitleField
+            LocationSelector
+            DateTimeSelector
+            DurationSelector
+            InviteesSelector
+        }
     }
 }
 

@@ -218,7 +218,7 @@ extension EditEventView {
                         let inviteeInvited_new_emails = inviteeInvited_new.map {$0.email}
                         
                         try await firestoreService.deleteEventFromFirestore(id: event.id)
-                        try await firestoreService.addEventToFirestore(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes, invitedPhoneNumbers: invitedPhoneNumbers+newlyInvitedPhoneNumbers, acceptedPhoneNumbers: acceptedPhoneNumbers)
+                        try await firestoreService.addEventToFirestore(id: event.id, title: event_title, location: event_location, dateTime: event_dateTime, attendeesAccepted: inviteeAccepted_new_emails, attendeesInvited: inviteeInvited_new_emails, host: user.email, hours: event_duration_hours, minutes: event_duration_minutes, invitedPhoneNumbers: invitedPhoneNumbers+newlyInvitedPhoneNumbers, acceptedPhoneNumbers: acceptedPhoneNumbers, selectedImage: selectedImage)
                         print(invitedPhoneNumbers)
                         print(newlyInvitedPhoneNumbers)
                         if newlyInvitedPhoneNumbers.count > 0 {

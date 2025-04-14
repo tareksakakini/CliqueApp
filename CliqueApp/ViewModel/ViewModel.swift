@@ -242,4 +242,21 @@ class ViewModel: ObservableObject {
             print("Failed to update: \(error.localizedDescription)")
         }
     }
+    
+    func createEventButtonPressed(eventID: String, eventTitle: String, eventLocation: String, eventDateTime: Date, invitees: [UserModel], user: UserModel, eventDurationHours: String, eventDurationMinutes: String, selectedPhoneNumbers: [String], selectedImage: UIImage?) async {
+        do {
+            let firestoreService = DatabaseManager()
+            var invitee_emails: [String] = []
+            for invitee in invitees{
+                invitee_emails += [invitee.email]
+            }
+            try await firestoreService.addEventToFirestore(id: eventID, title: eventTitle, location: eventLocation, dateTime: eventDateTime, attendeesAccepted: [], attendeesInvited: invitee_emails, host: user.email, hours: eventDurationHours, minutes: eventDurationMinutes, invitedPhoneNumbers: selectedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
+            for invitee in invitees {
+                let notificationText: String = "\(user.fullname) just invited you to an event!"
+                sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+            }
+        } catch {
+            print("Failed to add event: \(error.localizedDescription)")
+        }
+    }
 }

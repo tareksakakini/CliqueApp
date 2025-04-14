@@ -43,7 +43,7 @@ class DatabaseManager {
         }
     }
     
-    func addEventToFirestore(id: String, title: String, location: String, dateTime: Date, attendeesAccepted: [String], attendeesInvited: [String], host: String, hours: String, minutes: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String]) async throws {
+    func addEventToFirestore(id: String, title: String, location: String, dateTime: Date, attendeesAccepted: [String], attendeesInvited: [String], host: String, hours: String, minutes: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
         let eventRef = db.collection("events").document(id)
         
         let eventData: [String: Any] = [
@@ -62,7 +62,11 @@ class DatabaseManager {
         
         do {
             try await eventRef.setData(eventData)
+            if let selectedImage {
+                await self.uploadEventImage(image: selectedImage, event_id: id)
+            }
             print("Event added successfully!")
+            
         } catch {
             print("Error adding event: \(error.localizedDescription)")
             throw error
