@@ -9,7 +9,7 @@ import SwiftUI
 
 struct MyFriendsView: View {
     
-    @EnvironmentObject private var ud: ViewModel
+    @EnvironmentObject private var vm: ViewModel
     @State private var isAddFriendSheetPresented: Bool = false
     
     @State var user: UserModel
@@ -18,7 +18,7 @@ struct MyFriendsView: View {
         ZStack {
             Color(.accent).ignoresSafeArea()
             VStack {
-                HeaderView(user: user, title: "My Friends", isFriendsView: true, navigationBinder: $isAddFriendSheetPresented)
+                HeaderView(user: user, title: "My Friends", navigationBinder: $isAddFriendSheetPresented, specialScreen: "MyFriendsView")
                 Friendlist
             }
         }
@@ -40,13 +40,18 @@ extension MyFriendsView {
             RequestedFriendList
             AcceptedFriendList
         }
+        .refreshable {
+            await vm.getUserFriends(user_email: user.email)
+            await vm.getUserFriendRequests(user_email: user.email)
+            await vm.getUserFriendRequestsSent(user_email: user.email)
+        }
     }
     
     private var AcceptedFriendList: some View {
-        ForEach(ud.friendship, id: \.self) {friend_username in
+        ForEach(vm.friendship, id: \.self) {friend_username in
             PersonPillView(
                 viewingUser: user,
-                displayedUser: ud.getUser(username: friend_username),
+                displayedUser: vm.getUser(username: friend_username),
                 personType: "friend",
                 invitees: .constant([])
             )
@@ -54,10 +59,10 @@ extension MyFriendsView {
     }
     
     private var RequestedFriendList: some View {
-        ForEach(ud.friendInviteReceived, id: \.self) {request_username in
+        ForEach(vm.friendInviteReceived, id: \.self) {request_username in
             PersonPillView(
                 viewingUser: user,
-                displayedUser: ud.getUser(username: request_username),
+                displayedUser: vm.getUser(username: request_username),
                 personType: "requester",
                 invitees: .constant([])
             )

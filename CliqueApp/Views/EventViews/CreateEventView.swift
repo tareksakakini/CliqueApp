@@ -35,7 +35,7 @@ struct CreateEventView: View {
         ZStack {
             Color(.accent).ignoresSafeArea()
             VStack {
-                HeaderView(user: user, title: "New Event", isFriendsView: false, navigationBinder: .constant(false))
+                HeaderView(user: user, title: "New Event", navigationBinder: .constant(false))
                 Spacer()
                 ScrollView() {
                     EventFields

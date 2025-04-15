@@ -9,11 +9,12 @@ import SwiftUI
 
 struct HeaderView: View {
     @EnvironmentObject private var ud: ViewModel
+    @Environment(\.dismiss) var dismiss
     
     let user: UserModel
     let title: String
-    let isFriendsView: Bool
     @Binding var navigationBinder: Bool
+    var specialScreen: String = ""
     var body: some View {
         HStack {
             
@@ -27,7 +28,7 @@ struct HeaderView: View {
             
             Spacer()
             
-            if isFriendsView {
+            if specialScreen == "MyFriendsView" {
                 Button {
                     navigationBinder = true
                 } label: {
@@ -37,6 +38,18 @@ struct HeaderView: View {
                         .foregroundColor(.white)
                         .frame(width: 40, height: 40)
                         .shadow(color: .white.opacity(0.3), radius: 1, x: 0, y: 2)
+                }
+            } else if specialScreen == "AddFriendView" {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(.white)
+                        .font(.caption)
+                        .frame(width: 20, height: 20)
+                        .padding()
                 }
             } else {
                 ProfilePictureView(user: user, diameter: 50, isPhone: false)
@@ -52,6 +65,6 @@ struct HeaderView: View {
 }
 
 #Preview {
-    HeaderView(user: UserData.userData[0], title: "Title", isFriendsView: false, navigationBinder: .constant(false))
+    HeaderView(user: UserData.userData[0], title: "Title", navigationBinder: .constant(false))
         .environmentObject(ViewModel())
 }

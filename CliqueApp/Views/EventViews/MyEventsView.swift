@@ -18,7 +18,7 @@ struct MyEventsView: View {
         ZStack {
             Color(.accent).ignoresSafeArea()
             VStack {
-                HeaderView(user: user, title: isInviteView ? "My Invites" : "My Events", isFriendsView: false, navigationBinder: .constant(false))
+                HeaderView(user: user, title: isInviteView ? "My Invites" : "My Events", navigationBinder: .constant(false))
                 EventScrollView
             }
         }
