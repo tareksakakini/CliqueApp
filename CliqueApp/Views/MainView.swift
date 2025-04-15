@@ -17,21 +17,21 @@ struct MainView: View {
     var body: some View {
         NavigationStack {
             TabView(selection: $selectedTab) {
-                MyEventsView(user: user)
+                MyEventsView(user: user, isInviteView: false)
                     .tabItem {
                         Image(systemName: "shareplay")
                         Text("My Events")
                     }
                     .tag(0)
                 
-                MyInvitesView(user: user)
+                MyEventsView(user: user, isInviteView: true)
                     .tabItem {
                         Image(systemName: "envelope.fill")
                         Text("Invites")
                     }
                     .tag(1)
                 
-                CreateEventView(user: user, selectedTab: $selectedTab, event: EventModel())
+                CreateEventView(user: user, selectedTab: $selectedTab, event: EventModel(), isNewEvent: true)
                     .tabItem {
                         Image(systemName: "plus.square.fill")
                         Text("New Event")

@@ -74,15 +74,15 @@ struct AddInviteesView: View {
                     {user_returned in
                         if invitees.contains(user_returned) {
                             PersonPillView(
-                                viewing_user: user,
-                                displayed_user: user_returned,
+                                viewingUser: user,
+                                displayedUser: user_returned,
                                 personType: "requestedInvitee",
                                 invitees: $invitees
                             )
                         } else {
                             PersonPillView(
-                                viewing_user: user,
-                                displayed_user: user_returned,
+                                viewingUser: user,
+                                displayedUser: user_returned,
                                 personType: "invitee",
                                 invitees: $invitees
                             )

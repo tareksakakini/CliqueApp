@@ -1,214 +1,23 @@
-//
-//  EventPillView.swift
-//  CliqueApp
-//
-//  Created by Tarek Sakakini on 1/27/25.
-//
-
 import SwiftUI
 
 struct PersonPillView: View {
     @EnvironmentObject private var ud: ViewModel
     @Environment(\.dismiss) var dismiss
     
-    let viewing_user: UserModel?
-    let displayed_user: UserModel?
-    let personType: String // Possible values: ["friend", "stranger", "invitee", "invited", "requester"]
+    let viewingUser: UserModel?
+    let displayedUser: UserModel?
+    let personType: String // ["friend", "stranger", "invitee", "invited", "requester"]
     @Binding var invitees: [UserModel]
     
     var body: some View {
         HStack {
-            
-            if let currentUser = displayed_user {
-                
-                ProfilePictureView(user: currentUser, diameter: 50, isPhone: false)
-                    .padding(.leading)
-                
-                VStack(alignment: .leading) {
-                    Text("\(currentUser.fullname)")
-                        .foregroundColor(Color(.accent))
-                        .font(.title3)
-                        .bold()
-                    
-                    Text("\(currentUser.email)")
-                        .foregroundColor(Color(#colorLiteral(red: 0.4756349325, green: 0.4756467342, blue: 0.4756404161, alpha: 1)))
-                        .font(.caption)
-                        .bold()
-                }
-                .padding(.leading, 5)
+            if let user = displayedUser {
+                profileSection(for: user)
             }
             
             Spacer()
             
-            if personType == "friend" {
-                Button {
-                    if let displayed_user = displayed_user {
-                        if let viewing_user = viewing_user {
-                            Task {
-                                do {
-                                    let databaseManager = DatabaseManager()
-                                    try await databaseManager.updateFriends(viewing_user: viewing_user.email, viewed_user: displayed_user.email, action: "remove")
-                                } catch {
-                                    print("Failed to remove friendship: \(error.localizedDescription)")
-                                }
-                            }
-                            ud.friendship.removeAll() { $0 == displayed_user.email }
-                        }
-                    }
-                    
-                } label: {
-                    Image(systemName: "minus.circle")
-                        .padding()
-                }
-            }
-            else if personType == "requestedFriend" {
-                Button {
-                    
-                } label: {
-                    Text("Sent")
-                        .foregroundColor(.white)
-                }
-                .bold()
-                .padding(.horizontal)
-                .padding(.vertical, 10)
-                .background(Color(.accent))
-                .cornerRadius(10)
-                .padding()
-            }
-            else if personType == "requestedInvitee" {
-                Button {
-                    if let displayed_user = displayed_user {
-                        
-                        if invitees.contains(displayed_user) {
-                            invitees.removeAll { $0 == displayed_user }
-                        }
-                    }
-                } label: {
-                    Text("Invited")
-                        .foregroundColor(.white)
-                }
-                .bold()
-                .padding(.horizontal)
-                .padding(.vertical, 10)
-                .background(Color(.accent))
-                .cornerRadius(10)
-                .padding()
-            }
-            else if personType == "requester" {
-                Button {
-                    if let displayed_user = displayed_user {
-                        if let viewing_user = viewing_user {
-                            Task {
-                                do {
-                                    let databaseManager = DatabaseManager()
-                                    try await databaseManager.updateFriends(viewing_user: viewing_user.email, viewed_user: displayed_user.email, action: "add")
-                                    //try await databaseManager.removeFriendRequest(sender: displayed_user.email, receiver: viewing_user.email)
-                                    let notificationText: String = "\(viewing_user.fullname) just accepted your friend request!"
-                                    sendPushNotification(notificationText: notificationText, receiverID: displayed_user.subscriptionId)
-                                } catch {
-                                    print("Failed to add friendship: \(error.localizedDescription)")
-                                }
-                            }
-                            ud.friendInviteReceived.removeAll { $0 == displayed_user.email }
-                            ud.friendship.append(displayed_user.email)
-                        
-                        }
-                    }
-                } label: {
-                    Image(systemName: "checkmark.square.fill")
-                        .resizable()
-                        .foregroundColor(Color(.accent))
-                        .scaledToFit()
-                        .frame(width: 35, height: 35)
-                }
-                .cornerRadius(5)
-                
-                Button {
-                    if let displayed_user = displayed_user {
-                        if let viewing_user = viewing_user {
-                            Task {
-                                do {
-                                    let databaseManager = DatabaseManager()
-                                    try await databaseManager.removeFriendRequest(sender: displayed_user.email, receiver: viewing_user.email)
-                                } catch {
-                                    print("Failed to reject friend request: \(error.localizedDescription)")
-                                }
-                            }
-                            ud.friendInviteReceived.removeAll { $0 == displayed_user.email }
-                        }
-                    }
-                } label: {
-                    Image(systemName: "xmark.square.fill")
-                        .resizable()
-                        .foregroundColor(.red.opacity(0.75))
-                        .scaledToFit()
-                        .frame(width: 35, height: 35)
-                }
-                .cornerRadius(5)
-                .padding(.trailing)
-            }
-            else if personType == "stranger" {
-                Button {
-                    if let displayed_user = displayed_user {
-                        if let viewing_user = viewing_user {
-                            Task {
-                                do {
-                                    let firestoreService = DatabaseManager()
-                                    try await firestoreService.sendFriendRequest(sender: viewing_user.email, receiver: displayed_user.email)
-                                    let notificationText: String = "\(viewing_user.fullname) just sent you a friend request!"
-                                    sendPushNotification(notificationText: notificationText, receiverID: "\(displayed_user.subscriptionId)")
-                                    //await ud.refreshData(user_email: viewing_user.email)
-                                    await ud.getUserFriendRequestsSent(user_email: viewing_user.email)
-                                } catch {
-                                    print("Friend Request Failed: \(error.localizedDescription)")
-                                }
-                            }
-                        }
-                    }
-                    
-                } label: {
-                    Image(systemName: "plus")
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundColor(Color(.accent))
-                        .font(.caption)
-                        .frame(width: 25, height: 25)
-                        .padding()
-                        .padding(.horizontal)
-                }
-            }
-            else if personType == "invitee" {
-                Button {
-                    if let displayed_user = displayed_user {
-                        
-                        if !invitees.contains(displayed_user) {
-                            invitees += [displayed_user]
-                        }
-                    }
-                    
-                } label: {
-                    Image(systemName: "plus")
-                        .resizable()
-                        .scaledToFit()
-                        .foregroundColor(Color(.accent))
-                        .font(.caption)
-                        .frame(width: 25, height: 25)
-                        .padding()
-                        .padding(.horizontal)
-                }
-            }
-            else if personType == "invited" {
-                Button {
-                    if let displayed_user = displayed_user {
-                        invitees.removeAll { $0 == displayed_user }
-                    }
-                    
-                } label: {
-                    Image(systemName: "minus.circle")
-                        .foregroundColor(Color(.accent))
-                        .padding()
-                }
-            }
+            actionButtons()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 70)
@@ -220,15 +29,200 @@ struct PersonPillView: View {
     }
 }
 
+// MARK: - Subviews & Logic
+private extension PersonPillView {
+    
+    func profileSection(for user: UserModel) -> some View {
+        HStack {
+            ProfilePictureView(user: user, diameter: 50, isPhone: false)
+                .padding(.leading)
+            
+            VStack(alignment: .leading) {
+                Text(user.fullname)
+                    .foregroundColor(Color(.accent))
+                    .font(.title3)
+                    .bold()
+                
+                Text(user.email)
+                    .foregroundColor(Color.gray)
+                    .font(.caption)
+                    .bold()
+            }
+            .padding(.leading, 5)
+        }
+    }
+    
+    @ViewBuilder
+    func actionButtons() -> some View {
+        switch personType {
+        case "friend":
+            removeFriendButton()
+            
+        case "requestedFriend":
+            statusTextButton(text: "Sent")
+            
+        case "requestedInvitee":
+            removeInviteeButton()
+            
+        case "requester":
+            acceptRejectButtons()
+            
+        case "stranger":
+            sendFriendRequestButton()
+            
+        case "invitee":
+            addInviteeButton()
+            
+        case "invited":
+            invitedRemoveButton()
+            
+        default:
+            EmptyView()
+        }
+    }
+    
+    func removeFriendButton() -> some View {
+        Button {
+            guard let displayed = displayedUser,
+                  let viewing = viewingUser else { return }
+            Task {
+                do {
+                    try await DatabaseManager().updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "remove")
+                    ud.friendship.removeAll { $0 == displayed.email }
+                } catch {
+                    print("Failed to remove friendship: \(error.localizedDescription)")
+                }
+            }
+        } label: {
+            Image(systemName: "minus.circle")
+                .padding()
+        }
+    }
+    
+    func statusTextButton(text: String) -> some View {
+        Text(text)
+            .foregroundColor(.white)
+            .bold()
+            .padding(.horizontal)
+            .padding(.vertical, 10)
+            .background(Color(.accent))
+            .cornerRadius(10)
+            .padding()
+    }
+    
+    func removeInviteeButton() -> some View {
+        Button {
+            guard let user = displayedUser else { return }
+            invitees.removeAll { $0 == user }
+        } label: {
+            statusTextButton(text: "Invited")
+        }
+    }
+    
+    func acceptRejectButtons() -> some View {
+        HStack {
+            Button {
+                guard let displayed = displayedUser,
+                      let viewing = viewingUser else { return }
+                Task {
+                    do {
+                        let db = DatabaseManager()
+                        try await db.updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "add")
+                        sendPushNotification(notificationText: "\(viewing.fullname) just accepted your friend request!", receiverID: displayed.subscriptionId)
+                        ud.friendInviteReceived.removeAll { $0 == displayed.email }
+                        ud.friendship.append(displayed.email)
+                    } catch {
+                        print("Failed to accept friend request: \(error.localizedDescription)")
+                    }
+                }
+            } label: {
+                Image(systemName: "checkmark.square.fill")
+                    .resizable()
+                    .foregroundColor(Color(.accent))
+                    .frame(width: 35, height: 35)
+            }
+            .cornerRadius(5)
+            
+            Button {
+                guard let displayed = displayedUser,
+                      let viewing = viewingUser else { return }
+                Task {
+                    do {
+                        try await DatabaseManager().removeFriendRequest(sender: displayed.email, receiver: viewing.email)
+                        ud.friendInviteReceived.removeAll { $0 == displayed.email }
+                    } catch {
+                        print("Failed to reject friend request: \(error.localizedDescription)")
+                    }
+                }
+            } label: {
+                Image(systemName: "xmark.square.fill")
+                    .resizable()
+                    .foregroundColor(.red.opacity(0.75))
+                    .frame(width: 35, height: 35)
+            }
+            .cornerRadius(5)
+            .padding(.trailing)
+        }
+    }
+    
+    func sendFriendRequestButton() -> some View {
+        Button {
+            guard let displayed = displayedUser,
+                  let viewing = viewingUser else { return }
+            Task {
+                do {
+                    let db = DatabaseManager()
+                    try await db.sendFriendRequest(sender: viewing.email, receiver: displayed.email)
+                    sendPushNotification(notificationText: "\(viewing.fullname) just sent you a friend request!", receiverID: displayed.subscriptionId)
+                    await ud.getUserFriendRequestsSent(user_email: viewing.email)
+                } catch {
+                    print("Friend Request Failed: \(error.localizedDescription)")
+                }
+            }
+        } label: {
+            Image(systemName: "plus")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(Color(.accent))
+                .frame(width: 25, height: 25)
+                .padding()
+        }
+    }
+    
+    func addInviteeButton() -> some View {
+        Button {
+            guard let user = displayedUser, !invitees.contains(user) else { return }
+            invitees.append(user)
+        } label: {
+            Image(systemName: "plus")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(Color(.accent))
+                .frame(width: 25, height: 25)
+                .padding()
+        }
+    }
+    
+    func invitedRemoveButton() -> some View {
+        Button {
+            guard let user = displayedUser else { return }
+            invitees.removeAll { $0 == user }
+        } label: {
+            Image(systemName: "minus.circle")
+                .foregroundColor(Color(.accent))
+                .padding()
+        }
+    }
+}
 
+// MARK: - Preview
 
 #Preview {
-    
     ZStack {
         Color(.accent).ignoresSafeArea()
         PersonPillView(
-            viewing_user: UserData.userData[0],
-            displayed_user: UserData.userData[0],
+            viewingUser: UserData.userData[0],
+            displayedUser: UserData.userData[0],
             personType: "requester",
             invitees: .constant([])
         )

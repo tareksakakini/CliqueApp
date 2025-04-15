@@ -10,9 +10,10 @@ import SwiftUI
 struct HeaderView: View {
     @EnvironmentObject private var ud: ViewModel
     
-    //@State private var profileImage: Image? = nil
     let user: UserModel
     let title: String
+    let isFriendsView: Bool
+    @Binding var navigationBinder: Bool
     var body: some View {
         HStack {
             
@@ -26,18 +27,31 @@ struct HeaderView: View {
             
             Spacer()
             
-            ProfilePictureView(user: user, diameter: 50, isPhone: false)
-            
-            Text(user.fullname.components(separatedBy: " ").first ?? "")
-                .foregroundColor(.white)
-                .font(.headline)
-                .bold()
+            if isFriendsView {
+                Button {
+                    navigationBinder = true
+                } label: {
+                    Image(systemName: "person.fill.badge.plus")
+                        .resizable()
+                        .scaledToFill()
+                        .foregroundColor(.white)
+                        .frame(width: 40, height: 40)
+                        .shadow(color: .white.opacity(0.3), radius: 1, x: 0, y: 2)
+                }
+            } else {
+                ProfilePictureView(user: user, diameter: 50, isPhone: false)
+                
+                Text(user.fullname.components(separatedBy: " ").first ?? "")
+                    .foregroundColor(.white)
+                    .font(.headline)
+                    .bold()
+            }
         }
         .padding()
     }
 }
 
 #Preview {
-    HeaderView(user: UserData.userData[0], title: "Title")
+    HeaderView(user: UserData.userData[0], title: "Title", isFriendsView: false, navigationBinder: .constant(false))
         .environmentObject(ViewModel())
 }

@@ -16,7 +16,7 @@ struct EventPillView: View {
     let inviteView: Bool
     
     @State var showSheet: Bool = false
-    @State private var eventImage: Image? = nil
+    @State private var eventImage: UIImage? = nil
     
     var body: some View {
         
@@ -41,7 +41,8 @@ struct EventPillView: View {
                     user: user,
                     event: event,
                     inviteView: inviteView,
-                    isPresented: $showSheet
+                    isPresented: $showSheet,
+                    eventImage: $eventImage
                 )
                 .presentationDetents([.fraction(0.5)])
             }
@@ -56,11 +57,7 @@ struct EventPillView: View {
         
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
-            if let uiImage = UIImage(data: data) {
-                DispatchQueue.main.async {
-                    eventImage = Image(uiImage: uiImage)
-                }
-            }
+            eventImage = UIImage(data: data) 
         } catch {
             print("Error loading image: \(error)")
         }
@@ -138,7 +135,7 @@ extension EventPillView {
                 .frame(height: 140)
             }
             else if let eventImage {
-                eventImage
+                Image(uiImage: eventImage)
                     .resizable()
                     .scaledToFill()
                     .frame(height: 140)

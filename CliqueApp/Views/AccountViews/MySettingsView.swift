@@ -28,7 +28,7 @@ struct MySettingsView: View {
             Color(.accent).ignoresSafeArea()
             
             VStack {
-                HeaderView(user: user, title: "My Settings")
+                HeaderView(user: user, title: "My Settings", isFriendsView: false, navigationBinder: .constant(false))
                 
                 Spacer()
                 

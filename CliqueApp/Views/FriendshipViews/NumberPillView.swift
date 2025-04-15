@@ -24,7 +24,6 @@ struct NumberPillView: View {
                 .foregroundStyle(Color(.accent), .white)
                 .padding(8)
                 .clipShape(Circle())
-                //.frame(width: 50)
                 .overlay(Circle().stroke(Color(.accent), lineWidth: 4))
                 .padding(.leading)
                 

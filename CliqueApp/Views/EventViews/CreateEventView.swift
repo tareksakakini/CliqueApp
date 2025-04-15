@@ -12,16 +12,18 @@ import ContactsUI
 
 struct CreateEventView: View {
     @EnvironmentObject private var vm: ViewModel
+    @Environment(\.dismiss) var dismiss
     
     @State var user: UserModel
     @Binding var selectedTab: Int
     @State var event: EventModel
+    let isNewEvent: Bool
     @State var inviteesUserModels: [UserModel] = []
     
     @State var imageSelection: PhotosPickerItem? = nil
     @State var selectedImage: UIImage? = nil
     
-    @State var addInviteeSheet: Bool = false
+    @State var showAddInviteeSheet: Bool = false
     @State var showAlert: Bool = false
     @State var alertMessage: String = ""
     
@@ -33,12 +35,17 @@ struct CreateEventView: View {
         ZStack {
             Color(.accent).ignoresSafeArea()
             VStack {
-                HeaderView(user: user, title: "New Event")
+                HeaderView(user: user, title: "New Event", isFriendsView: false, navigationBinder: .constant(false))
                 Spacer()
                 ScrollView() {
                     EventFields
-                    CreateButton
-                        .padding(.vertical, 50)
+                    HStack {
+                        CreateButton
+                        if !isNewEvent {
+                            CancelButton
+                        }
+                    }
+                    .padding(.vertical, 50)
                 }
                 Spacer()
             }
@@ -54,22 +61,32 @@ struct CreateEventView: View {
                 }
             }
         }
-        .task {
-            await vm.getAllUsers()
-            await vm.getUserFriends(user_email: user.email)
-        }
     }
 }
 
 #Preview {
-    CreateEventView(user: UserData.userData[0], selectedTab: .constant(2), event: EventModel())
+    CreateEventView(user: UserData.userData[0], selectedTab: .constant(2), event: EventModel(), isNewEvent: false)
         .environmentObject(ViewModel())
 }
 
 extension CreateEventView {
     
-    private var CreateButton: some View {
+    private var CancelButton: some View {
+        Button {
+            dismiss()
+        } label: {
+            Text("Back")
+                .frame(width: 150, height: 55)
+                .background(Color(#colorLiteral(red: 0.6642242074, green: 0.6642400622, blue: 0.6642315388, alpha: 1)))
+                .cornerRadius(10)
+                .foregroundColor(.white)
+                .bold()
+                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
+        }
         
+    }
+    
+    private var CreateButton: some View {
         Button {
             if event.title.count < 3 {
                 alertMessage = "Event title has to be 3 characters or longer!"
@@ -79,32 +96,30 @@ extension CreateEventView {
                 showAlert = true
             } else {
                 Task {
-                    let temp_uuid = UUID().uuidString
+                    let temp_uuid = isNewEvent ? UUID().uuidString : event.id
                     messageEventID = temp_uuid
-                    event.attendeesInvited = inviteesUserModels.map({$0.email})
                     
-                    await vm.createEventButtonPressed(eventID: temp_uuid, eventTitle: event.title, eventLocation: event.location, eventDateTime: event.dateTime, invitees: event.attendeesInvited, user: user, eventDurationHours: event.hours, eventDurationMinutes: event.minutes, selectedPhoneNumbers: event.invitedPhoneNumbers, selectedImage: selectedImage)
+                    event.attendeesInvited = inviteesUserModels.map({$0.email})
+                    await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent)
                     
                     if event.invitedPhoneNumbers.count > 0 {
                         showMessageComposer = true
                     }
-                    event.title = ""
-                    event.location = ""
-                    event.dateTime = Date()
-                    event.attendeesInvited = []
+                    event = EventModel()
                     inviteesUserModels = []
                     imageSelection = nil
                     selectedImage = nil
-                    event.invitedPhoneNumbers = []
                     
-                    
+                    if isNewEvent {
+                        selectedTab = 0
+                    } else {
+                        dismiss()
+                    }
                 }
-                selectedTab = 0
             }
         } label: {
-            Text("Create Event")
-                .padding()
-                .padding(.horizontal)
+            Text(isNewEvent ? "Create Event" : "Update Event")
+                .frame(width: 150, height: 55)
                 .background(.white)
                 .cornerRadius(10)
                 .foregroundColor(Color(.accent))
@@ -226,11 +241,11 @@ extension CreateEventView {
                 Text("Invitees")
                 
                 Button {
-                    addInviteeSheet = true
+                    showAddInviteeSheet = true
                 } label: {
                     Image(systemName: "plus.circle")
                 }
-                .sheet(isPresented: $addInviteeSheet) {
+                .sheet(isPresented: $showAddInviteeSheet) {
                     AddInviteesView(user: user, invitees: $inviteesUserModels, selectedPhoneNumbers: $event.invitedPhoneNumbers)
                         .presentationDetents([.fraction(0.9)])
                 }
@@ -243,8 +258,8 @@ extension CreateEventView {
             ForEach(inviteesUserModels, id: \.self) { invitee in
                 let inviteeUser = vm.getUser(username: invitee.email)
                 PersonPillView(
-                    viewing_user: user,
-                    displayed_user: inviteeUser,
+                    viewingUser: user,
+                    displayedUser: inviteeUser,
                     personType: "invited",
                     invitees: $inviteesUserModels
                 )

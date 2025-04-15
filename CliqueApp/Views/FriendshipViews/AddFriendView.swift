@@ -40,15 +40,15 @@ struct AddFriendView: View {
                     {user_returned in
                         if ud.friendInviteSent.contains(user_returned.email) {
                             PersonPillView(
-                                viewing_user: user,
-                                displayed_user: user_returned,
+                                viewingUser: user,
+                                displayedUser: user_returned,
                                 personType: "requestedFriend",
                                 invitees: .constant([])
                             )
                         } else if user.email != user_returned.email && !ud.friendship.contains(user_returned.email) {
                             PersonPillView(
-                                viewing_user: user,
-                                displayed_user: user_returned,
+                                viewingUser: user,
+                                displayedUser: user_returned,
                                 personType: "stranger",
                                 invitees: .constant([])
                             )

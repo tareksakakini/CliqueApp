@@ -15,6 +15,7 @@ struct EventResponseView: View {
     @State var event: EventModel
     let inviteView: Bool
     @Binding var isPresented: Bool
+    @Binding var eventImage: UIImage?
     
     @State var editView: Bool = false
     
@@ -33,7 +34,7 @@ struct EventResponseView: View {
 }
 
 #Preview {
-    EventResponseView(user: UserData.userData[0], event: UserData.eventData[0], inviteView: false, isPresented: .constant(true))
+    EventResponseView(user: UserData.userData[0], event: UserData.eventData[0], inviteView: false, isPresented: .constant(true), eventImage: .constant(nil))
         .environmentObject(ViewModel())
 }
 
@@ -162,7 +163,7 @@ extension EventResponseView {
                 .frame(width: 40)
         }
         .fullScreenCover(isPresented: $editView) {
-            EditEventView(user: user, event: event)
+            CreateEventView(user: user, selectedTab: .constant(0), event: event, isNewEvent: false, selectedImage: eventImage)
         }
     }
     

@@ -243,13 +243,16 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func createEventButtonPressed(eventID: String, eventTitle: String, eventLocation: String, eventDateTime: Date, invitees: [String], user: UserModel, eventDurationHours: String, eventDurationMinutes: String, selectedPhoneNumbers: [String], selectedImage: UIImage?) async {
+    func createEventButtonPressed(eventID: String, user: UserModel, event: EventModel, selectedImage: UIImage?, isNewEvent: Bool) async {
         do {
             let firestoreService = DatabaseManager()
-            try await firestoreService.addEventToFirestore(id: eventID, title: eventTitle, location: eventLocation, dateTime: eventDateTime, attendeesAccepted: [], attendeesInvited: invitees, host: user.email, hours: eventDurationHours, minutes: eventDurationMinutes, invitedPhoneNumbers: selectedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
+            if !isNewEvent {
+                try await firestoreService.deleteEventFromFirestore(id: eventID)
+            }
+            try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, dateTime: event.dateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: event.host, hours: event.hours, minutes: event.minutes, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
             let notificationText: String = "\(user.fullname) just invited you to an event!"
-            for invitee in invitees {
-                if let inviteeFull = self.getUser(username: user.email) {
+            for invitee in event.attendeesInvited {
+                if let inviteeFull = self.getUser(username: invitee) {
                     sendPushNotification(notificationText: notificationText, receiverID: inviteeFull.subscriptionId)
                 }
             }
