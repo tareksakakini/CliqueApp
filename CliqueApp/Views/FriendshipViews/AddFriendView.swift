@@ -58,20 +58,6 @@ struct AddFriendView: View {
                 Spacer()
             }
         }
-        .onAppear {
-            Task {
-                await ud.getAllUsers()
-            }
-            Task {
-                await ud.getUserFriends(user_email: user.email)
-            }
-            Task {
-                await ud.getUserFriendRequests(user_email: user.email)
-            }
-            Task {
-                await ud.getUserFriendRequestsSent(user_email: user.email)
-            }
-        }
     }
 }
 

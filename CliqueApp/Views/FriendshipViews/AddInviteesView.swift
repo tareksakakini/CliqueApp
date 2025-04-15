@@ -130,17 +130,6 @@ struct AddInviteesView: View {
                 } + [.cancel()]
             )
         }
-        .onAppear {
-            Task {
-                await ud.getAllUsers()
-            }
-            Task {
-                await ud.getUserFriends(user_email: user.email)
-            }
-            Task {
-                await ud.getUserFriendRequests(user_email: user.email)
-            }
-        }
     }
 }
 

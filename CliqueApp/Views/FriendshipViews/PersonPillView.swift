@@ -14,9 +14,7 @@ struct PersonPillView: View {
             if let user = displayedUser {
                 profileSection(for: user)
             }
-            
             Spacer()
-            
             actionButtons()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -88,7 +86,6 @@ private extension PersonPillView {
             Task {
                 do {
                     try await DatabaseManager().updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "remove")
-                    ud.friendship.removeAll { $0 == displayed.email }
                 } catch {
                     print("Failed to remove friendship: \(error.localizedDescription)")
                 }
@@ -129,8 +126,6 @@ private extension PersonPillView {
                         let db = DatabaseManager()
                         try await db.updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "add")
                         sendPushNotification(notificationText: "\(viewing.fullname) just accepted your friend request!", receiverID: displayed.subscriptionId)
-                        ud.friendInviteReceived.removeAll { $0 == displayed.email }
-                        ud.friendship.append(displayed.email)
                     } catch {
                         print("Failed to accept friend request: \(error.localizedDescription)")
                     }
@@ -149,7 +144,6 @@ private extension PersonPillView {
                 Task {
                     do {
                         try await DatabaseManager().removeFriendRequest(sender: displayed.email, receiver: viewing.email)
-                        ud.friendInviteReceived.removeAll { $0 == displayed.email }
                     } catch {
                         print("Failed to reject friend request: \(error.localizedDescription)")
                     }
@@ -174,7 +168,6 @@ private extension PersonPillView {
                     let db = DatabaseManager()
                     try await db.sendFriendRequest(sender: viewing.email, receiver: displayed.email)
                     sendPushNotification(notificationText: "\(viewing.fullname) just sent you a friend request!", receiverID: displayed.subscriptionId)
-                    await ud.getUserFriendRequestsSent(user_email: viewing.email)
                 } catch {
                     print("Friend Request Failed: \(error.localizedDescription)")
                 }

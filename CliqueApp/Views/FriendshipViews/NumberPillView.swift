@@ -8,33 +8,20 @@
 import SwiftUI
 
 struct NumberPillView: View {
-    @EnvironmentObject private var ud: ViewModel
-    @Environment(\.dismiss) var dismiss
-    
+
     let phoneNumber: String?
     @Binding var selectedPhoneNumbers: [String]
     
     var body: some View {
         HStack {
-            Image(systemName: "phone")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 30)
-                .symbolRenderingMode(.palette)
-                .foregroundStyle(Color(.accent), .white)
-                .padding(8)
-                .clipShape(Circle())
-                .overlay(Circle().stroke(Color(.accent), lineWidth: 4))
+            ProfilePictureView(user: nil, diameter: 50, isPhone: true)
                 .padding(.leading)
                 
-            
-            VStack(alignment: .leading) {
-                Text("\(phoneNumber ?? "")")
-                    .foregroundColor(Color(.accent))
-                    .font(.title3)
-                    .bold()
-            }
-            .padding(.leading, 5)
+            Text("\(phoneNumber ?? "")")
+                .foregroundColor(Color(.accent))
+                .font(.title3)
+                .bold()
+                .padding(.leading, 5)
             
             Spacer()
             
