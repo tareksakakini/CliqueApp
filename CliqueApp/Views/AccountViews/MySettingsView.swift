@@ -10,14 +10,13 @@ import PhotosUI
 
 struct MySettingsView: View {
     
-    @EnvironmentObject private var ud: ViewModel
-    
-    
+    @EnvironmentObject private var vm: ViewModel
+
     @State var user: UserModel
-    @State var go_to_login_screen: Bool = false
-    @State var go_to_account_deleted_screen: Bool = false
-    @State var message: String = ""
-    @State private var navigationPath = NavigationPath()
+    
+    @State var goToLoginScreen: Bool = false
+    @State var goToAccountDeletedScreen: Bool = false
+    
     @State private var imageSelection: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage? = nil
     @State private var profilePic: Image? = nil
@@ -26,91 +25,20 @@ struct MySettingsView: View {
         
         ZStack {
             Color(.accent).ignoresSafeArea()
-            
             VStack {
                 HeaderView(user: user, title: "My Settings", navigationBinder: .constant(false))
-                
                 Spacer()
-                
-                ProfilePictureView(user: user, diameter: 250, isPhone: false)
-                
+                ImageSelectionField(whichView: "ProfilePictureView", user: user, imageSelection: $imageSelection, selectedImage: $selectedImage, diameter: 200, isPhone: false)
                 Spacer()
-                
-                PhotosPicker(selection: $imageSelection, matching: .images) {
-                    Text("Add Profile Picture")
-                        .frame(width: 200, height: 60)
-                        .background(.white)
-                        .cornerRadius(10)
-                        .foregroundColor(Color(.accent))
-                        .bold()
-                        .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-                }
-                
-                Button {
-                    
-                    Task {
-                        do {
-                            try AuthManager.shared.signOut()
-                            go_to_login_screen = true
-                            print("User signed out")
-                        } catch {
-                            print("Sign out failed")
-                        }
-                    }
-                    
-                } label: {
-                    Text("Sign out")
-                        .frame(width: 200, height: 60)
-                        .background(.white)
-                        .cornerRadius(10)
-                        .foregroundColor(Color(.accent))
-                        .bold()
-                        .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-                }
-                .navigationDestination(isPresented: $go_to_login_screen) {
-                    LoginView()
-                }
-                
-                Button {
-                    
-                    Task {
-                        do {
-                            let databaseManager = DatabaseManager()
-                            try await databaseManager.deleteUserAccount(uid: user.uid, email: user.email)
-                            go_to_account_deleted_screen = true
-                            print("User deleted account")
-                        } catch {
-                            print("Failed to delete user account from database")
-                        }
-                    }
-                    
-                } label: {
-                    Text("Delete Account")
-                        .frame(width: 200, height: 60)
-                        .background(.white)
-                        .cornerRadius(10)
-                        .foregroundColor(Color(.accent))
-                        .bold()
-                        .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-                }
-                .navigationDestination(isPresented: $go_to_account_deleted_screen) {
-                    account_deleted
-                }
-                
+                SignOutButton
+                DeleteAccountButton
                 Spacer()
             }
         }
-        .onChange(of: imageSelection) {
+        .onChange(of: selectedImage) {
             Task {
-                if let imageSelection {
-                    if let data = try? await imageSelection.loadTransferable(type: Data.self) {
-                        if let uiImage = UIImage(data: data) {
-                            selectedImage = uiImage
-                            
-                            let databaseManager = DatabaseManager()
-                            databaseManager.uploadProfileImage(uiImage)
-                        }
-                    }
+                if let selectedImage {
+                    await vm.saveProfilePicture(image: selectedImage)
                 }
             }
         }
@@ -123,13 +51,52 @@ struct MySettingsView: View {
 }
 
 extension MySettingsView {
-    private var account_deleted: some View {
-        ZStack {
-            Color(.accent).ignoresSafeArea()
-            
-            Text("Account deleted successfully")
-                .foregroundColor(.white)
+    private var SignOutButton: some View {
+        Button {
+            Task {
+                do {
+                    try AuthManager.shared.signOut()
+                    goToLoginScreen = true
+                } catch {
+                    print("Sign out failed")
+                }
+            }
+        } label: {
+            Text("Sign out")
+                .frame(width: 200, height: 60)
+                .background(.white)
+                .cornerRadius(10)
+                .foregroundColor(Color(.accent))
+                .bold()
+                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
-        .navigationBarHidden(true)
+        .navigationDestination(isPresented: $goToLoginScreen) {
+            LoginView()
+        }
+    }
+    
+    private var DeleteAccountButton: some View {
+        Button {
+            Task {
+                do {
+                    let databaseManager = DatabaseManager()
+                    try await databaseManager.deleteUserAccount(uid: user.uid, email: user.email)
+                    goToAccountDeletedScreen = true
+                } catch {
+                    print("Failed to delete user account from database")
+                }
+            }
+        } label: {
+            Text("Delete Account")
+                .frame(width: 200, height: 60)
+                .background(.white)
+                .cornerRadius(10)
+                .foregroundColor(Color(.accent))
+                .bold()
+                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
+        }
+        .navigationDestination(isPresented: $goToAccountDeletedScreen) {
+            AccountDeleted()
+        }
     }
 }

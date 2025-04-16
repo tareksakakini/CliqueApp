@@ -83,7 +83,6 @@ extension CreateEventView {
                 .bold()
                 .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
-        
     }
     
     private var CreateButton: some View {
@@ -129,7 +128,13 @@ extension CreateEventView {
     }
     
     private var ImageSelector: some View {
-        ImageSelectionField(imageSelection: $imageSelection, selectedImage: $selectedImage)
+        ZStack {
+            if selectedImage != nil {
+                ImageSelectionField(whichView: "SelectedEventImage", imageSelection: $imageSelection, selectedImage: $selectedImage)
+            } else {
+                ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage)
+            }
+        }
     }
     
     private var TitleField: some View {

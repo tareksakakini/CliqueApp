@@ -63,7 +63,8 @@ class DatabaseManager {
         do {
             try await eventRef.setData(eventData)
             if let selectedImage {
-                await self.uploadEventImage(image: selectedImage, event_id: id)
+                let storageLocation = "event_images/\(id).jpg"
+                await self.uploadImage(image: selectedImage, storageLocation: storageLocation, referenceLocation: eventRef, fieldName: "eventPic")
             }
             print("Event added successfully!")
             
@@ -401,10 +402,10 @@ class DatabaseManager {
         }
     }
     
-    func uploadEventImage(image: UIImage, event_id: String) async {
+    func uploadImage(image: UIImage, storageLocation: String, referenceLocation: DocumentReference, fieldName: String) async {
         guard let imageData = image.jpegData(compressionQuality: 0.4) else { return }
         let storageRef = Storage.storage().reference()
-        let fileRef = storageRef.child("event_images/\(event_id).jpg")
+        let fileRef = storageRef.child(storageLocation)
         
         fileRef.putData(imageData, metadata: nil) { _, error in
             if let error = error {
@@ -414,51 +415,19 @@ class DatabaseManager {
             
             fileRef.downloadURL { url, error in
                 guard let downloadURL = url else { return }
-                self.saveEventImageURLToFirestore(url: downloadURL.absoluteString, event_id: event_id)
+                self.saveImageURLtoFirestore(url: downloadURL.absoluteString, referenceLocation: referenceLocation, fieldName: fieldName)
             }
         }
     }
     
-    func saveEventImageURLToFirestore(url: String, event_id: String) {
-            let db = Firestore.firestore()
-            db.collection("events").document(event_id).setData(["eventPic": url], merge: true) { error in
-                if let error = error {
-                    print("Error updating Firestore: \(error.localizedDescription)")
-                } else {
-                    print("Event picture updated successfully!")
-                }
-            }
-        }
-    
-    func uploadProfileImage(_ image: UIImage) {
-        guard let imageData = image.jpegData(compressionQuality: 0.4) else { return }
-        let storageRef = Storage.storage().reference()
-        let userId = Auth.auth().currentUser?.uid ?? UUID().uuidString
-        let fileRef = storageRef.child("profile_pictures/\(userId).jpg")
-        
-        fileRef.putData(imageData, metadata: nil) { _, error in
+    func saveImageURLtoFirestore(url: String, referenceLocation: DocumentReference, fieldName: String) {
+        referenceLocation.setData([fieldName: url], merge: true) { error in
             if let error = error {
-                print("Upload failed: \(error.localizedDescription)")
-                return
-            }
-            
-            fileRef.downloadURL { url, error in
-                guard let downloadURL = url else { return }
-                self.saveImageURLToFirestore(url: downloadURL.absoluteString)
+                print("Error updating Firestore: \(error.localizedDescription)")
+            } else {
+                print("Picture updated successfully!")
             }
         }
     }
-    
-    func saveImageURLToFirestore(url: String) {
-            let db = Firestore.firestore()
-            let userId = Auth.auth().currentUser?.uid ?? UUID().uuidString
-            db.collection("users").document(userId).setData(["profilePic": url], merge: true) { error in
-                if let error = error {
-                    print("Error updating Firestore: \(error.localizedDescription)")
-                } else {
-                    print("Profile picture updated successfully!")
-                }
-            }
-        }
 }
 

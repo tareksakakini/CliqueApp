@@ -7,6 +7,8 @@
 
 import Foundation
 import SwiftUI
+import FirebaseFirestore
+import FirebaseAuth
 
 @MainActor
 class ViewModel: ObservableObject {
@@ -73,6 +75,7 @@ class ViewModel: ObservableObject {
             let upcomingEvents = fetchedEvents.filter { $0.dateTime >= oneDayAgo }
             let orderedUpcomingEvents = upcomingEvents.sorted { $0.dateTime < $1.dateTime }
             self.events = orderedUpcomingEvents
+            print("Fetched")
         } catch {
             print("Failed to fetch events: \(error.localizedDescription)")
         }
@@ -249,7 +252,7 @@ class ViewModel: ObservableObject {
             if !isNewEvent {
                 try await firestoreService.deleteEventFromFirestore(id: eventID)
             }
-            try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, dateTime: event.dateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: event.host, hours: event.hours, minutes: event.minutes, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
+            try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, dateTime: event.dateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, hours: event.hours, minutes: event.minutes, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
             let notificationText: String = "\(user.fullname) just invited you to an event!"
             for invitee in event.attendeesInvited {
                 if let inviteeFull = self.getUser(username: invitee) {
@@ -259,5 +262,14 @@ class ViewModel: ObservableObject {
         } catch {
             print("Failed to add event: \(error.localizedDescription)")
         }
+    }
+    
+    func saveProfilePicture(image: UIImage) async {
+        let firestoreService = DatabaseManager()
+        let db = Firestore.firestore()
+        let userID = Auth.auth().currentUser?.uid ?? UUID().uuidString
+        let storageLocation: String = "profile_pictures/\(userID).jpg"
+        let referenceLocation: DocumentReference = db.collection("users").document(userID)
+        await firestoreService.uploadImage(image: image, storageLocation: storageLocation, referenceLocation: referenceLocation, fieldName: "profilePic")
     }
 }
