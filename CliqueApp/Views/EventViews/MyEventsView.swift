@@ -22,6 +22,25 @@ struct MyEventsView: View {
                 EventScrollView
             }
         }
+        .task {
+            await vm.getAllEvents()
+            try? await Task.sleep(for: .seconds(0.25))
+            await vm.getAllEvents()
+            try? await Task.sleep(for: .seconds(0.25))
+            await vm.getAllEvents()
+            try? await Task.sleep(for: .seconds(0.25))
+            await vm.getAllEvents()
+            try? await Task.sleep(for: .seconds(0.25))
+            await vm.getAllEvents()
+            try? await Task.sleep(for: .seconds(0.25))
+            await vm.getAllEvents()
+            try? await Task.sleep(for: .seconds(0.25))
+            await vm.getAllEvents()
+            try? await Task.sleep(for: .seconds(0.25))
+            await vm.getAllEvents()
+            try? await Task.sleep(for: .seconds(0.25))
+            await vm.getAllEvents()
+        }
     }
 }
 
@@ -32,16 +51,22 @@ struct MyEventsView: View {
 
 extension MyEventsView {
     private var EventScrollView: some View {
-        ScrollView {
-            ForEach(vm.events, id: \.self) {event in
-                let checklist = isInviteView ? event.attendeesInvited : event.attendeesAccepted + [event.host]
-                if checklist.contains(user.email) {
-                    EventPillView(
-                        event: event,
-                        user: user,
-                        inviteView: isInviteView
-                    )
-                }
+        let filteredEvents = vm.events.filter { event in
+            let checklist = isInviteView ? event.attendeesInvited : event.attendeesAccepted + [event.host]
+            return checklist.contains(user.email)
+        }
+        
+        return ScrollView {
+            if filteredEvents.count == 0 {
+                Text("Pull down to refresh")
+                    .foregroundColor(Color(.accent))
+            }
+            ForEach(filteredEvents, id: \.self) {event in
+                EventPillView(
+                    event: event,
+                    user: user,
+                    inviteView: isInviteView
+                )
             }
         }
         .refreshable {

@@ -58,6 +58,7 @@ struct MainView: View {
         .task {
             await vm.refreshData(user_email: user.email)
             await vm.updateOneSignalSubscriptionId(user: user)
+            await vm.loadProfilePic(imageUrl: user.profilePic)
         }
         .onAppear {
             // Change the background color of the TabBar

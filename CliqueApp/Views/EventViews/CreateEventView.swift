@@ -35,7 +35,7 @@ struct CreateEventView: View {
         ZStack {
             Color(.accent).ignoresSafeArea()
             VStack {
-                HeaderView(user: user, title: "New Event", navigationBinder: .constant(false))
+                HeaderView(user: user, title: isNewEvent ? "New Event" : "Update Event", navigationBinder: .constant(false))
                 Spacer()
                 ScrollView() {
                     EventFields
@@ -100,6 +100,7 @@ extension CreateEventView {
                     
                     event.attendeesInvited = inviteesUserModels.map({$0.email})
                     await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent)
+                    await vm.getAllEvents()
                     
                     if event.invitedPhoneNumbers.count > 0 {
                         showMessageComposer = true

@@ -81,6 +81,7 @@ extension EventResponseView {
         Button {
             Task {
                 await vm.acceptButtonPressed(user: user, event: event)
+                await vm.getAllEvents()
                 isPresented.toggle()
             }
         } label: {
@@ -99,6 +100,7 @@ extension EventResponseView {
         Button {
             Task {
                 await vm.declineButtonPressed(user: user, event: event)
+                await vm.getAllEvents()
                 isPresented.toggle()
             }
             
@@ -129,6 +131,7 @@ extension EventResponseView {
             Button {
                 Task {
                     await vm.leaveButtonPressed(user: user, event: event)
+                    await vm.getAllEvents()
                     isPresented.toggle()
                 }
             } label: {

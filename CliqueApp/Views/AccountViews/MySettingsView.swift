@@ -19,7 +19,6 @@ struct MySettingsView: View {
     
     @State private var imageSelection: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage? = nil
-    @State private var profilePic: Image? = nil
     
     var body: some View {
         
@@ -39,6 +38,7 @@ struct MySettingsView: View {
             Task {
                 if let selectedImage {
                     await vm.saveProfilePicture(image: selectedImage)
+                    vm.userProfilePic = selectedImage
                 }
             }
         }

@@ -52,7 +52,7 @@ struct HeaderView: View {
                         .padding()
                 }
             } else {
-                ProfilePictureView(user: user, diameter: 50, isPhone: false)
+                ProfilePictureView(user: user, diameter: 50, isPhone: false, isViewingUser: true)
                 
                 Text(user.fullname.components(separatedBy: " ").first ?? "")
                     .foregroundColor(.white)

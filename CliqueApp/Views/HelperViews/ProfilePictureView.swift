@@ -8,10 +8,13 @@
 import SwiftUI
 
 struct ProfilePictureView: View {
+    @EnvironmentObject private var vm: ViewModel
+    
     @State var user: UserModel?
     @State var diameter: CGFloat
     @State var isPhone: Bool
-    @State var profilePic: Image? = nil
+    @State var isViewingUser: Bool = false
+    @State var profilePic: UIImage? = nil
     
     var body: some View {
         ZStack {
@@ -26,7 +29,7 @@ struct ProfilePictureView: View {
             }
         }
         .task {
-            if let user {
+            if let user, !isViewingUser {
                 await loadImage(imageUrl: user.profilePic)
             }
         }
@@ -38,9 +41,7 @@ struct ProfilePictureView: View {
         do {
             let (data, _) = try await URLSession.shared.data(from: url)
             if let uiImage = UIImage(data: data) {
-                DispatchQueue.main.async {
-                    profilePic = Image(uiImage: uiImage)
-                }
+                profilePic = uiImage
             }
         } catch {
             print("Error loading image: \(error)")
@@ -89,19 +90,36 @@ extension ProfilePictureView {
     
     private var CustomImage: some View {
         ZStack{
-            if let profilePic {
-                profilePic
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: diameter, height: diameter)
-                    .clipShape(Circle())
-                    .clipped()
+            if isViewingUser {
+                if let pic = vm.userProfilePic {
+                    Image(uiImage: pic)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: diameter, height: diameter)
+                        .clipShape(Circle())
+                        .clipped()
+                } else {
+                    ProgressViewImage
+                        .frame(width: diameter, height: diameter)
+                        .clipShape(Circle())
+                        .clipped()
+                }
             } else {
-                ProgressViewImage
-                    .frame(width: diameter, height: diameter)
-                    .clipShape(Circle())
-                    .clipped()
+                if let pic = profilePic {
+                    Image(uiImage: pic)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: diameter, height: diameter)
+                        .clipShape(Circle())
+                        .clipped()
+                } else {
+                    ProgressViewImage
+                        .frame(width: diameter, height: diameter)
+                        .clipShape(Circle())
+                        .clipped()
+                }
             }
+            
         }
     }
     

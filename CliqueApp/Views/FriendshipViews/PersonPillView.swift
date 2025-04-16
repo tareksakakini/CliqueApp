@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PersonPillView: View {
-    @EnvironmentObject private var ud: ViewModel
+    @EnvironmentObject private var vm: ViewModel
     @Environment(\.dismiss) var dismiss
     
     let viewingUser: UserModel?
@@ -86,6 +86,7 @@ private extension PersonPillView {
             Task {
                 do {
                     try await DatabaseManager().updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "remove")
+                    await vm.getUserFriends(user_email: viewing.email)
                 } catch {
                     print("Failed to remove friendship: \(error.localizedDescription)")
                 }
@@ -125,6 +126,8 @@ private extension PersonPillView {
                     do {
                         let db = DatabaseManager()
                         try await db.updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "add")
+                        await vm.getUserFriends(user_email: viewing.email)
+                        await vm.getUserFriendRequests(user_email: viewing.email)
                         sendPushNotification(notificationText: "\(viewing.fullname) just accepted your friend request!", receiverID: displayed.subscriptionId)
                     } catch {
                         print("Failed to accept friend request: \(error.localizedDescription)")
@@ -144,6 +147,8 @@ private extension PersonPillView {
                 Task {
                     do {
                         try await DatabaseManager().removeFriendRequest(sender: displayed.email, receiver: viewing.email)
+                        await vm.getUserFriends(user_email: viewing.email)
+                        await vm.getUserFriendRequests(user_email: viewing.email)
                     } catch {
                         print("Failed to reject friend request: \(error.localizedDescription)")
                     }
@@ -167,6 +172,7 @@ private extension PersonPillView {
                 do {
                     let db = DatabaseManager()
                     try await db.sendFriendRequest(sender: viewing.email, receiver: displayed.email)
+                    await vm.getUserFriendRequestsSent(user_email: viewing.email)
                     sendPushNotification(notificationText: "\(viewing.fullname) just sent you a friend request!", receiverID: displayed.subscriptionId)
                 } catch {
                     print("Friend Request Failed: \(error.localizedDescription)")

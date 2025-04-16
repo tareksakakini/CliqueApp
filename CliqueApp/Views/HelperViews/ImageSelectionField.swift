@@ -29,7 +29,7 @@ struct ImageSelectionField: View {
                     }
                 } else if whichView == "ProfilePictureView" {
                     if let user, let diameter, let isPhone {
-                        ProfilePictureView(user: user, diameter: diameter, isPhone: isPhone)
+                        ProfilePictureView(user: user, diameter: diameter, isPhone: isPhone, isViewingUser: true)
                     }
                 }
             }

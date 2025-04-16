@@ -37,6 +37,10 @@ struct MyFriendsView: View {
 extension MyFriendsView {
     private var Friendlist: some View {
         ScrollView {
+            if vm.friendship.count + vm.friendInviteReceived.count == 0 {
+                Text("Pull down to refresh")
+                    .foregroundColor(Color(.accent))
+            }
             RequestedFriendList
             AcceptedFriendList
         }

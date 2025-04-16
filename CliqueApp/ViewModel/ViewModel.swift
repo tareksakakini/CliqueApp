@@ -18,6 +18,7 @@ class ViewModel: ObservableObject {
     @Published var friendInviteReceived: [String]
     @Published var friendInviteSent: [String]
     @Published var eventRefreshTrigger: Bool
+    @Published var userProfilePic: UIImage?
     
     init() {
         self.users = []
@@ -26,6 +27,7 @@ class ViewModel: ObservableObject {
         self.friendInviteReceived = []
         self.friendInviteSent = []
         self.eventRefreshTrigger = false
+        self.userProfilePic = nil
     }
     
     func refreshData(user_email: String) async {
@@ -271,5 +273,18 @@ class ViewModel: ObservableObject {
         let storageLocation: String = "profile_pictures/\(userID).jpg"
         let referenceLocation: DocumentReference = db.collection("users").document(userID)
         await firestoreService.uploadImage(image: image, storageLocation: storageLocation, referenceLocation: referenceLocation, fieldName: "profilePic")
+    }
+    
+    func loadProfilePic(imageUrl: String) async {
+        guard let url = URL(string: imageUrl) else { return }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            if let uiImage = UIImage(data: data) {
+                self.userProfilePic = uiImage
+            }
+        } catch {
+            print("Error loading image: \(error)")
+        }
     }
 }
