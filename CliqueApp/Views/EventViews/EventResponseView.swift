@@ -6,6 +6,8 @@
 //
 
 import SwiftUI
+import MessageUI
+import ContactsUI
 
 struct EventResponseView: View {
     
@@ -18,6 +20,7 @@ struct EventResponseView: View {
     @Binding var eventImage: UIImage?
     
     @State var editView: Bool = false
+    
     
     var body: some View {
         NavigationStack {

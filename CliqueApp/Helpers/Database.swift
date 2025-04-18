@@ -74,6 +74,39 @@ class DatabaseManager {
         }
     }
     
+    func updateEventInFirestore(id: String, title: String, location: String, dateTime: Date, attendeesAccepted: [String], attendeesInvited: [String], host: String, hours: String, minutes: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
+        let eventRef = db.collection("events").document(id)
+        
+        let updatedEventData: [String: Any] = [
+            "title": title,
+            "location": location,
+            "dateTime": dateTime,
+            "attendeesAccepted": attendeesAccepted,
+            "attendeesInvited": attendeesInvited,
+            "host": host,
+            "hours": hours,
+            "minutes": minutes,
+            "invitedPhoneNumbers": invitedPhoneNumbers,
+            "acceptedPhoneNumbers": acceptedPhoneNumbers
+        ]
+        
+        do {
+            try await eventRef.updateData(updatedEventData)
+            
+            if let selectedImage {
+                let storageLocation = "event_images/\(id).jpg"
+                await self.uploadImage(image: selectedImage, storageLocation: storageLocation, referenceLocation: eventRef, fieldName: "eventPic")
+            }
+            
+            print("Event updated successfully!")
+            
+        } catch {
+            print("Error updating event: \(error.localizedDescription)")
+            throw error
+        }
+    }
+
+    
     func deleteEventFromFirestore(id: String) async throws {
         let eventRef = db.collection("events").document(id)
         

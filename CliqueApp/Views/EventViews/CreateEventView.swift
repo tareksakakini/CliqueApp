@@ -18,10 +18,12 @@ struct CreateEventView: View {
     @Binding var selectedTab: Int
     @State var event: EventModel
     let isNewEvent: Bool
-    @State var inviteesUserModels: [UserModel] = []
-    
-    @State var imageSelection: PhotosPickerItem? = nil
     @State var selectedImage: UIImage? = nil
+    
+    @State var oldEvent: EventModel = EventModel()
+    @State var newPhoneNumbers: [String] = []
+    @State var inviteesUserModels: [UserModel] = []
+    @State var imageSelection: PhotosPickerItem? = nil
     
     @State var showAddInviteeSheet: Bool = false
     @State var showAlert: Bool = false
@@ -49,17 +51,39 @@ struct CreateEventView: View {
                 }
                 Spacer()
             }
+            .onAppear {
+                oldEvent = event
+            }
             .alert(alertMessage, isPresented: $showAlert) {
                 Button("Dismiss", role: .cancel) { }
             }
             .sheet(isPresented: $showMessageComposer) {
                 if MFMessageComposeViewController.canSendText() {
-                    MessageComposer(recipients: event.invitedPhoneNumbers, body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)")
+                    MessageComposer(
+                        recipients: newPhoneNumbers,
+                        body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)",
+                        onFinish: {
+                            Task {
+                                await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                                await vm.getAllEvents()
+                                event = EventModel()
+                                inviteesUserModels = []
+                                imageSelection = nil
+                                selectedImage = nil
+                                newPhoneNumbers = []
+                                oldEvent = EventModel()
+                                if isNewEvent {
+                                    selectedTab = 0
+                                }
+                            }
+                        }
+                    )
                 }  else {
                     Text("This device can't send SMS messages.")
                         .padding()
                 }
             }
+            .id(messageEventID)
         }
     }
 }
@@ -99,21 +123,28 @@ extension CreateEventView {
                     messageEventID = temp_uuid
                     
                     event.attendeesInvited = inviteesUserModels.map({$0.email})
-                    await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent)
-                    await vm.getAllEvents()
-                    
-                    if event.invitedPhoneNumbers.count > 0 {
-                        showMessageComposer = true
+                    newPhoneNumbers = []
+                    for phoneNumber in event.invitedPhoneNumbers {
+                        if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
+                            newPhoneNumbers.append(phoneNumber)
+                        }
                     }
-                    event = EventModel()
-                    inviteesUserModels = []
-                    imageSelection = nil
-                    selectedImage = nil
                     
-                    if isNewEvent {
-                        selectedTab = 0
+                    if newPhoneNumbers.count > 0 {
+                        print("MessageEventID: \(messageEventID)")
+                        DispatchQueue.main.async {showMessageComposer = true}
                     } else {
-                        dismiss()
+                        await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                        await vm.getAllEvents()
+                        event = EventModel()
+                        inviteesUserModels = []
+                        imageSelection = nil
+                        selectedImage = nil
+                        newPhoneNumbers = []
+                        oldEvent = EventModel()
+                        if isNewEvent {
+                            selectedTab = 0
+                        }
                     }
                 }
             }

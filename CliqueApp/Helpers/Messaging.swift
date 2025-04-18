@@ -41,15 +41,23 @@ struct ContactPicker: UIViewControllerRepresentable {
 struct MessageComposer: UIViewControllerRepresentable {
     var recipients: [String]
     var body: String
+    var onFinish: () -> Void  // closure like `onSelect` in ContactPicker
 
     class Coordinator: NSObject, MFMessageComposeViewControllerDelegate {
+        var parent: MessageComposer
+
+        init(parent: MessageComposer) {
+            self.parent = parent
+        }
+
         func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
             controller.dismiss(animated: true)
+            parent.onFinish()  // trigger sheet dismissal
         }
     }
 
     func makeCoordinator() -> Coordinator {
-        Coordinator()
+        Coordinator(parent: self)
     }
 
     func makeUIViewController(context: Context) -> MFMessageComposeViewController {
@@ -62,4 +70,3 @@ struct MessageComposer: UIViewControllerRepresentable {
 
     func updateUIViewController(_ uiViewController: MFMessageComposeViewController, context: Context) {}
 }
-

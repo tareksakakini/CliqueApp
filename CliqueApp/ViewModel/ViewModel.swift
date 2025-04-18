@@ -248,21 +248,30 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func createEventButtonPressed(eventID: String, user: UserModel, event: EventModel, selectedImage: UIImage?, isNewEvent: Bool) async {
+    func createEventButtonPressed(eventID: String, user: UserModel, event: EventModel, selectedImage: UIImage?, isNewEvent: Bool, oldEvent: EventModel) async {
         do {
             let firestoreService = DatabaseManager()
-            if !isNewEvent {
-                try await firestoreService.deleteEventFromFirestore(id: eventID)
+            if isNewEvent {
+                try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, dateTime: event.dateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, hours: event.hours, minutes: event.minutes, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
+            } else {
+                try await firestoreService.updateEventInFirestore(id: eventID, title: event.title, location: event.location, dateTime: event.dateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, hours: event.hours, minutes: event.minutes, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
             }
-            try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, dateTime: event.dateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, hours: event.hours, minutes: event.minutes, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
-            let notificationText: String = "\(user.fullname) just invited you to an event!"
+            
+            var newInvitees: [String] = []
             for invitee in event.attendeesInvited {
+                if !oldEvent.attendeesInvited.contains(invitee) {
+                    newInvitees.append(invitee)
+                }
+            }
+            
+            let notificationText: String = "\(user.fullname) just invited you to an event!"
+            for invitee in newInvitees {
                 if let inviteeFull = self.getUser(username: invitee) {
                     sendPushNotification(notificationText: notificationText, receiverID: inviteeFull.subscriptionId)
                 }
             }
         } catch {
-            print("Failed to add event: \(error.localizedDescription)")
+            print("Failed to add or update event: \(error.localizedDescription)")
         }
     }
     
