@@ -200,14 +200,15 @@ extension CreateEventView {
     }
     
     private var DateTimeSelector: some View {
+        
         VStack(alignment: .leading) {
-            Text("Date and Time")
+            Text("Starts")
                 .padding(.top, 15)
                 .padding(.leading, 25)
                 .font(.title2)
                 .foregroundColor(.white)
             
-            DatePicker("", selection: $event.dateTime, displayedComponents: [.date, .hourAndMinute])
+            DatePicker("", selection: $event.startDateTime, displayedComponents: [.date, .hourAndMinute])
                 .foregroundColor(.white)
                 .labelsHidden()
                 .tint(.white)
@@ -215,60 +216,21 @@ extension CreateEventView {
                 .background(.white)
                 .cornerRadius(10)
                 .padding(.horizontal, 20)
-        }
-    }
-    
-    private var DurationSelector: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Text("Duration")
-                    .padding(.top, 15)
-                    .padding(.leading, 25)
-                    .font(.title2)
-                    .foregroundColor(.white)
-                
-                Text("(Optional)")
-                    .padding(.top, 20)
-                    .font(.caption)
-                    .foregroundColor(.white)
-            }
-    
-            HStack {
-                Picker(
-                    selection : $event.hours,
-                    label: Text("Hours"),
-                    content: {
-                        Text("").tag("")
-                        ForEach(Array(0...23), id: \.self) {hour in
-                            Text("\(hour) h").tag(String(hour))
-                        }
-                    }
-                )
-                .foregroundColor(.black)
-                .padding(.horizontal)
-                .padding(.vertical, 10)
-                .background(.white)
-                .cornerRadius(10)
+        
+            Text("Ends")
+                .padding(.top, 15)
+                .padding(.leading, 25)
+                .font(.title2)
+                .foregroundColor(.white)
             
-                
-                Picker(
-                    selection : $event.minutes,
-                    label: Text("Minutes"),
-                    content: {
-                        Text("").tag("")
-                        ForEach(Array(stride(from: 0, to: 60, by: 5)), id: \.self) {minute in
-                            Text("\(minute) m").tag(String(minute))
-                        }
-                    }
-                )
-                .foregroundColor(.black)
-                .padding(.horizontal)
-                .padding(.vertical, 10)
+            DatePicker("", selection: $event.endDateTime, displayedComponents: [.date, .hourAndMinute])
+                .foregroundColor(.white)
+                .labelsHidden()
+                .tint(.white)
+                .padding()
                 .background(.white)
                 .cornerRadius(10)
-            }
-            .padding(.top, 5)
-            .padding(.leading)
+                .padding(.horizontal, 20)
         }
     }
     
@@ -318,7 +280,6 @@ extension CreateEventView {
             TitleField
             LocationSelector
             DateTimeSelector
-            DurationSelector
             InviteesSelector
         }
     }

@@ -55,7 +55,8 @@ struct UserData {
             id: "1",
             title: "Snowboarding",
             location: "Northstar",
-            dateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 5, hour: 11, minute: 10))!,
+            startDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 5, hour: 11, minute: 10))!,
+            endDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 5, hour: 11, minute: 10))!,
             attendeesAccepted: ["tareksakakini@gmail.com", "alikanj@gmail.com"],
             attendeesInvited: ["jadyaacoub@gmail.com", "testing3@testing.com"],
             host: "tareksakakini@gmail.com"
@@ -64,7 +65,8 @@ struct UserData {
             id: "2",
             title: "Board Game Night",
             location: "George and Marias",
-            dateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 4, hour: 11, minute: 10))!,
+            startDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 4, hour: 11, minute: 10))!,
+            endDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 4, hour: 11, minute: 10))!,
             attendeesAccepted: ["tareksakakini@gmail.com"],
             attendeesInvited: ["alikanj@gmail.com"],
             host: "tareksakakini@gmail.com"
@@ -73,7 +75,8 @@ struct UserData {
             id: "3",
             title: "Coffee Date",
             location: "Old Soul",
-            dateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 6, hour: 11, minute: 10))!,
+            startDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 6, hour: 11, minute: 10))!,
+            endDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 6, hour: 11, minute: 10))!,
             attendeesAccepted: ["alikanj@gmail.com"],
             attendeesInvited: ["tareksakakini@gmail.com"],
             host: "alikanj@gmail.com"

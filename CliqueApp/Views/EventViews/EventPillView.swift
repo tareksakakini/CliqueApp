@@ -92,14 +92,14 @@ extension EventPillView {
     }
     
     private var EventDate: some View {
-        Text("\(vm.formatDate(date: event.dateTime))")
+        Text("\(vm.formatDate(date: event.startDateTime))")
             .foregroundColor(Color(.accent))
             .font(.title3)
             .bold()
     }
     
     private var EventTime: some View {
-        Text("\(vm.formatTime(time: event.dateTime))")
+        Text("\(vm.formatTime(time: event.startDateTime))")
             .foregroundColor(Color(.accent))
             .font(.subheadline)
     }

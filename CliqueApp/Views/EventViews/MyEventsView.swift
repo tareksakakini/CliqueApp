@@ -22,25 +22,6 @@ struct MyEventsView: View {
                 EventScrollView
             }
         }
-        .task {
-            await vm.getAllEvents()
-            try? await Task.sleep(for: .seconds(0.25))
-            await vm.getAllEvents()
-            try? await Task.sleep(for: .seconds(0.25))
-            await vm.getAllEvents()
-            try? await Task.sleep(for: .seconds(0.25))
-            await vm.getAllEvents()
-            try? await Task.sleep(for: .seconds(0.25))
-            await vm.getAllEvents()
-            try? await Task.sleep(for: .seconds(0.25))
-            await vm.getAllEvents()
-            try? await Task.sleep(for: .seconds(0.25))
-            await vm.getAllEvents()
-            try? await Task.sleep(for: .seconds(0.25))
-            await vm.getAllEvents()
-            try? await Task.sleep(for: .seconds(0.25))
-            await vm.getAllEvents()
-        }
     }
 }
 

@@ -49,10 +49,6 @@ extension EventResponseView {
                 EventDate
                 EventTime
                 
-                if event.hours != "" && event.minutes != "" {
-                    EventDuration
-                }
-                
                 EventLocation
                 EventOrganizer
                 EventAttendees
@@ -186,7 +182,7 @@ extension EventResponseView {
     private var EventDate: some View {
         HStack {
             Image(systemName: "calendar")
-            Text("\(vm.formatDate(date: event.dateTime))")
+            Text("\(vm.formatDate(date: event.startDateTime))")
         }
         .font(.body)
     }
@@ -194,15 +190,7 @@ extension EventResponseView {
     private var EventTime: some View {
         HStack {
             Image(systemName: "clock")
-            Text("\(vm.formatTime(time: event.dateTime))")
-        }
-        .font(.body)
-    }
-    
-    private var EventDuration: some View {
-        HStack {
-            Image(systemName: "timer")
-            Text("\(event.hours) Hours \(event.minutes) Minutes")
+            Text("\(vm.formatTime(time: event.startDateTime))")
         }
         .font(.body)
     }

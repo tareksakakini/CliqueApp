@@ -74,8 +74,8 @@ class ViewModel: ObservableObject {
             let fetchedEvents = try await firestoreService.getAllEvents()
             let currentDate = Date()
             let oneDayAgo = Calendar.current.date(byAdding: .day, value: -1, to: currentDate)!
-            let upcomingEvents = fetchedEvents.filter { $0.dateTime >= oneDayAgo }
-            let orderedUpcomingEvents = upcomingEvents.sorted { $0.dateTime < $1.dateTime }
+            let upcomingEvents = fetchedEvents.filter { $0.startDateTime >= oneDayAgo }
+            let orderedUpcomingEvents = upcomingEvents.sorted { $0.startDateTime < $1.startDateTime }
             self.events = orderedUpcomingEvents
             print("Fetched")
         } catch {
@@ -252,9 +252,9 @@ class ViewModel: ObservableObject {
         do {
             let firestoreService = DatabaseManager()
             if isNewEvent {
-                try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, dateTime: event.dateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, hours: event.hours, minutes: event.minutes, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
+                try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, startDateTime: event.startDateTime, endDateTime: event.endDateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
             } else {
-                try await firestoreService.updateEventInFirestore(id: eventID, title: event.title, location: event.location, dateTime: event.dateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, hours: event.hours, minutes: event.minutes, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
+                try await firestoreService.updateEventInFirestore(id: eventID, title: event.title, location: event.location, startDateTime: event.startDateTime, endDateTime: event.endDateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
             }
             
             var newInvitees: [String] = []
