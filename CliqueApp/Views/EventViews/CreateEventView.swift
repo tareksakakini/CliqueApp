@@ -217,20 +217,38 @@ extension CreateEventView {
                 .cornerRadius(10)
                 .padding(.horizontal, 20)
         
-            Text("Ends")
-                .padding(.top, 15)
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
+            HStack() {
+                Text("Ends")
+                    .font(.title2)
+                    .foregroundColor(.white)
+                
+                Spacer()
+                
+                Image(systemName: event.noEndTime ? "checkmark.square.fill" : "square.fill")
+                    .foregroundColor(event.noEndTime ? .blue.opacity(0.5) : .white)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .onTapGesture {
+                        event.noEndTime.toggle()
+                    }
+                
+                Text("Do not include end time")
+                    .foregroundColor(.white)
+                    .font(.footnote)
+            }
+            .padding(.top, 15)
+            .padding(.horizontal, 25)
             
-            DatePicker("", selection: $event.endDateTime, displayedComponents: [.date, .hourAndMinute])
-                .foregroundColor(.white)
-                .labelsHidden()
-                .tint(.white)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding(.horizontal, 20)
+            if !event.noEndTime {
+                DatePicker("", selection: $event.endDateTime, displayedComponents: [.date, .hourAndMinute])
+                    .foregroundColor(.white)
+                    .labelsHidden()
+                    .tint(.white)
+                    .padding()
+                    .background(.white)
+                    .cornerRadius(10)
+                    .padding(.horizontal, 20)
+            }
         }
     }
     

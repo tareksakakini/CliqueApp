@@ -45,6 +45,7 @@ extension MyFriendsView {
             AcceptedFriendList
         }
         .refreshable {
+            await vm.getAllUsers()
             await vm.getUserFriends(user_email: user.email)
             await vm.getUserFriendRequests(user_email: user.email)
             await vm.getUserFriendRequestsSent(user_email: user.email)

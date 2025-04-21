@@ -252,9 +252,9 @@ class ViewModel: ObservableObject {
         do {
             let firestoreService = DatabaseManager()
             if isNewEvent {
-                try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, startDateTime: event.startDateTime, endDateTime: event.endDateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
+                try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, startDateTime: event.startDateTime, endDateTime: event.endDateTime, noEndTime: event.noEndTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
             } else {
-                try await firestoreService.updateEventInFirestore(id: eventID, title: event.title, location: event.location, startDateTime: event.startDateTime, endDateTime: event.endDateTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
+                try await firestoreService.updateEventInFirestore(id: eventID, title: event.title, location: event.location, startDateTime: event.startDateTime, endDateTime: event.endDateTime, noEndTime: event.noEndTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, host: user.email, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], selectedImage: selectedImage)
             }
             
             var newInvitees: [String] = []

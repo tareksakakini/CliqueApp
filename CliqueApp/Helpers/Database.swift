@@ -43,7 +43,7 @@ class DatabaseManager {
         }
     }
     
-    func addEventToFirestore(id: String, title: String, location: String, startDateTime: Date, endDateTime: Date, attendeesAccepted: [String], attendeesInvited: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
+    func addEventToFirestore(id: String, title: String, location: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
         let eventRef = db.collection("events").document(id)
         
         let eventData: [String: Any] = [
@@ -52,6 +52,7 @@ class DatabaseManager {
             "location": location,
             "startDateTime": startDateTime,
             "endDateTime": endDateTime,
+            "noEndTime": noEndTime,
             "attendeesAccepted": attendeesAccepted,
             "attendeesInvited": attendeesInvited,
             "host": host,
@@ -73,7 +74,7 @@ class DatabaseManager {
         }
     }
     
-    func updateEventInFirestore(id: String, title: String, location: String, startDateTime: Date, endDateTime: Date, attendeesAccepted: [String], attendeesInvited: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
+    func updateEventInFirestore(id: String, title: String, location: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
         let eventRef = db.collection("events").document(id)
         
         let updatedEventData: [String: Any] = [
@@ -81,6 +82,7 @@ class DatabaseManager {
             "location": location,
             "startDateTime": startDateTime,
             "endDateTime": endDateTime,
+            "noEndTime": noEndTime,
             "attendeesAccepted": attendeesAccepted,
             "attendeesInvited": attendeesInvited,
             "host": host,
