@@ -296,4 +296,26 @@ class ViewModel: ObservableObject {
             print("Error loading image: \(error)")
         }
     }
+
+    func calculateDuration(startDateTime: Date, endDateTime: Date) -> (hours: Int, minutes: Int) {
+        let calendar = Calendar.current
+
+        // Strip seconds and nanoseconds
+        let startComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: startDateTime)
+        let endComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: endDateTime)
+
+        guard let trimmedStart = calendar.date(from: startComponents),
+              let trimmedEnd = calendar.date(from: endComponents) else {
+            return (0, 0)
+        }
+
+        let interval = trimmedEnd.timeIntervalSince(trimmedStart)
+        let totalMinutes = Int(interval) / 60
+        let hours = totalMinutes / 60
+        let minutes = totalMinutes % 60
+
+        return (hours, minutes)
+    }
+
+
 }

@@ -20,6 +20,7 @@ struct EventResponseView: View {
     @Binding var eventImage: UIImage?
     
     @State var editView: Bool = false
+    @State var duration: (hours: Int, minutes: Int) = (0,0)
     
     
     var body: some View {
@@ -32,6 +33,9 @@ struct EventResponseView: View {
                     inviteView ? AnyView(ResponseButtons) : AnyView(LeaveButton)
                 }
             }
+        }
+        .onAppear {
+            duration = vm.calculateDuration(startDateTime: event.startDateTime, endDateTime: event.endDateTime)
         }
     }
 }
@@ -48,6 +52,9 @@ extension EventResponseView {
                 EventHeader
                 EventDate
                 EventTime
+                if !event.noEndTime {
+                    EventDuration
+                }
                 
                 EventLocation
                 EventOrganizer
@@ -191,6 +198,14 @@ extension EventResponseView {
         HStack {
             Image(systemName: "clock")
             Text("\(vm.formatTime(time: event.startDateTime))")
+        }
+        .font(.body)
+    }
+    
+    private var EventDuration: some View {
+        HStack {
+            Image(systemName: "timer")
+            Text("\(duration.hours) Hours \(duration.minutes) Minutes")
         }
         .font(.body)
     }
