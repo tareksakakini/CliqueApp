@@ -468,9 +468,21 @@ class DatabaseManager {
         let usersRef = db.collection("users")
         
         do {
+            // Query for users where username field exists and equals the input username
             let query = usersRef.whereField("username", isEqualTo: username)
             let snapshot = try await query.getDocuments()
-            return !snapshot.documents.isEmpty
+            
+            // Additional check: make sure the found documents actually have a non-empty username
+            let validMatches = snapshot.documents.filter { document in
+                if let docUsername = document.data()["username"] as? String {
+                    return !docUsername.isEmpty && docUsername == username
+                }
+                return false
+            }
+            
+            let isTaken = !validMatches.isEmpty
+            print("Username '\(username)' check: \(isTaken ? "TAKEN" : "AVAILABLE") (found \(validMatches.count) valid matches)")
+            return isTaken
         } catch {
             print("Error checking username availability: \(error.localizedDescription)")
             throw error

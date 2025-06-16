@@ -137,7 +137,19 @@ struct SignUpView: View {
                 text: $username,
                 placeholder: "Choose a unique username",
                 isChecking: $isCheckingUsername,
-                isAvailable: $isUsernameTaken,
+                isAvailable: Binding(
+                    get: { 
+                        guard let taken = isUsernameTaken else { return nil }
+                        return !taken  // Invert: if taken=false, then available=true
+                    },
+                    set: { newValue in
+                        guard let available = newValue else { 
+                            isUsernameTaken = nil
+                            return 
+                        }
+                        isUsernameTaken = !available  // Invert: if available=true, then taken=false
+                    }
+                ),
                 isFocused: $usernameFieldIsFocused,
                 onUsernameChange: { newValue in
                     isUsernameTaken = nil
@@ -372,25 +384,15 @@ struct ModernGenderPicker: View {
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.primary)
             
-            HStack {
-                Image(systemName: "person.fill")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .frame(width: 20)
-                
-                Picker("Gender", selection: $selection) {
-                    Text("Male").tag("Male")
-                    Text("Female").tag("Female")
-                    Text("Other").tag("Other")
-                }
-                .font(.system(size: 16, weight: .medium))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Spacer()
+            Picker("Gender", selection: $selection) {
+                Text("Male").foregroundColor(.secondary).tag("Male")
+                Text("Female").foregroundColor(.secondary).tag("Female")
+                Text("Other").foregroundColor(.secondary).tag("Other")
             }
+            .pickerStyle(SegmentedPickerStyle())
+            .font(.system(size: 16, weight: .medium))
             .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-            .frame(height: 55)
+            .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemGray6))
@@ -464,7 +466,7 @@ struct ModernUsernameField: View {
     
     private var usernameInputField: some View {
         HStack {
-            Image(systemName: "person.fill")
+            Image(systemName: "at")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.secondary)
                 .frame(width: 20)
