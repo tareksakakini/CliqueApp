@@ -10,6 +10,7 @@ import SwiftUI
 struct SignUpView: View {
     
     @EnvironmentObject private var vm: ViewModel
+    @Environment(\.dismiss) private var dismiss
     
     @State var user: UserModel? = nil
     @State var fullname: String = ""
@@ -24,15 +25,177 @@ struct SignUpView: View {
     let genderOptions = ["Male", "Female", "Other"]
     
     var body: some View {
-        ZStack {
-            Color(.accent).ignoresSafeArea()
-            VStack {
-                BackNavigation(foregroundColor: .white)
-                TitleBar
-                SignUpSheet
+        GeometryReader { geometry in
+            ZStack {
+                // Modern neutral gradient background
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(.systemGray6),
+                        Color(.systemBackground),
+                        Color(.systemGray6).opacity(0.5)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 0) {
+                        // Custom back navigation
+                        HStack {
+                            Button {
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 18, weight: .semibold))
+                                    Text("Back")
+                                        .font(.system(size: 16, weight: .medium))
+                                }
+                                .foregroundColor(.primary)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Color(.systemGray5))
+                                .cornerRadius(12)
+                            }
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
+                        
+                        // Header section
+                        VStack(spacing: 12) {
+                            Text("Create Account")
+                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                                .foregroundColor(.primary)
+                            
+                            Text("Join the community and start planning amazing outings")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 32)
+                        }
+                        .padding(.top, 20)
+                        .padding(.bottom, 32)
+                        
+                        // Main form card
+                        VStack(spacing: 24) {
+                            // Form fields
+                            VStack(spacing: 20) {
+                                ModernTextField(
+                                    title: "Full Name",
+                                    text: $fullname,
+                                    placeholder: "Enter your full name",
+                                    icon: "person.fill"
+                                )
+                                
+                                ModernGenderPicker(selection: $gender)
+                                
+                                ModernTextField(
+                                    title: "Email",
+                                    text: $email,
+                                    placeholder: "Enter your email address",
+                                    icon: "envelope.fill",
+                                    keyboardType: .emailAddress
+                                )
+                                
+                                ModernPasswordField(
+                                    title: "Password",
+                                    text: $password,
+                                    placeholder: "Create a secure password",
+                                    isVisible: $isPasswordVisible
+                                )
+                            }
+                            
+                            // Checkboxes
+                            VStack(spacing: 16) {
+                                ModernCheckbox(
+                                    isChecked: $isAgeChecked,
+                                    text: "I am 16 years or older"
+                                )
+                                
+                                HStack(spacing: 12) {
+                                    ModernCheckbox(
+                                        isChecked: $isAgreePolicy,
+                                        text: ""
+                                    )
+                                    
+                                    HStack(spacing: 4) {
+                                        Text("I agree to the")
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                        
+                                        NavigationLink(destination: PrivacyPolicyView()) {
+                                            Text("Privacy Policy")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.blue)
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                }
+                            }
+                            .padding(.horizontal, 4)
+                            
+                            // Create account button
+                            Button {
+                                Task {
+                                    user = await vm.signUpUserAndAddToFireStore(
+                                        email: email,
+                                        password: password,
+                                        fullname: fullname,
+                                        profilePic: "userDefault",
+                                        gender: gender
+                                    )
+                                    if let user = user {
+                                        print("User signed up: \(user.uid)")
+                                        goToVerifyView = true
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: "person.badge.plus")
+                                        .font(.system(size: 18, weight: .semibold))
+                                    Text("Create Account")
+                                        .font(.system(size: 18, weight: .semibold))
+                                }
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(
+                                    LinearGradient(
+                                        gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+                                .cornerRadius(16)
+                                .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
+                            }
+                            .disabled(!isAgeChecked || !isAgreePolicy)
+                            .opacity((!isAgeChecked || !isAgreePolicy) ? 0.6 : 1.0)
+                            .animation(.easeInOut(duration: 0.2), value: isAgeChecked)
+                            .animation(.easeInOut(duration: 0.2), value: isAgreePolicy)
+                        }
+                        .padding(24)
+                        .background(
+                            RoundedRectangle(cornerRadius: 24)
+                                .fill(.regularMaterial)
+                                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+                        )
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 40)
+                    }
+                }
             }
         }
         .navigationBarHidden(true)
+        .navigationDestination(isPresented: $goToVerifyView) {
+            if let user = user {
+                VerifyEmailView(user: user)
+            }
+        }
     }
 }
 
@@ -43,219 +206,159 @@ struct SignUpView: View {
     }
 }
 
-extension SignUpView {
+// MARK: - Modern UI Components
+
+struct ModernTextField: View {
+    let title: String
+    @Binding var text: String
+    let placeholder: String
+    let icon: String
+    var keyboardType: UIKeyboardType = .default
     
-    private var TitleBar: some View {
-        HStack {
-            Image("yalla_transparent")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 70, height: 70)
-                .foregroundColor(.white)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.primary)
             
-            RoundedRectangle(cornerRadius: 10)
-                .foregroundColor(.white)
-                .frame(width: 5, height: 50, alignment: .leading)
-            
-            Text("Sign Up")
-                .foregroundColor(.white)
-                .font(.largeTitle)
-            
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-    }
-    
-    private var SignUpSheet: some View {
-        ScrollView {
-            VStack() {
-                UserFields
-                CheckBoxes
-                SignupButton
+            HStack {
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 20)
+                
+                TextField(placeholder, text: $text)
+                    .font(.system(size: 16, weight: .medium))
+                    .textInputAutocapitalization(.never)
+                    .disableAutocorrection(true)
+                    .keyboardType(keyboardType)
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.systemGray4), lineWidth: 1)
+                    )
+            )
         }
     }
+}
+
+struct ModernPasswordField: View {
+    let title: String
+    @Binding var text: String
+    let placeholder: String
+    @Binding var isVisible: Bool
     
-    private var UserFields: some View {
-        VStack(alignment: .leading) {
-            NameField
-            GenderField
-            EmailField
-            PasswordField
-        }
-    }
-    
-    private var NameField: some View {
-        VStack(alignment: .leading) {
-            Text("Full Name")
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.primary)
             
-            TextField("", text: $fullname, prompt: Text("Enter your name here ...").foregroundColor(Color.black.opacity(0.5)))
-                .foregroundColor(.black)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding(.horizontal)
+            HStack {
+                Image(systemName: "lock.fill")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 20)
+                
+                Group {
+                    if isVisible {
+                        TextField(placeholder, text: $text)
+                    } else {
+                        SecureField(placeholder, text: $text)
+                    }
+                }
+                .font(.system(size: 16, weight: .medium))
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
+                
+                Button {
+                    isVisible.toggle()
+                } label: {
+                    Image(systemName: isVisible ? "eye.fill" : "eye.slash.fill")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.systemGray4), lineWidth: 1)
+                    )
+            )
         }
     }
+}
+
+struct ModernGenderPicker: View {
+    @Binding var selection: String
     
-    private var GenderField: some View {
-        VStack(alignment: .leading) {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Gender")
-                .padding(.top, 15)
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.primary)
             
-            Picker(
-                selection : $gender,
-                label: Text("Gender"),
-                content: {
+            HStack {
+                Image(systemName: "figure.dress.line.vertical.figure")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 20)
+                
+                Picker("Gender", selection: $selection) {
                     Text("Male").tag("Male")
                     Text("Female").tag("Female")
                     Text("Other").tag("Other")
                 }
+                .font(.system(size: 16, weight: .medium))
+                
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.systemGray4), lineWidth: 1)
+                    )
             )
-            .foregroundColor(.black)
-            .padding(.horizontal)
-            .padding(.vertical, 10)
-            .background(.white)
-            .cornerRadius(10)
-            .padding(.horizontal)
         }
     }
+}
+
+struct ModernCheckbox: View {
+    @Binding var isChecked: Bool
+    let text: String
     
-    private var EmailField: some View {
-        VStack(alignment: .leading) {
-            Text("Email")
-                .padding(.top, 15)
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
-            
-            TextField("", text: $email, prompt: Text("Enter your email here ...").foregroundColor(Color.black.opacity(0.5)))
-                .foregroundColor(.black)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding(.horizontal)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
-        }
-    }
-    
-    private var PasswordField: some View {
-        VStack(alignment: .leading) {
-            Text("Password")
-                .padding(.top, 15)
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
-            
-            HStack {
-                if isPasswordVisible {
-                    TextField("", text: $password, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
-                        .foregroundColor(.black)
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
-                        .background(.white)
-                        .cornerRadius(10)
-                        .padding()
-                } else {
-                    SecureField("", text: $password, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
-                        .foregroundColor(.black)
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
-                        .background(.white)
-                        .cornerRadius(10)
-                        .padding()
-                }
-                
-                Button {
-                    isPasswordVisible.toggle()
-                } label: {
-                    Image(systemName: isPasswordVisible ? "eye.fill" : "eye.slash.fill")
-                        .foregroundColor(.gray)
-                        .padding()
-                }
-            }
-            .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
-            .padding(.horizontal)
-        }
-    }
-    
-    private var CheckBoxes: some View {
-        VStack(alignment: .leading) {
-            HStack() {
-                Image(systemName: isAgeChecked ? "checkmark.square.fill" : "square.fill")
-                    .foregroundColor(isAgeChecked ? .blue.opacity(0.5) : .white)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .onTapGesture {
-                        isAgeChecked.toggle()
-                    }
-                
-                Text("I am 16 years or older.")
-                    .foregroundColor(.white)
-            }
-            
-            HStack() {
-                Image(systemName: isAgreePolicy ? "checkmark.square.fill" : "square.fill")
-                    .foregroundColor(isAgreePolicy ? .blue.opacity(0.5) : .white)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .onTapGesture {
-                        isAgreePolicy.toggle()
-                    }
-                
-                Text("I have read and agree to the").foregroundColor(.white)
-                
-                NavigationLink(destination: PrivacyPolicyView()) {
-                    Text("Privacy Policy")
-                        .foregroundColor(Color(#colorLiteral(red: 0, green: 0.9914394021, blue: 1, alpha: 1)))
-                        .underline()
-                        .bold()
-                }
-            }
-        }
-        .padding()
-    }
-    
-    private var SignupButton: some View {
+    var body: some View {
         Button {
-            Task {
-                user = await vm.signUpUserAndAddToFireStore(
-                    email: email,
-                    password: password,
-                    fullname: fullname,
-                    profilePic: "userDefault",
-                    gender: gender
-                )
-                if let user = user {
-                    print("User signed up: \(user.uid)")
-                    goToVerifyView = true
+            isChecked.toggle()
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: isChecked ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(isChecked ? .blue : .secondary)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isChecked)
+                
+                if !text.isEmpty {
+                    Text(text)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
                 }
             }
-        } label: {
-            Text("Create Account")
-                .padding()
-                .padding(.horizontal)
-                .background(.white)
-                .cornerRadius(10)
-                .foregroundColor(Color(.accent))
-                .bold()
-                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
-        .disabled(!isAgeChecked || !isAgreePolicy)
-        .navigationDestination(isPresented: $goToVerifyView) {
-            if let user = user {
-                VerifyEmailView(user: user)
-            }
-        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
