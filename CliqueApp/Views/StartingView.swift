@@ -77,16 +77,64 @@ extension StartingView {
                 Spacer()
                 Spacer()
                 
-                //Get Started Button
-                NavigationLink("Get Started", destination: LoginView())
-                    .bold()
-                    .font(.title2)
-                    .padding()
-                    .padding(.horizontal)
-                    .background(.white)
-                    .cornerRadius(10)
-                    .foregroundColor(Color(.accent))
-                    .shadow(radius: 10)
+                //Log In and Sign Up Buttons
+                VStack(spacing: 16) {
+                    //Log In Button
+                    NavigationLink(destination: LoginView()) {
+                        Text("Log In")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(Color(.accent))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [.white, Color.white.opacity(0.9)]),
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .cornerRadius(16)
+                            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            )
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    
+                    //Sign Up Button
+                    NavigationLink(destination: SignUpView()) {
+                        Text("Sign Up")
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Color.white.opacity(0.15), Color.white.opacity(0.05)]),
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .cornerRadius(16)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(
+                                        LinearGradient(
+                                            gradient: Gradient(colors: [.white.opacity(0.6), .white.opacity(0.3)]),
+                                            startPoint: .top,
+                                            endPoint: .bottom
+                                        ), 
+                                        lineWidth: 1.5
+                                    )
+                            )
+                            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+                .padding(.horizontal, 32)
                 
                 Spacer()
             }
