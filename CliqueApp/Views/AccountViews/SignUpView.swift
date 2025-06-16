@@ -316,11 +316,13 @@ struct ModernGenderPicker: View {
                     Text("Other").tag("Other")
                 }
                 .font(.system(size: 16, weight: .medium))
+                .frame(maxWidth: .infinity, alignment: .leading)
                 
                 Spacer()
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 16)
+            .frame(height: 55)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(Color(.systemGray6))
