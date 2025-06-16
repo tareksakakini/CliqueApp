@@ -30,9 +30,9 @@ struct SignUpView: View {
                 // Modern neutral gradient background
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color(.systemGray6),
-                        Color(.systemBackground),
-                        Color(.systemGray6).opacity(0.5)
+                        Color(.systemGray5),
+                        Color(.systemGray4).opacity(0.3),
+                        Color(.systemGray5).opacity(0.8)
                     ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -181,8 +181,13 @@ struct SignUpView: View {
                         .padding(24)
                         .background(
                             RoundedRectangle(cornerRadius: 24)
-                                .fill(.regularMaterial)
-                                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+                                .fill(Color(.systemBackground))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .stroke(Color(.accent).opacity(0.1), lineWidth: 1)
+                                )
+                                .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 8)
+                                .shadow(color: Color(.accent).opacity(0.1), radius: 24, x: 0, y: 12)
                         )
                         .padding(.horizontal, 20)
                         .padding(.bottom, 40)
