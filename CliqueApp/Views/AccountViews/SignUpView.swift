@@ -41,40 +41,17 @@ struct SignUpView: View {
                 
                 ScrollView {
                     VStack(spacing: 0) {
-                        // Custom back navigation
-                        HStack {
-                            Button {
-                                dismiss()
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Image(systemName: "chevron.left")
-                                        .font(.system(size: 18, weight: .semibold))
-                                    Text("Back")
-                                        .font(.system(size: 16, weight: .medium))
-                                }
-                                .foregroundColor(.primary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color(.systemGray5))
-                                .cornerRadius(12)
-                            }
-                            
-                            Spacer()
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.top, 8)
-                        
                         // Header section
                         VStack(spacing: 12) {
                             Text("Create Account")
                                 .font(.system(size: 32, weight: .bold, design: .rounded))
                                 .foregroundColor(.primary)
                             
-                            Text("Join the community and start planning amazing outings")
+                            Text("Join the community and plan amazing outings")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal, 32)
+                                .padding(.horizontal, 16)
                         }
                         .padding(.top, 20)
                         .padding(.bottom, 32)
@@ -87,7 +64,7 @@ struct SignUpView: View {
                                     title: "Full Name",
                                     text: $fullname,
                                     placeholder: "Enter your full name",
-                                    icon: "person.fill"
+                                    icon: "textformat"
                                 )
                                 
                                 ModernGenderPicker(selection: $gender)
@@ -124,7 +101,7 @@ struct SignUpView: View {
                                     HStack(spacing: 4) {
                                         Text("I agree to the")
                                             .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(.secondary)
+                                            .foregroundColor(.primary)
                                         
                                         NavigationLink(destination: PrivacyPolicyView()) {
                                             Text("Privacy Policy")
@@ -195,7 +172,22 @@ struct SignUpView: View {
                 }
             }
         }
-        .navigationBarHidden(true)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Back")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.primary)
+                }
+            }
+        }
         .navigationDestination(isPresented: $goToVerifyView) {
             if let user = user {
                 VerifyEmailView(user: user)
@@ -313,7 +305,7 @@ struct ModernGenderPicker: View {
                 .foregroundColor(.primary)
             
             HStack {
-                Image(systemName: "figure.dress.line.vertical.figure")
+                Image(systemName: "person.fill")
                     .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.secondary)
                     .frame(width: 20)
