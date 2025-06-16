@@ -161,18 +161,28 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func signUpUserAndAddToFireStore(email: String, password: String, fullname: String, profilePic: String, gender: String) async -> UserModel? {
+    func signUpUserAndAddToFireStore(email: String, password: String, fullname: String, username: String, profilePic: String, gender: String) async -> UserModel? {
         do {
             let signup_user = try await AuthManager.shared.signUp(email: email, password: password)
             let firestoreService = DatabaseManager()
-            try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: email, fullname: fullname, profilePic: "userDefault", gender: gender)
+            try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: email, fullname: fullname, username: username, profilePic: "userDefault", gender: gender)
             let user = try await firestoreService.getUserFromFirestore(uid: signup_user.uid)
             return user
         } catch {
             print("Sign up failed: \(error.localizedDescription)")
             return nil
         }
-        
+    }
+    
+    func isUsernameTaken(_ username: String) async -> Bool {
+        let firestoreService = DatabaseManager()
+        do {
+            let isTaken = try await firestoreService.isUsernameTaken(username: username)
+            return isTaken
+        } catch {
+            print("Failed to check username availability: \(error.localizedDescription)")
+            return true // Return true to be safe in case of error
+        }
     }
     
     func signInUser(email: String, password: String) async -> UserModel? {

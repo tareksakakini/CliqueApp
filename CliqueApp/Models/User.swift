@@ -11,6 +11,7 @@ import FirebaseCore
 struct UserModel: Hashable {
     var uid: String = ""
     var fullname: String = ""
+    var username: String = ""
     var email: String = ""
     var createdAt: Date = Date()
     var profilePic: String = ""
@@ -21,6 +22,7 @@ struct UserModel: Hashable {
         var user = UserModel()
         user.uid = userData["uid"] as? String ?? ""
         user.fullname = userData["fullname"] as? String ?? ""
+        user.username = userData["username"] as? String ?? ""
         user.email = userData["email"] as? String ?? ""
         user.createdAt = (userData["createdAt"] as? Timestamp)?.dateValue() ?? Date()
         user.profilePic = userData["profilePic"] as? String ?? ""

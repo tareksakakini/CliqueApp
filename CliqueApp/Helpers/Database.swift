@@ -7,7 +7,7 @@ import FirebaseStorage
 class DatabaseManager {
     private let db = Firestore.firestore()
     
-    func addUserToFirestore(uid: String, email: String, fullname: String, profilePic: String, gender: String) async throws {
+    func addUserToFirestore(uid: String, email: String, fullname: String, username: String, profilePic: String, gender: String) async throws {
         let userRef = db.collection("users").document(uid)
         
         let userData: [String: Any] = [
@@ -15,6 +15,7 @@ class DatabaseManager {
             "email": email,
             "createdAt": Date(),
             "fullname": fullname,
+            "username": username,
             "profilePic": profilePic,
             "gender": gender
         ]
@@ -460,6 +461,19 @@ class DatabaseManager {
             } else {
                 print("Picture updated successfully!")
             }
+        }
+    }
+    
+    func isUsernameTaken(username: String) async throws -> Bool {
+        let usersRef = db.collection("users")
+        
+        do {
+            let query = usersRef.whereField("username", isEqualTo: username)
+            let snapshot = try await query.getDocuments()
+            return !snapshot.documents.isEmpty
+        } catch {
+            print("Error checking username availability: \(error.localizedDescription)")
+            throw error
         }
     }
 }
