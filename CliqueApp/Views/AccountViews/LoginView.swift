@@ -10,6 +10,7 @@ import SwiftUI
 struct LoginView: View {
     
     @EnvironmentObject private var vm: ViewModel
+    @Environment(\.dismiss) private var dismiss
     
     @State var user: UserModel? = nil
     @State var email: String = ""
@@ -19,181 +20,245 @@ struct LoginView: View {
     @State var isPasswordVisible = false
     @State var isVerified = false
     @State var wrongMessage: String = " "
+    @State var isLoading: Bool = false
     
     var body: some View {
-        ZStack {
-            Color.white.ignoresSafeArea()
-            
-            VStack {
-                BackNavigation(foregroundColor: Color(.accent))
-                Spacer()
-                LoginSheet
-                Spacer()
+        mainContent
+            .navigationBarBackButtonHidden(true)
+            .toolbarBackground(Color(.systemGray5), for: .navigationBar)
+            .toolbarBackground(.automatic, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Back")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .foregroundColor(.primary)
+                    }
+                }
             }
-        }
-        .navigationBarHidden(true)
-    }
-}
-
-#Preview {
-    LoginView()
-        .environmentObject(ViewModel())
-}
-
-extension LoginView {
-    private var LoginSheet: some View {
-        VStack {
-            Title
-            UserFields
-            WrongMessage
-            AccountManagement
-            SignInButton
-            
-        }
-        .frame(width: 300, height: 450)
-        .background(Color(.accent))
-        .cornerRadius(20)
-        .shadow(radius: 50)
+            .navigationDestination(isPresented: $goToNextScreen) {
+                if let user {
+                    if isVerified {
+                        MainView(user: user)
+                    } else {
+                        VerifyEmailView(user: user)
+                    }
+                }
+            }
     }
     
-    private var Title: some View {
+    private var mainContent: some View {
+        GeometryReader { geometry in
+            ZStack {
+                backgroundGradient
+                
+                ScrollView {
+                    VStack(spacing: 0) {
+                        headerSection
+                        
+                        formCard
+                    }
+                }
+            }
+        }
+    }
+    
+    private var backgroundGradient: some View {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color(.systemGray5),
+                Color(.systemGray4).opacity(0.3),
+                Color(.systemGray5).opacity(0.8)
+            ]),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+    }
+    
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            Text("Welcome Back")
+                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+            
+            Text("Sign in to plan your next outing")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+        }
+        .padding(.top, 20)
+        .padding(.bottom, 32)
+    }
+    
+    private var formCard: some View {
+        VStack(spacing: 24) {
+            formFields
+            
+            if !wrongMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                errorMessage
+            }
+            
+            accountManagement
+            
+            signInButton
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(Color(.accent).opacity(0.1), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 8)
+                .shadow(color: Color(.accent).opacity(0.1), radius: 24, x: 0, y: 12)
+        )
+        .padding(.horizontal, 20)
+        .padding(.bottom, 40)
+    }
+    
+    private var formFields: some View {
+        VStack(spacing: 20) {
+            ModernTextField(
+                title: "Email",
+                text: $email,
+                placeholder: "Enter your email address",
+                icon: "envelope.fill",
+                keyboardType: .emailAddress
+            )
+            
+            ModernPasswordField(
+                title: "Password",
+                text: $password,
+                placeholder: "Enter your password",
+                isVisible: $isPasswordVisible
+            )
+        }
+    }
+    
+    private var errorMessage: some View {
         HStack {
-            Image("yalla_transparent")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 70, height: 70)
-                .foregroundColor(.white)
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.red)
             
-            RoundedRectangle(cornerRadius: 10)
-                .foregroundColor(.white)
-                .frame(width: 5, height: 50, alignment: .leading)
-            
-            Text("Login")
-                .foregroundColor(.white)
-                .font(.largeTitle)
+            Text(wrongMessage)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.red)
             
             Spacer()
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.red.opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                )
+        )
     }
     
-    private var UserFields: some View {
-        VStack {
-            EmailField
-            PasswordField
-        }
-    }
-    
-    private var EmailField: some View {
-        TextField("", text: $email, prompt: Text("Enter your email here ...").foregroundColor(Color.black.opacity(0.5)))
-            .foregroundColor(.black)
-            .padding()
-            .background(.white)
-            .cornerRadius(10)
-            .padding()
-            .textInputAutocapitalization(.never)
-            .disableAutocorrection(true)
-    }
-    
-    private var PasswordField: some View {
-        HStack {
-            if isPasswordVisible {
-                TextField("", text: $password, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
-                    .foregroundColor(.black)
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-                    .background(.white)
-                    .cornerRadius(10)
-                    .padding()
-            } else {
-                SecureField("", text: $password, prompt: Text("Enter your password here ...").foregroundColor(Color.black.opacity(0.5)))
-                    .foregroundColor(.black)
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-                    .background(.white)
-                    .cornerRadius(10)
-                    .padding()
-            }
-            
-            Button {
-                isPasswordVisible.toggle()
-            } label: {
-                Image(systemName: isPasswordVisible ? "eye.fill" : "eye.slash.fill")
-                    .foregroundColor(.gray)
-                    .padding()
-            }
-        }
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color.white))
-        .padding(.horizontal)
-    }
-    
-    private var WrongMessage: some View {
-        Text(wrongMessage)
-            .font(.caption)
-            .foregroundColor(.white)
-            .padding(2)
-    }
-    
-    private var AccountManagement: some View {
-        VStack {
+    private var accountManagement: some View {
+        VStack(spacing: 12) {
             HStack {
                 Text("Don't have an account?")
-                    .font(.caption)
-                    .foregroundColor(.white)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary)
                 
                 NavigationLink {
                     SignUpView()
                 } label: {
                     Text("Create Account")
-                        .font(.caption)
-                        .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.blue)
                 }
+                
+                Spacer()
             }
             
             HStack {
                 Text("Forgot your password?")
-                    .font(.caption)
-                    .foregroundColor(.white)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.secondary)
+                
                 NavigationLink {
                     ResetPassordView()
                 } label: {
                     Text("Reset Password")
-                        .font(.caption)
-                        .foregroundColor(Color(#colorLiteral(red: 0.4513868093, green: 0.9930960536, blue: 1, alpha: 1)))
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.blue)
                 }
+                
+                Spacer()
             }
         }
-        .padding()
+        .padding(.horizontal, 4)
     }
     
-    private var SignInButton: some View {
-        
+    private var signInButton: some View {
         Button {
+            isLoading = true
             wrongMessage = " "
             Task {
                 user = await vm.signInUser(email: email, password: password)
-                isVerified = await AuthManager.shared.getEmailVerified()
                 if user != nil {
+                    isVerified = await AuthManager.shared.getEmailVerified()
+                    // Always navigate to next screen for successful login
                     goToNextScreen = true
                 } else {
                     wrongMessage = "Email or password is incorrect"
+                    isLoading = false
                 }
             }
         } label: {
-            Text("Sign in")
-                .padding()
-                .padding(.horizontal)
-                .background(.white)
-                .cornerRadius(10)
-                .foregroundColor(Color(.accent))
-                .bold()
-                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-        }
-        .navigationDestination(isPresented: $goToNextScreen) {
-            if let user {
-                isVerified ? AnyView(MainView(user: user)) : AnyView(VerifyEmailView(user: user))
+            HStack {
+                if isLoading {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundColor(.white)
+                } else {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                }
+                
+                Text(isLoading ? "Signing In..." : "Sign In")
+                    .font(.system(size: 18, weight: .semibold))
             }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
         }
+        .disabled(isLoading || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
+        .opacity((isLoading || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty) ? 0.6 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isLoading)
+        .animation(.easeInOut(duration: 0.2), value: email.isEmpty)
+        .animation(.easeInOut(duration: 0.2), value: password.isEmpty)
     }
 }
+
+#Preview {
+    NavigationStack {
+        LoginView()
+            .environmentObject(ViewModel())
+    }
+}
+
