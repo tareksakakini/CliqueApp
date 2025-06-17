@@ -401,5 +401,79 @@ class ViewModel: ObservableObject {
             print("Failed to sign out: \(error.localizedDescription)")
         }
     }
+    
+    func updateUserFullName(fullName: String) async -> (success: Bool, errorMessage: String?) {
+        guard let user = signedInUser else {
+            return (false, "No user is currently signed in")
+        }
+        
+        do {
+            let firestoreService = DatabaseManager()
+            try await firestoreService.updateUserFullName(uid: user.uid, fullName: fullName)
+            
+            // Update the local user object
+            DispatchQueue.main.async {
+                self.signedInUser?.fullname = fullName
+            }
+            
+            return (true, nil)
+        } catch {
+            print("Error updating full name: \(error.localizedDescription)")
+            return (false, "Failed to update full name. Please try again.")
+        }
+    }
+    
+    func updateUserUsername(username: String) async -> (success: Bool, errorMessage: String?) {
+        guard let user = signedInUser else {
+            return (false, "No user is currently signed in")
+        }
+        
+        // Check if username is already taken
+        do {
+            let firestoreService = DatabaseManager()
+            let isTaken = try await firestoreService.isUsernameTaken(username: username)
+            
+            if isTaken {
+                return (false, "Username is already taken. Please choose a different one.")
+            }
+            
+            try await firestoreService.updateUserUsername(uid: user.uid, username: username)
+            
+            // Update the local user object
+            DispatchQueue.main.async {
+                self.signedInUser?.username = username
+            }
+            
+            return (true, nil)
+        } catch {
+            print("Error updating username: \(error.localizedDescription)")
+            return (false, "Failed to update username. Please try again.")
+        }
+    }
+    
+    func changePassword(currentPassword: String, newPassword: String) async -> (success: Bool, errorMessage: String?) {
+        do {
+            try await AuthManager.shared.changePassword(currentPassword: currentPassword, newPassword: newPassword)
+            return (true, nil)
+        } catch {
+            print("Error changing password: \(error.localizedDescription)")
+            
+            // Provide user-friendly error messages
+            let errorMessage: String
+            if error.localizedDescription.contains("wrong-password") || error.localizedDescription.contains("invalid-credential") {
+                errorMessage = "Current password is incorrect. Please try again."
+            } else if error.localizedDescription.contains("weak-password") {
+                errorMessage = "New password is too weak. Please choose a stronger password."
+            } else if error.localizedDescription.contains("requires-recent-login") {
+                errorMessage = "For security reasons, please sign out and sign back in, then try changing your password again."
+            } else if error.localizedDescription.contains("network") || error.localizedDescription.contains("internet") {
+                errorMessage = "Network error. Please check your internet connection and try again."
+            } else {
+                errorMessage = "Failed to change password. Please try again."
+            }
+            
+            return (false, errorMessage)
+        }
+    }
 
 }

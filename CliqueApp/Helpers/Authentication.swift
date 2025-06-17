@@ -66,5 +66,32 @@ class AuthManager {
             return false
         }
     }
+    
+    // Changes the password for the currently authenticated user
+    func changePassword(currentPassword: String, newPassword: String) async throws {
+        guard let user = Auth.auth().currentUser else {
+            throw NSError(domain: "AuthError", code: 0, userInfo: [NSLocalizedDescriptionKey: "No user is currently signed in"])
+        }
+        
+        guard let email = user.email else {
+            throw NSError(domain: "AuthError", code: 0, userInfo: [NSLocalizedDescriptionKey: "User email not available"])
+        }
+        
+        // Re-authenticate the user with their current password
+        let credential = EmailAuthProvider.credential(withEmail: email, password: currentPassword)
+        
+        do {
+            // First, re-authenticate the user
+            try await user.reauthenticate(with: credential)
+            
+            // Then, update the password
+            try await user.updatePassword(to: newPassword)
+            
+            print("Password changed successfully")
+        } catch {
+            print("Error changing password: \(error.localizedDescription)")
+            throw error
+        }
+    }
 
 }

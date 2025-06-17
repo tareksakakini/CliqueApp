@@ -436,6 +436,30 @@ class DatabaseManager {
         }
     }
     
+    func updateUserFullName(uid: String, fullName: String) async throws {
+        let userRef = db.collection("users").document(uid)
+        
+        do {
+            try await userRef.updateData(["fullname": fullName])
+            print("Full name updated successfully!")
+        } catch {
+            print("Error updating full name: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
+    func updateUserUsername(uid: String, username: String) async throws {
+        let userRef = db.collection("users").document(uid)
+        
+        do {
+            try await userRef.updateData(["username": username])
+            print("Username updated successfully!")
+        } catch {
+            print("Error updating username: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
     func uploadImage(image: UIImage, storageLocation: String, referenceLocation: DocumentReference, fieldName: String) async {
         guard let imageData = image.jpegData(compressionQuality: 0.4) else { return }
         let storageRef = Storage.storage().reference()

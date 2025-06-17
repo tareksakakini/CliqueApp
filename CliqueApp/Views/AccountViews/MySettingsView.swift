@@ -1,5 +1,5 @@
 //
-//  LandingView.swift
+//  MySettingsView.swift
 //  CliqueApp
 //
 //  Created by Tarek Sakakini on 1/6/25.
@@ -11,6 +11,7 @@ import PhotosUI
 struct MySettingsView: View {
     
     @EnvironmentObject private var vm: ViewModel
+    @Environment(\.dismiss) private var dismiss
 
     @State var user: UserModel
     
@@ -19,27 +20,808 @@ struct MySettingsView: View {
     
     @State private var imageSelection: PhotosPickerItem? = nil
     @State private var selectedImage: UIImage? = nil
+    @State private var showDeleteConfirmation = false
+    @State private var showSignOutConfirmation = false
+    @State private var isDeletingAccount = false
+    @State private var deleteResult: (success: Bool, message: String)? = nil
+    @State private var showDeleteResult = false
+    @State private var showChangePassword = false
+    @State private var isUploadingImage = false
+    @State private var uploadResult: (success: Bool, message: String)? = nil
+    @State private var showUploadResult = false
+    @State private var imageRefreshId = UUID()
+    @State private var showPhotoActionSheet = false
+    @State private var showFullSizeImage = false
+    @State private var isEditingFullname = false
+    @State private var editedFullname = ""
+    @State private var isUpdatingFullname = false
+    @State private var fullnameUpdateResult: (success: Bool, message: String)? = nil
+    @State private var showFullnameUpdateResult = false
+    @State private var isEditingUsername = false
+    @State private var editedUsername = ""
+    @State private var isUpdatingUsername = false
+    @State private var usernameUpdateResult: (success: Bool, message: String)? = nil
+    @State private var showUsernameUpdateResult = false
     
     var body: some View {
-        
-        ZStack {
-            Color(.accent).ignoresSafeArea()
-            VStack {
-                HeaderView(user: user, title: "My Settings", navigationBinder: .constant(false))
-                Spacer()
-                ImageSelectionField(whichView: "ProfilePictureView", user: user, imageSelection: $imageSelection, selectedImage: $selectedImage, diameter: 200, isPhone: false)
-                Spacer()
-                SignOutButton
-                DeleteAccountButton
-                Spacer()
+        mainContent
+            .navigationBarBackButtonHidden(true)
+            .toolbarBackground(Color(.systemGray5), for: .navigationBar)
+            .toolbarBackground(.automatic, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button {
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                            Text("Back")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .foregroundColor(.primary)
+                    }
+                }
+            }
+            .onChange(of: selectedImage) {
+                Task {
+                    if let selectedImage {
+                        await uploadProfileImage(selectedImage)
+                    }
+                }
+            }
+            .navigationDestination(isPresented: $goToLoginScreen) {
+                LoginView()
+            }
+            .navigationDestination(isPresented: $goToAccountDeletedScreen) {
+                AccountDeleted()
+            }
+    }
+    
+    private var mainContent: some View {
+        GeometryReader { geometry in
+            ZStack {
+                backgroundGradient
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        headerSection
+                        
+                        profileSection
+                        
+                        statusMessages
+                        
+                        actionButtons
+                    }
+                    .padding(.bottom, 40)
+                }
             }
         }
-        .onChange(of: selectedImage) {
-            Task {
-                if let selectedImage {
-                    await vm.saveProfilePicture(image: selectedImage)
-                    vm.userProfilePic = selectedImage
+    }
+    
+    private var backgroundGradient: some View {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color(.systemGray5),
+                Color(.systemGray4).opacity(0.3),
+                Color(.systemGray5).opacity(0.8)
+            ]),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+    }
+    
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            Text("My Profile")
+                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+            
+            Text("Manage your account and preferences")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+        }
+        .padding(.top, 20)
+        .padding(.bottom, 32)
+    }
+    
+    private var profileSection: some View {
+        VStack(spacing: 20) {
+            // Profile Avatar
+            VStack(spacing: 12) {
+                ZStack {
+                    if user.profilePic != "" && user.profilePic != "userDefault" {
+                        AsyncImage(url: URL(string: user.profilePic)) { phase in
+                            switch phase {
+                            case .empty:
+                                Circle()
+                                    .fill(Color.black.opacity(0.1))
+                                    .frame(width: 90, height: 90)
+                                    .overlay(
+                                        ProgressView()
+                                            .tint(.black.opacity(0.6))
+                                    )
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 90, height: 90)
+                                    .clipShape(Circle())
+                                    .onTapGesture {
+                                        showFullSizeImage = true
+                                    }
+                            case .failure(_):
+                                Circle()
+                                    .fill(Color.black)
+                                    .frame(width: 90, height: 90)
+                                    .overlay(
+                                        Text(user.fullname.prefix(1))
+                                            .font(.system(size: 32, weight: .medium, design: .rounded))
+                                            .foregroundColor(.white)
+                                    )
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                        .id(imageRefreshId)
+                    } else {
+                        Circle()
+                            .fill(Color.black)
+                            .frame(width: 90, height: 90)
+                            .overlay(
+                                Text(user.fullname.prefix(1))
+                                    .font(.system(size: 32, weight: .medium, design: .rounded))
+                                    .foregroundColor(.white)
+                            )
+                    }
+                    
+                    // Edit button
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: 28, height: 28)
+                        .overlay(
+                            Button(action: {
+                                showPhotoActionSheet = true
+                            }) {
+                                Image(systemName: "camera.fill")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.black.opacity(0.7))
+                            }
+                        )
+                        .shadow(color: Color.black.opacity(0.15), radius: 4, x: 0, y: 2)
+                        .offset(x: 30, y: 30)
                 }
+                .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+            }
+            .padding(.top, 32)
+            
+            // User Info Card
+            userInfoCard
+        }
+        .padding(.horizontal, 20)
+    }
+    
+    private var userInfoCard: some View {
+        VStack(spacing: 24) {
+            Text(user.fullname)
+                .font(.system(size: 24, weight: .semibold, design: .rounded))
+                .foregroundColor(.primary)
+            
+            VStack(spacing: 20) {
+                // Full Name row
+                HStack(spacing: 16) {
+                    Circle()
+                        .fill(Color.black.opacity(0.05))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: "person")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.black.opacity(0.7))
+                        )
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Full Name")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.black.opacity(0.5))
+                            .textCase(.uppercase)
+                            .tracking(0.5)
+                        if isEditingFullname {
+                            TextField("Enter your full name", text: $editedFullname)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .autocapitalization(.words)
+                                .disableAutocorrection(true)
+                                .frame(maxWidth: 200)
+                        } else {
+                            Text(user.fullname)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    Spacer()
+                    
+                    if isEditingFullname {
+                        HStack(spacing: 8) {
+                            Button(action: {
+                                isEditingFullname = false
+                                editedFullname = user.fullname
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.gray)
+                            }
+                            Button(action: {
+                                Task {
+                                    await updateFullname()
+                                }
+                            }) {
+                                if isUpdatingFullname {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                } else {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            .disabled(isUpdatingFullname || editedFullname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    } else {
+                        Button(action: {
+                            isEditingFullname = true
+                            editedFullname = user.fullname
+                        }) {
+                            Image(systemName: "square.and.pencil")
+                                .font(.system(size: 18))
+                                .foregroundColor(.black.opacity(0.7))
+                        }
+                    }
+                }
+                
+                Rectangle()
+                    .fill(Color.black.opacity(0.05))
+                    .frame(height: 1)
+                
+                // Username row
+                HStack(spacing: 16) {
+                    Circle()
+                        .fill(Color.black.opacity(0.05))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: "at")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.black.opacity(0.7))
+                        )
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Username")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.black.opacity(0.5))
+                            .textCase(.uppercase)
+                            .tracking(0.5)
+                        if isEditingUsername {
+                            TextField("Enter your username", text: $editedUsername)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                                .frame(maxWidth: 200)
+                        } else {
+                            Text(user.username.isEmpty ? "Not set" : user.username)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(user.username.isEmpty ? .black.opacity(0.4) : .primary)
+                        }
+                    }
+                    Spacer()
+                    
+                    if isEditingUsername {
+                        HStack(spacing: 8) {
+                            Button(action: {
+                                isEditingUsername = false
+                                editedUsername = user.username
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.gray)
+                            }
+                            Button(action: {
+                                Task {
+                                    await updateUsername()
+                                }
+                            }) {
+                                if isUpdatingUsername {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                } else {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.blue)
+                                }
+                            }
+                            .disabled(isUpdatingUsername || editedUsername.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        }
+                    } else {
+                        Button(action: {
+                            isEditingUsername = true
+                            editedUsername = user.username
+                        }) {
+                            Image(systemName: "square.and.pencil")
+                                .font(.system(size: 18))
+                                .foregroundColor(.black.opacity(0.7))
+                        }
+                    }
+                }
+                
+                Rectangle()
+                    .fill(Color.black.opacity(0.05))
+                    .frame(height: 1)
+                
+                // Email row
+                HStack(spacing: 16) {
+                    Circle()
+                        .fill(Color.black.opacity(0.05))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: "envelope")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.black.opacity(0.7))
+                        )
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Email")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.black.opacity(0.5))
+                            .textCase(.uppercase)
+                            .tracking(0.5)
+                        Text(user.email)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                    Spacer()
+                }
+                
+                Rectangle()
+                    .fill(Color.black.opacity(0.05))
+                    .frame(height: 1)
+                
+                // Gender row
+                HStack(spacing: 16) {
+                    Circle()
+                        .fill(Color.black.opacity(0.05))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: "person.2")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.black.opacity(0.7))
+                        )
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Gender")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.black.opacity(0.5))
+                            .textCase(.uppercase)
+                            .tracking(0.5)
+                        Text(user.gender.isEmpty ? "Not specified" : user.gender)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(user.gender.isEmpty ? .black.opacity(0.4) : .primary)
+                    }
+                    Spacer()
+                }
+            }
+            .padding(28)
+            .background(Color.white)
+            .cornerRadius(20)
+            .shadow(color: Color.black.opacity(0.04), radius: 20, x: 0, y: 8)
+        }
+    }
+    
+    private var statusMessages: some View {
+        VStack(spacing: 12) {
+            // Upload result message
+            if showUploadResult, let result = uploadResult {
+                HStack {
+                    Image(systemName: result.success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundColor(result.success ? .green : .red)
+                    Text(result.message)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(result.success ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(result.success ? Color.green.opacity(0.3) : Color.red.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .padding(.horizontal, 20)
+                .transition(.scale.combined(with: .opacity))
+            }
+            
+            // Fullname update result message
+            if showFullnameUpdateResult, let result = fullnameUpdateResult {
+                HStack {
+                    Image(systemName: result.success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundColor(result.success ? .green : .red)
+                    Text(result.message)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(result.success ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(result.success ? Color.green.opacity(0.3) : Color.red.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .padding(.horizontal, 20)
+                .transition(.scale.combined(with: .opacity))
+            }
+            
+            // Username update result message
+            if showUsernameUpdateResult, let result = usernameUpdateResult {
+                HStack {
+                    Image(systemName: result.success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundColor(result.success ? .green : .red)
+                    Text(result.message)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(result.success ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(result.success ? Color.green.opacity(0.3) : Color.red.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .padding(.horizontal, 20)
+                .transition(.scale.combined(with: .opacity))
+            }
+            
+            // Account deletion result message
+            if showDeleteResult, let result = deleteResult {
+                HStack {
+                    Image(systemName: result.success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .foregroundColor(result.success ? .green : .red)
+                    Text(result.message)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.primary)
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(result.success ? Color.green.opacity(0.1) : Color.red.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(result.success ? Color.green.opacity(0.3) : Color.red.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .padding(.horizontal, 20)
+                .transition(.scale.combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showUploadResult)
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showFullnameUpdateResult)
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showUsernameUpdateResult)
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showDeleteResult)
+    }
+    
+    private var actionButtons: some View {
+        VStack(spacing: 16) {
+            // Change Password Button
+            Button(action: {
+                showChangePassword = true
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "key")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.black.opacity(0.7))
+                    Text("Change Password")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.black.opacity(0.3))
+                }
+                .padding(20)
+                .background(Color.white)
+                .cornerRadius(16)
+                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+            }
+            
+            // Sign Out Button
+            Button(action: {
+                showSignOutConfirmation = true
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "arrow.right.square")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.black.opacity(0.7))
+                    Text("Sign Out")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.black.opacity(0.3))
+                }
+                .padding(20)
+                .background(Color.white)
+                .cornerRadius(16)
+                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+            }
+            
+            // Delete Account Button
+            Button(action: {
+                showDeleteConfirmation = true
+            }) {
+                HStack(spacing: 12) {
+                    if isDeletingAccount {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .tint(.black.opacity(0.7))
+                    } else {
+                        Image(systemName: "trash")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.black.opacity(0.7))
+                    }
+                    Text(isDeletingAccount ? "Deleting Account..." : "Delete Account")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    if !isDeletingAccount {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.black.opacity(0.3))
+                    }
+                }
+                .padding(20)
+                .background(Color.white)
+                .cornerRadius(16)
+                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+            }
+            .disabled(isDeletingAccount)
+        }
+        .padding(.horizontal, 20)
+        .sheet(isPresented: $showChangePassword) {
+            ChangePasswordView()
+                .environmentObject(vm)
+        }
+        .confirmationDialog(
+            "Sign Out",
+            isPresented: $showSignOutConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Sign Out", role: .destructive) {
+                Task {
+                    do {
+                        try AuthManager.shared.signOut()
+                        goToLoginScreen = true
+                    } catch {
+                        print("Sign out failed")
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to sign out?")
+        }
+        .confirmationDialog(
+            "Delete Account",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Account", role: .destructive) {
+                isDeletingAccount = true
+                Task {
+                    do {
+                        let databaseManager = DatabaseManager()
+                        try await databaseManager.deleteUserAccount(uid: user.uid, email: user.email)
+                        deleteResult = (success: true, message: "Account deleted successfully")
+                        goToAccountDeletedScreen = true
+                    } catch {
+                        deleteResult = (success: false, message: "Failed to delete account")
+                        print("Failed to delete user account from database")
+                    }
+                    isDeletingAccount = false
+                    showDeleteResult = true
+                    
+                    // Auto-hide the message after a few seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                        showDeleteResult = false
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("This action cannot be undone. Your account and all associated data will be permanently deleted.")
+        }
+        .confirmationDialog(
+            "Profile Picture",
+            isPresented: $showPhotoActionSheet,
+            titleVisibility: .visible
+        ) {
+            if user.profilePic != "" && user.profilePic != "userDefault" {
+                // User has a profile picture - show change and remove options
+                Button("Change Photo") {
+                    showPhotoPicker()
+                }
+                
+                Button("Remove Photo", role: .destructive) {
+                    Task {
+                        await removeProfileImage()
+                    }
+                }
+                
+                Button("Cancel", role: .cancel) { }
+            } else {
+                // User has no profile picture - show add option
+                Button("Add Photo") {
+                    showPhotoPicker()
+                }
+                
+                Button("Cancel", role: .cancel) { }
+            }
+        } message: {
+            if user.profilePic != "" && user.profilePic != "userDefault" {
+                Text("Choose an option for your profile picture")
+            } else {
+                Text("Add a profile picture to personalize your account")
+            }
+        }
+        .photosPicker(isPresented: .constant(false), selection: $imageSelection, matching: .images)
+        .sheet(isPresented: $showFullSizeImage) {
+            if user.profilePic != "" && user.profilePic != "userDefault" {
+                ZStack {
+                    Color(.systemBackground).ignoresSafeArea()
+                    AsyncImage(url: URL(string: user.profilePic)) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView().tint(.gray)
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .background(Color(.systemBackground))
+                        case .failure(_):
+                            Image(systemName: "person.crop.circle.badge.exclam")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 120, height: 120)
+                                .foregroundColor(.gray.opacity(0.7))
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Button(action: { showFullSizeImage = false }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.gray.opacity(0.8))
+                                    .padding()
+                            }
+                        }
+                        Spacer()
+                    }
+                }
+            }
+        }
+        .onChange(of: user.profilePic) { oldValue, newValue in
+            // Force image refresh when profile URL changes
+            if oldValue != newValue && !newValue.isEmpty {
+                imageRefreshId = UUID()
+            }
+        }
+        .onChange(of: imageSelection) { _, newValue in
+            Task {
+                if let newValue {
+                    await loadImage(from: newValue)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func showPhotoPicker() {
+        // This would ideally trigger the PhotosPicker, but SwiftUI PhotosPicker
+        // doesn't support programmatic triggering. We'll use the confirmationDialog
+        // to show options and then the user can tap to select.
+        // For now, we'll just show an alert that photo picker functionality needs to be implemented
+        // TODO: Implement photo picker functionality
+    }
+    
+    private func loadImage(from item: PhotosPickerItem?) async {
+        guard let item else { return }
+        do {
+            if let data = try await item.loadTransferable(type: Data.self),
+               let uiImage = UIImage(data: data) {
+                selectedImage = uiImage
+            }
+        } catch {
+            print("Failed to load image data:", error)
+        }
+    }
+    
+    private func uploadProfileImage(_ uiImage: UIImage) async {
+        isUploadingImage = true
+        showUploadResult = false
+        
+        // Upload the image using existing ViewModel method
+        await vm.saveProfilePicture(image: uiImage)
+        vm.userProfilePic = uiImage
+        
+        DispatchQueue.main.async {
+            self.isUploadingImage = false
+            self.uploadResult = (true, "Profile picture updated!")
+            self.showUploadResult = true
+            
+            // Force image refresh on successful upload
+            self.imageRefreshId = UUID()
+            
+            // Auto-hide the message after a few seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                self.showUploadResult = false
+            }
+        }
+    }
+    
+    private func removeProfileImage() async {
+        // TODO: Implement remove profile image functionality
+        // This would involve calling a ViewModel method to remove the profile image
+        uploadResult = (false, "Remove image functionality not yet implemented")
+        showUploadResult = true
+        
+        // Auto-hide the message after a few seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            showUploadResult = false
+        }
+    }
+    
+    private func updateFullname() async {
+        isUpdatingFullname = true
+        showFullnameUpdateResult = false
+        
+        let result = await vm.updateUserFullName(fullName: user.fullname)
+        
+        DispatchQueue.main.async {
+            self.isUpdatingFullname = false
+            self.fullnameUpdateResult = (result.success, result.errorMessage ?? "Unknown error")
+            self.showFullnameUpdateResult = true
+            
+            // Auto-hide the message after a few seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                self.showFullnameUpdateResult = false
+            }
+        }
+    }
+    
+    private func updateUsername() async {
+        isUpdatingUsername = true
+        showUsernameUpdateResult = false
+        
+        let result = await vm.updateUserUsername(username: user.username)
+        
+        DispatchQueue.main.async {
+            self.isUpdatingUsername = false
+            self.usernameUpdateResult = (result.success, result.errorMessage ?? "Unknown error")
+            self.showUsernameUpdateResult = true
+            
+            // Auto-hide the message after a few seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                self.showUsernameUpdateResult = false
             }
         }
     }
@@ -50,53 +832,214 @@ struct MySettingsView: View {
         .environmentObject(ViewModel())
 }
 
-extension MySettingsView {
-    private var SignOutButton: some View {
-        Button {
-            Task {
-                do {
-                    try AuthManager.shared.signOut()
-                    goToLoginScreen = true
-                } catch {
-                    print("Sign out failed")
+// MARK: - Supporting Views
+
+struct ChangePasswordView: View {
+    @EnvironmentObject private var vm: ViewModel
+    @Environment(\.dismiss) private var dismiss
+    
+    @State private var currentPassword = ""
+    @State private var newPassword = ""
+    @State private var confirmPassword = ""
+    @State private var isCurrentPasswordVisible = false
+    @State private var isNewPasswordVisible = false
+    @State private var isConfirmPasswordVisible = false
+    @State private var isChangingPassword = false
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(.systemGray5),
+                        Color(.systemGray4).opacity(0.3),
+                        Color(.systemGray5).opacity(0.8)
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                VStack(spacing: 24) {
+                    headerSection
+                    
+                    formCard
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 20)
+            }
+            .navigationTitle("Change Password")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
                 }
             }
-        } label: {
-            Text("Sign out")
-                .frame(width: 200, height: 60)
-                .background(.white)
-                .cornerRadius(10)
-                .foregroundColor(Color(.accent))
-                .bold()
-                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-        }
-        .navigationDestination(isPresented: $goToLoginScreen) {
-            LoginView()
         }
     }
     
-    private var DeleteAccountButton: some View {
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "key.fill")
+                .font(.system(size: 60, weight: .medium))
+                .foregroundColor(.accent)
+                .padding(.bottom, 10)
+            
+            Text("Change Password")
+                .font(.system(size: 28, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+            
+            Text("Enter your current password and choose a new one")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+        }
+        .padding(.top, 20)
+    }
+    
+    private var formCard: some View {
+        VStack(spacing: 24) {
+            VStack(spacing: 20) {
+                ModernPasswordField(
+                    title: "Current Password",
+                    text: $currentPassword,
+                    placeholder: "Enter your current password",
+                    isVisible: $isCurrentPasswordVisible
+                )
+                
+                ModernPasswordField(
+                    title: "New Password",
+                    text: $newPassword,
+                    placeholder: "Enter your new password",
+                    isVisible: $isNewPasswordVisible
+                )
+                
+                ModernPasswordField(
+                    title: "Confirm New Password",
+                    text: $confirmPassword,
+                    placeholder: "Confirm your new password",
+                    isVisible: $isConfirmPasswordVisible
+                )
+            }
+            
+            changePasswordButton
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(Color(.accent).opacity(0.1), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 8)
+                .shadow(color: Color(.accent).opacity(0.1), radius: 24, x: 0, y: 12)
+        )
+    }
+    
+    private var changePasswordButton: some View {
         Button {
+            // Validate passwords
+            if currentPassword.isEmpty {
+                alertMessage = "Please enter your current password."
+                showAlert = true
+                return
+            }
+            
+            if newPassword.count < 6 {
+                alertMessage = "New password must be at least 6 characters."
+                showAlert = true
+                return
+            }
+            
+            if newPassword != confirmPassword {
+                alertMessage = "New passwords do not match."
+                showAlert = true
+                return
+            }
+            
+            isChangingPassword = true
+            
             Task {
-                do {
-                    let databaseManager = DatabaseManager()
-                    try await databaseManager.deleteUserAccount(uid: user.uid, email: user.email)
-                    goToAccountDeletedScreen = true
-                } catch {
-                    print("Failed to delete user account from database")
+                let result = await vm.changePassword(currentPassword: currentPassword, newPassword: newPassword)
+                
+                DispatchQueue.main.async {
+                    self.isChangingPassword = false
+                    
+                    if result.success {
+                        self.alertMessage = "Password changed successfully!"
+                        self.currentPassword = ""
+                        self.newPassword = ""
+                        self.confirmPassword = ""
+                    } else {
+                        self.alertMessage = result.errorMessage ?? "Failed to change password"
+                    }
+                    
+                    self.showAlert = true
                 }
             }
         } label: {
-            Text("Delete Account")
-                .frame(width: 200, height: 60)
-                .background(.white)
-                .cornerRadius(10)
-                .foregroundColor(Color(.accent))
-                .bold()
-                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
+            HStack {
+                if isChangingPassword {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundColor(.white)
+                } else {
+                    Image(systemName: "key.fill")
+                        .font(.system(size: 18, weight: .semibold))
+                }
+                
+                Text(isChangingPassword ? "Changing Password..." : "Change Password")
+                    .font(.system(size: 18, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(16)
+            .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
         }
-        .navigationDestination(isPresented: $goToAccountDeletedScreen) {
-            AccountDeleted()
+        .disabled(isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
+        .opacity((isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) ? 0.6 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isChangingPassword)
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Password Change"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
+    }
+}
+
+struct AccountDeleted: View {
+    var body: some View {
+        VStack(spacing: 24) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 80, weight: .medium))
+                .foregroundColor(.green)
+            
+            Text("Account Deleted")
+                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+            
+            Text("Your account has been successfully deleted. Thank you for using our app.")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 32)
+            
+            Spacer()
+        }
+        .padding(.top, 100)
+        .navigationBarBackButtonHidden(true)
     }
 }
