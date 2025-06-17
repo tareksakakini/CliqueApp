@@ -364,6 +364,17 @@ struct ModernPersonPillView: View {
     @Binding var invitees: [UserModel]
     
     var body: some View {
+        if personType == "friend", let user = displayedUser, let viewingUser = viewingUser {
+            NavigationLink(destination: FriendDetailsView(friend: user, viewingUser: viewingUser)) {
+                personPillContent()
+            }
+            .buttonStyle(PlainButtonStyle())
+        } else {
+            personPillContent()
+        }
+    }
+    
+    private func personPillContent() -> some View {
         HStack(spacing: 16) {
             if let user = displayedUser {
                 profileSection(for: user)
