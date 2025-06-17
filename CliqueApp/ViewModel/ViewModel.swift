@@ -346,19 +346,49 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func resendVerificationEmail() async -> Bool {
+    func resendVerificationEmail() async -> (success: Bool, errorMessage: String?) {
         do {
             guard let currentUser = Auth.auth().currentUser else {
-                print("No current user found")
-                return false
+                print("No current user found - user may not be signed in")
+                return (false, "Please sign in again to resend verification email.")
             }
             
+            // Check if user is already verified
+            try await currentUser.reload()
+            if currentUser.isEmailVerified {
+                print("User email is already verified")
+                return (true, nil)
+            }
+            
+            print("Attempting to send verification email to: \(currentUser.email ?? "unknown")")
             try await currentUser.sendEmailVerification()
-            print("Verification email sent successfully")
-            return true
-        } catch {
-            print("Failed to resend verification email: \(error.localizedDescription)")
-            return false
+            print("Verification email sent successfully to: \(currentUser.email ?? "unknown")")
+            return (true, nil)
+        } catch let error as NSError {
+            print("Failed to resend verification email - Error code: \(error.code)")
+            print("Error description: \(error.localizedDescription)")
+            print("Error domain: \(error.domain)")
+            
+            // Check for specific Firebase Auth errors
+            if error.domain == "FIRAuthErrorDomain" {
+                switch error.code {
+                case 17999: // FIRAuthErrorCodeTooManyRequests
+                    print("Too many requests - user should wait before trying again")
+                    return (false, "Too many requests. Please wait a few minutes before trying again.")
+                case 17011: // FIRAuthErrorCodeUserNotFound
+                    print("User not found - may need to sign in again")
+                    return (false, "User session expired. Please sign in again.")
+                case 17020: // FIRAuthErrorCodeNetworkError
+                    print("Network error - check internet connection")
+                    return (false, "Network error. Please check your internet connection and try again.")
+                default:
+                    print("Other Firebase Auth error: \(error.code)")
+                    return (false, "Unable to send email right now. Please wait a bit and try again.")
+                }
+            }
+            
+            // Generic error message for unknown errors
+            return (false, "Unable to send email right now. Please wait a bit and try again.")
         }
     }
     

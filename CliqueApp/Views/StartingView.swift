@@ -26,6 +26,7 @@ struct StartingView: View {
             }
             
         }
+        .navigationBarBackButtonHidden(true)
         .task {
             signedInUser = await vm.getSignedInUser()
             isEmailVerified = await AuthManager.shared.getEmailVerified()

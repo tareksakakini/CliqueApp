@@ -17,6 +17,9 @@ struct VerifyEmailView: View {
     @State private var showNotVerifiedMessage = false
     @State private var emailResent = false
     @State private var navigateToMainView = false
+    @State private var showResendError = false
+    @State private var resendErrorMessage = ""
+    @State private var showStartingView = false
     
     var body: some View {
         ZStack {
@@ -86,7 +89,7 @@ struct VerifyEmailView: View {
                 Button("Sign Out") {
                     Task {
                         await vm.signoutButtonPressed()
-                        dismiss()
+                        showStartingView = true
                     }
                 }
                 .font(.system(size: 14, weight: .medium))
@@ -98,6 +101,9 @@ struct VerifyEmailView: View {
         .navigationBarBackButtonHidden(true)
         .navigationDestination(isPresented: $navigateToMainView) {
             MainView(user: user)
+        }
+        .navigationDestination(isPresented: $showStartingView) {
+            StartingView()
         }
         .onAppear {
             // Set the signed in user and check verification status
@@ -194,10 +200,40 @@ struct VerifyEmailView: View {
                 )
                 .transition(.scale.combined(with: .opacity))
             }
+            
+            // Resend error message
+            if showResendError {
+                VStack(spacing: 8) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                            .font(.system(size: 20, weight: .medium))
+                        Text("Failed to send email")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.red)
+                    }
+                    
+                    Text(resendErrorMessage)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.red.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16)
+                                .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                        )
+                )
+                .transition(.scale.combined(with: .opacity))
+            }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showSuccessMessage)
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showNotVerifiedMessage)
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: emailResent)
+        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: showResendError)
     }
     
     @ViewBuilder
@@ -244,7 +280,7 @@ struct VerifyEmailView: View {
                     Text(isCheckingVerification ? "Checking..." : "I've Verified My Email")
                         .font(.system(size: 18, weight: .semibold))
                 }
-                .foregroundColor(.white)
+                    .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 56)
                 .background(
@@ -263,18 +299,28 @@ struct VerifyEmailView: View {
             Button(action: {
                 Task {
                     isResendingEmail = true
-                    // Hide previous messages
+                    // Hide all previous messages
                     emailResent = false
                     showNotVerifiedMessage = false
+                    showResendError = false
                     
-                    let success = await vm.resendVerificationEmail()
+                    let result = await vm.resendVerificationEmail()
                     isResendingEmail = false
                     
-                    if success {
+                    if result.success {
                         emailResent = true
                         // Auto-hide the confirmation after a few seconds
                         DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                             emailResent = false
+                        }
+                    } else {
+                        // Show resend error with specific message
+                        showResendError = true
+                        resendErrorMessage = result.errorMessage ?? "Unable to send email right now. Please wait a bit and try again."
+                        
+                        // Auto-hide the error after a few seconds
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                            showResendError = false
                         }
                     }
                 }
