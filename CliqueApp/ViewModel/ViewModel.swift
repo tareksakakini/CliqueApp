@@ -19,6 +19,7 @@ class ViewModel: ObservableObject {
     @Published var friendInviteSent: [String]
     @Published var eventRefreshTrigger: Bool
     @Published var userProfilePic: UIImage?
+    @Published var signedInUser: UserModel?
     
     init() {
         self.users = []
@@ -326,6 +327,49 @@ class ViewModel: ObservableObject {
 
         return (hours, minutes)
     }
-
+    
+    func checkEmailVerificationStatus() async {
+        do {
+            // Reload the current Firebase Auth user to get latest verification status
+            try await Auth.auth().currentUser?.reload()
+            
+            // Update the signedInUser with latest verification status
+            if let currentUser = Auth.auth().currentUser {
+                let firestoreService = DatabaseManager()
+                let updatedUser = try await firestoreService.getUserFromFirestore(uid: currentUser.uid)
+                var userWithVerification = updatedUser
+                userWithVerification.isEmailVerified = currentUser.isEmailVerified
+                self.signedInUser = userWithVerification
+            }
+        } catch {
+            print("Failed to check email verification status: \(error.localizedDescription)")
+        }
+    }
+    
+    func resendVerificationEmail() async -> Bool {
+        do {
+            guard let currentUser = Auth.auth().currentUser else {
+                print("No current user found")
+                return false
+            }
+            
+            try await currentUser.sendEmailVerification()
+            print("Verification email sent successfully")
+            return true
+        } catch {
+            print("Failed to resend verification email: \(error.localizedDescription)")
+            return false
+        }
+    }
+    
+    func signoutButtonPressed() async {
+        do {
+            try Auth.auth().signOut()
+            self.signedInUser = nil
+            print("User signed out successfully")
+        } catch {
+            print("Failed to sign out: \(error.localizedDescription)")
+        }
+    }
 
 }
