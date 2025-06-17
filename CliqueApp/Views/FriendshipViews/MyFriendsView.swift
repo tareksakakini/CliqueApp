@@ -98,6 +98,7 @@ struct MyFriendsView: View {
                 dynamicContentSection
             }
             .padding(.horizontal, 20)
+            .padding(.top, 20)
             .padding(.bottom, 40)
         }
         .refreshable {
