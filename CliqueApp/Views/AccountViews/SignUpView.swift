@@ -25,6 +25,8 @@ struct SignUpView: View {
     @State private var isCheckingUsername = false
     @State private var isUsernameTaken: Bool? = nil
     @FocusState private var usernameFieldIsFocused: Bool
+    @State private var showAlert = false
+    @State private var alertMessage = ""
     
     let genderOptions = ["Male", "Female", "Other"]
     
@@ -223,14 +225,45 @@ struct SignUpView: View {
     private var createAccountButton: some View {
         Button {
             Task {
-                // Validation
+                // Full name validation
                 if fullname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    alertMessage = "Full name cannot be empty."
+                    showAlert = true
                     return
                 }
+                // Username validation
                 if username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    alertMessage = "Username cannot be empty."
+                    showAlert = true
                     return
                 }
+                // Email format validation
+                if !isValidEmail(email) {
+                    alertMessage = "Please enter a valid email address."
+                    showAlert = true
+                    return
+                }
+                // Password length validation
+                if password.count < 6 {
+                    alertMessage = "Password must be at least 6 characters."
+                    showAlert = true
+                    return
+                }
+                // Username availability check
                 if isUsernameTaken == true {
+                    alertMessage = "Username is already taken. Please choose a different username."
+                    showAlert = true
+                    return
+                }
+                // Age and policy agreement validation
+                if !isAgeChecked {
+                    alertMessage = "You must confirm that you are 16 years or older."
+                    showAlert = true
+                    return
+                }
+                if !isAgreePolicy {
+                    alertMessage = "You must agree to the Privacy Policy."
+                    showAlert = true
                     return
                 }
                 
@@ -245,6 +278,10 @@ struct SignUpView: View {
                 if let user = user {
                     print("User signed up: \(user.uid)")
                     goToVerifyView = true
+                } else {
+                    // Check for email already in use (Firebase error message)
+                    alertMessage = "Sign up failed. This email may already be in use. Please use a different email or try signing in."
+                    showAlert = true
                 }
             }
         } label: {
@@ -273,6 +310,16 @@ struct SignUpView: View {
         .animation(.easeInOut(duration: 0.2), value: isAgreePolicy)
         .animation(.easeInOut(duration: 0.2), value: isUsernameTaken)
         .animation(.easeInOut(duration: 0.2), value: isCheckingUsername)
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Sign Up Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+    }
+    
+    // Helper for email validation
+    private func isValidEmail(_ email: String) -> Bool {
+        let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
+        let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
+        return emailPred.evaluate(with: email)
     }
 }
 
