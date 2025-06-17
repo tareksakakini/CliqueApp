@@ -431,26 +431,18 @@ class ViewModel: ObservableObject {
             return (false, "No user is currently signed in")
         }
         
-        // Check if username is already taken
         do {
             let firestoreService = DatabaseManager()
-            let isTaken = try await firestoreService.isUsernameTaken(username: username)
-            
-            if isTaken {
-                return (false, "Username is already taken. Please choose a different one.")
-            }
-            
             try await firestoreService.updateUserUsername(uid: user.uid, username: username)
             
             // Update the local user object
             DispatchQueue.main.async {
                 self.signedInUser?.username = username
             }
-            
             return (true, nil)
         } catch {
             print("Error updating username: \(error.localizedDescription)")
-            return (false, "Failed to update username. Please try again.")
+            return (false, error.localizedDescription)
         }
     }
     
@@ -476,6 +468,23 @@ class ViewModel: ObservableObject {
             }
             
             return (false, errorMessage)
+        }
+    }
+    
+    func removeUserProfilePic() async -> (success: Bool, errorMessage: String?) {
+        guard let user = signedInUser else {
+            return (false, "No user is currently signed in")
+        }
+        do {
+            let firestoreService = DatabaseManager()
+            try await firestoreService.removeUserProfilePic(uid: user.uid)
+            DispatchQueue.main.async {
+                self.signedInUser?.profilePic = "userDefault"
+            }
+            return (true, nil)
+        } catch {
+            print("Error removing profile picture: \(error.localizedDescription)")
+            return (false, error.localizedDescription)
         }
     }
 

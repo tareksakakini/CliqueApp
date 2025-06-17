@@ -784,14 +784,19 @@ struct MySettingsView: View {
     }
     
     private func removeProfileImage() async {
-        // TODO: Implement remove profile image functionality
-        // This would involve calling a ViewModel method to remove the profile image
-        uploadResult = (false, "Remove image functionality not yet implemented")
-        showUploadResult = true
-        
-        // Auto-hide the message after a few seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            showUploadResult = false
+        let result = await vm.removeUserProfilePic()
+        DispatchQueue.main.async {
+            if result.success {
+                self.user.profilePic = "userDefault"
+                self.uploadResult = (true, "Profile picture removed!")
+            } else {
+                self.uploadResult = (false, result.errorMessage ?? "Failed to remove profile picture")
+            }
+            self.showUploadResult = true
+            // Auto-hide the message after a few seconds
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                self.showUploadResult = false
+            }
         }
     }
     

@@ -460,6 +460,17 @@ class DatabaseManager {
         }
     }
     
+    func removeUserProfilePic(uid: String) async throws {
+        let userRef = db.collection("users").document(uid)
+        do {
+            try await userRef.updateData(["profilePic": "userDefault"])
+            print("Profile picture removed successfully!")
+        } catch {
+            print("Error removing profile picture: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
     func uploadImage(image: UIImage, storageLocation: String, referenceLocation: DocumentReference, fieldName: String) async {
         guard let imageData = image.jpegData(compressionQuality: 0.4) else { return }
         let storageRef = Storage.storage().reference()
