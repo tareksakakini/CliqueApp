@@ -44,6 +44,8 @@ struct MySettingsView: View {
     @State private var showUsernameUpdateResult = false
     @State private var showPhotosPicker = false
     @State private var tempSelectedImage: UIImage? = nil
+    @State private var showImageCropper = false
+    @State private var imageToProcess: UIImage? = nil
     
     var body: some View {
         mainContent
@@ -81,20 +83,12 @@ struct MySettingsView: View {
                 if let newValue {
                     await loadImage(from: newValue)
                     if let selectedImage {
-                        // Show the selected image immediately for better UX
+                        // Show the image cropper instead of directly uploading
                         DispatchQueue.main.async {
-                            // Create a temporary URL for the selected image to show immediately
-                            self.tempSelectedImage = selectedImage
-                        }
-                        
-                        // Upload in background
-                        await uploadProfileImage(selectedImage)
-                        
-                        // Reset states after upload completes
-                        DispatchQueue.main.async {
+                            self.imageToProcess = selectedImage
+                            self.showImageCropper = true
                             self.selectedImage = nil
                             self.imageSelection = nil
-                            self.tempSelectedImage = nil
                         }
                     }
                 }
@@ -721,6 +715,26 @@ struct MySettingsView: View {
             }
         }
         .photosPicker(isPresented: $showPhotosPicker, selection: $imageSelection, matching: .images)
+        .sheet(isPresented: $showImageCropper) {
+            if let imageToProcess = imageToProcess {
+                ImageCropperView(
+                    image: imageToProcess,
+                    cropSize: CGSize(width: 300, height: 300),
+                    onCrop: { croppedImage in
+                        // Upload the cropped image
+                        Task {
+                            await uploadProfileImage(croppedImage)
+                        }
+                        showImageCropper = false
+                        self.imageToProcess = nil
+                    },
+                    onCancel: {
+                        showImageCropper = false
+                        self.imageToProcess = nil
+                    }
+                )
+            }
+        }
         .sheet(isPresented: $showFullSizeImage) {
             if user.profilePic != "" && user.profilePic != "userDefault" {
                 ZStack {
