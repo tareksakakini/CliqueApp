@@ -49,3 +49,7 @@ AuthKey_S6T7UJJRWA.p8
 RestAPIKey.txt
 
 CliqueApp/Views/Signup_SampleView.swift
+
+CliqueApp/ProfileView_Sample.swift
+
+CliqueApp/ViewModel_Sample.swift

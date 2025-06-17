@@ -62,7 +62,7 @@ struct MySettingsView: View {
                         }
                         .foregroundColor(.primary)
                     }
-                }
+            }
         }
         .onChange(of: selectedImage) {
             Task {
@@ -759,17 +759,23 @@ struct MySettingsView: View {
         isUploadingImage = true
         showUploadResult = false
         
-        // Upload the image using existing ViewModel method
-        await vm.saveProfilePicture(image: uiImage)
-        vm.userProfilePic = uiImage
+        let result = await vm.uploadUserProfilePic(image: uiImage)
         
         DispatchQueue.main.async {
             self.isUploadingImage = false
-            self.uploadResult = (true, "Profile picture updated!")
-            self.showUploadResult = true
             
-            // Force image refresh on successful upload
-            self.imageRefreshId = UUID()
+            if result.success, let newProfilePicUrl = result.profilePicUrl {
+                // Update local user state with new profile picture URL
+                self.user.profilePic = newProfilePicUrl
+                self.uploadResult = (true, "Profile picture updated!")
+                
+                // Force image refresh
+                self.imageRefreshId = UUID()
+            } else {
+                self.uploadResult = (false, result.errorMessage ?? "Failed to upload profile picture")
+            }
+            
+            self.showUploadResult = true
             
             // Auto-hide the message after a few seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {

@@ -488,4 +488,28 @@ class ViewModel: ObservableObject {
         }
     }
 
+    func uploadUserProfilePic(image: UIImage) async -> (success: Bool, errorMessage: String?, profilePicUrl: String?) {
+        guard let user = signedInUser else {
+            return (false, "No user is currently signed in", nil)
+        }
+        
+        do {
+            let firestoreService = DatabaseManager()
+            
+            // Upload image and get the new URL
+            let newProfilePicUrl = try await firestoreService.uploadUserProfilePic(uid: user.uid, image: image)
+            
+            // Update local user object
+            DispatchQueue.main.async {
+                self.signedInUser?.profilePic = newProfilePicUrl
+                self.userProfilePic = image
+            }
+            
+            return (true, nil, newProfilePicUrl)
+        } catch {
+            print("Error uploading profile picture: \(error.localizedDescription)")
+            return (false, error.localizedDescription, nil)
+        }
+    }
+
 }

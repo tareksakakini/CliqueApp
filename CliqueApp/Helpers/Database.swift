@@ -1,3 +1,4 @@
+import Foundation
 import FirebaseFirestore
 import FirebaseDatabaseInternal
 import FirebaseAuth
@@ -469,6 +470,48 @@ class DatabaseManager {
             print("Error removing profile picture: \(error.localizedDescription)")
             throw error
         }
+    }
+    
+    func uploadUserProfilePic(uid: String, image: UIImage) async throws -> String {
+        guard let imageData = image.jpegData(compressionQuality: 0.8) else {
+            throw NSError(domain: "ImageError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert image to data"])
+        }
+        
+        let storageRef = Storage.storage().reference()
+        let profilePicRef = storageRef.child("profile_pictures/\(uid).jpg")
+        
+        // Upload the image using async/await pattern
+        let _ = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<StorageMetadata?, Error>) in
+            profilePicRef.putData(imageData, metadata: nil) { metadata, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else {
+                    continuation.resume(returning: metadata)
+                }
+            }
+        }
+        
+        // Get the download URL
+        let downloadURL = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
+            profilePicRef.downloadURL { url, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                } else if let url = url {
+                    continuation.resume(returning: url)
+                } else {
+                    continuation.resume(throwing: NSError(domain: "DownloadError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to get download URL"]))
+                }
+            }
+        }
+        
+        let profilePicUrl = downloadURL.absoluteString
+        
+        // Update Firestore with the new profile picture URL
+        let userRef = db.collection("users").document(uid)
+        try await userRef.updateData(["profilePic": profilePicUrl])
+        
+        print("Profile picture uploaded successfully!")
+        return profilePicUrl
     }
     
     func uploadImage(image: UIImage, storageLocation: String, referenceLocation: DocumentReference, fieldName: String) async {
