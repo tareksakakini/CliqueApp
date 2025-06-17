@@ -43,6 +43,7 @@ struct MySettingsView: View {
     @State private var usernameUpdateResult: (success: Bool, message: String)? = nil
     @State private var showUsernameUpdateResult = false
     @State private var showPhotosPicker = false
+    @State private var tempSelectedImage: UIImage? = nil
     
     var body: some View {
         mainContent
@@ -64,13 +65,6 @@ struct MySettingsView: View {
                     }
             }
         }
-        .onChange(of: selectedImage) {
-            Task {
-                if let selectedImage {
-                        await uploadProfileImage(selectedImage)
-                    }
-                }
-            }
             .navigationDestination(isPresented: $goToLoginScreen) {
                 StartingView()
             }
@@ -80,6 +74,30 @@ struct MySettingsView: View {
         .onAppear {
             if let signedInUser = vm.signedInUser {
                 user = signedInUser
+            }
+        }
+        .onChange(of: imageSelection) { _, newValue in
+            Task {
+                if let newValue {
+                    await loadImage(from: newValue)
+                    if let selectedImage {
+                        // Show the selected image immediately for better UX
+                        DispatchQueue.main.async {
+                            // Create a temporary URL for the selected image to show immediately
+                            self.tempSelectedImage = selectedImage
+                        }
+                        
+                        // Upload in background
+                        await uploadProfileImage(selectedImage)
+                        
+                        // Reset states after upload completes
+                        DispatchQueue.main.async {
+                            self.selectedImage = nil
+                            self.imageSelection = nil
+                            self.tempSelectedImage = nil
+                        }
+                    }
+                }
             }
         }
     }
@@ -139,7 +157,28 @@ struct MySettingsView: View {
             // Profile Avatar
             VStack(spacing: 12) {
                 ZStack {
-                    if user.profilePic != "" && user.profilePic != "userDefault" {
+                    // Show temporary selected image immediately, then fallback to profile pic
+                    if let tempImage = tempSelectedImage {
+                        Image(uiImage: tempImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 90, height: 90)
+                            .clipShape(Circle())
+                            .overlay(
+                                // Show upload progress overlay
+                                Circle()
+                                    .fill(Color.black.opacity(isUploadingImage ? 0.3 : 0))
+                                    .overlay(
+                                        Group {
+                                            if isUploadingImage {
+                                                ProgressView()
+                                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                                    .scaleEffect(0.8)
+                                            }
+                                        }
+                                    )
+                            )
+                    } else if user.profilePic != "" && user.profilePic != "userDefault" {
                         AsyncImage(url: URL(string: user.profilePic)) { phase in
                             switch phase {
                             case .empty:
@@ -725,18 +764,6 @@ struct MySettingsView: View {
             // Force image refresh when profile URL changes
             if oldValue != newValue && !newValue.isEmpty {
                 imageRefreshId = UUID()
-            }
-        }
-        .onChange(of: imageSelection) { _, newValue in
-            Task {
-                if let newValue {
-                    await loadImage(from: newValue)
-                    if let selectedImage {
-                        await uploadProfileImage(selectedImage)
-                        self.selectedImage = nil // Reset after upload
-                        self.imageSelection = nil // Reset picker
-                    }
-                }
             }
         }
     }
