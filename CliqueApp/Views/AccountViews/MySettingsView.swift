@@ -42,6 +42,7 @@ struct MySettingsView: View {
     @State private var isUpdatingUsername = false
     @State private var usernameUpdateResult: (success: Bool, message: String)? = nil
     @State private var showUsernameUpdateResult = false
+    @State private var showPhotosPicker = false
     
     var body: some View {
         mainContent
@@ -658,22 +659,19 @@ struct MySettingsView: View {
             if user.profilePic != "" && user.profilePic != "userDefault" {
                 // User has a profile picture - show change and remove options
                 Button("Change Photo") {
-                    showPhotoPicker()
+                    showPhotosPicker = true
                 }
-                
                 Button("Remove Photo", role: .destructive) {
                     Task {
                         await removeProfileImage()
                     }
                 }
-                
                 Button("Cancel", role: .cancel) { }
             } else {
                 // User has no profile picture - show add option
                 Button("Add Photo") {
-                    showPhotoPicker()
+                    showPhotosPicker = true
                 }
-                
                 Button("Cancel", role: .cancel) { }
             }
         } message: {
@@ -683,7 +681,7 @@ struct MySettingsView: View {
                 Text("Add a profile picture to personalize your account")
             }
         }
-        .photosPicker(isPresented: .constant(false), selection: $imageSelection, matching: .images)
+        .photosPicker(isPresented: $showPhotosPicker, selection: $imageSelection, matching: .images)
         .sheet(isPresented: $showFullSizeImage) {
             if user.profilePic != "" && user.profilePic != "userDefault" {
                 ZStack {
@@ -733,20 +731,17 @@ struct MySettingsView: View {
             Task {
                 if let newValue {
                     await loadImage(from: newValue)
+                    if let selectedImage {
+                        await uploadProfileImage(selectedImage)
+                        self.selectedImage = nil // Reset after upload
+                        self.imageSelection = nil // Reset picker
+                    }
                 }
             }
         }
     }
     
     // MARK: - Helper Methods
-    
-    private func showPhotoPicker() {
-        // This would ideally trigger the PhotosPicker, but SwiftUI PhotosPicker
-        // doesn't support programmatic triggering. We'll use the confirmationDialog
-        // to show options and then the user can tap to select.
-        // For now, we'll just show an alert that photo picker functionality needs to be implemented
-        // TODO: Implement photo picker functionality
-    }
     
     private func loadImage(from item: PhotosPickerItem?) async {
         guard let item else { return }
