@@ -79,13 +79,14 @@ extension ProfilePictureView {
         
     }
     private var DefaultImage: some View {
-        Image(systemName: "person.crop.circle.fill")
-            .resizable()
-            .scaledToFit()
+        Circle()
+            .fill(Color.gray.opacity(0.6))
             .frame(width: diameter, height: diameter)
-            .foregroundColor(.gray.opacity(0.6))
-            .background(.white)
-            .clipShape(.circle)
+            .overlay(
+                Text(user?.fullname.prefix(1) ?? "?")
+                    .font(.system(size: diameter * 0.4, weight: .medium, design: .rounded))
+                    .foregroundColor(.white)
+            )
     }
     
     private var CustomImage: some View {

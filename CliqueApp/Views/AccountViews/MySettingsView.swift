@@ -194,7 +194,7 @@ struct MySettingsView: View {
                                     }
                             case .failure(_):
                                 Circle()
-                                    .fill(Color.black)
+                                    .fill(Color.gray.opacity(0.6))
                                     .frame(width: 90, height: 90)
                                     .overlay(
                                         Text(user.fullname.prefix(1))
@@ -208,7 +208,7 @@ struct MySettingsView: View {
                         .id(imageRefreshId)
                     } else {
                         Circle()
-                            .fill(Color.black)
+                            .fill(Color.gray.opacity(0.6))
                             .frame(width: 90, height: 90)
                             .overlay(
                                 Text(user.fullname.prefix(1))

@@ -120,7 +120,7 @@ struct FriendDetailsView: View {
                                 .clipShape(Circle())
                         case .failure(_):
                             Circle()
-                                .fill(Color.black)
+                                .fill(Color.gray.opacity(0.6))
                                 .frame(width: 120, height: 120)
                                 .overlay(
                                     Text(friend.fullname.prefix(1))
@@ -133,7 +133,7 @@ struct FriendDetailsView: View {
                     }
                 } else {
                     Circle()
-                        .fill(Color.black)
+                        .fill(Color.gray.opacity(0.6))
                         .frame(width: 120, height: 120)
                         .overlay(
                             Text(friend.fullname.prefix(1))
@@ -313,7 +313,7 @@ struct FriendsFriendsListView: View {
                                 return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
                             }, id: \.self) { friendUsername in
                                 if let friendUser = vm.getUser(username: friendUsername) {
-                                    FriendListItemView(friend: friendUser)
+                                    FriendListItemView(friend: friendUser, viewingUser: friend)
                                 }
                             }
                         }
@@ -337,30 +337,40 @@ struct FriendsFriendsListView: View {
 // MARK: - Friend List Item View
 
 struct FriendListItemView: View {
+    @EnvironmentObject private var vm: ViewModel
+    
     let friend: UserModel
+    let viewingUser: UserModel
     
     var body: some View {
-        HStack(spacing: 16) {
-            ProfilePictureView(user: friend, diameter: 50, isPhone: false)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(friend.fullname)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
+        NavigationLink(destination: FriendDetailsView(friend: friend, viewingUser: viewingUser)) {
+            HStack(spacing: 16) {
+                ProfilePictureView(user: friend, diameter: 50, isPhone: false)
                 
-                Text(friend.username.isEmpty ? "@username" : "@\(friend.username)")
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(friend.fullname)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    Text(friend.username.isEmpty ? "@username" : "@\(friend.username)")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(friend.username.isEmpty ? .secondary.opacity(0.6) : .secondary)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(friend.username.isEmpty ? .secondary.opacity(0.6) : .secondary)
-                    .lineLimit(1)
+                    .foregroundColor(.black.opacity(0.3))
             }
-            
-            Spacer()
+            .padding(20)
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
         }
-        .padding(20)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
