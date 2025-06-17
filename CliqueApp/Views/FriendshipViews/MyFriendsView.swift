@@ -400,9 +400,9 @@ struct ModernPersonPillView: View {
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 
-                Text(user.email)
+                Text(user.username.isEmpty ? "@username" : "@\(user.username)")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(user.username.isEmpty ? .secondary.opacity(0.6) : .secondary)
                     .lineLimit(1)
             }
         }
