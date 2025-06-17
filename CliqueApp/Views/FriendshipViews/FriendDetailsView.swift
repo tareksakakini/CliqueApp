@@ -191,16 +191,6 @@ struct FriendDetailsView: View {
                 
                 Divider()
                 
-                // Email Row
-                detailRow(
-                    icon: "envelope.fill",
-                    title: "Email",
-                    value: friend.email,
-                    isClickable: false
-                ) { }
-                
-                Divider()
-                
                 // Friends Count Row
                 detailRow(
                     icon: "person.2.fill",
