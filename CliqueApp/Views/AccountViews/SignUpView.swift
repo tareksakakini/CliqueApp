@@ -276,6 +276,7 @@ struct SignUpView: View {
                     gender: gender
                 )
                 if let user = user {
+                    vm.signedInUser = user
                     print("User signed up: \(user.uid)")
                     goToVerifyView = true
                 } else {

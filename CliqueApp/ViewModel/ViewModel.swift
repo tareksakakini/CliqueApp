@@ -155,6 +155,9 @@ class ViewModel: ObservableObject {
         if let signedInUserUID = signedInUserUID {
             let firestoreService = DatabaseManager()
             let signedInUser = try? await firestoreService.getUserFromFirestore(uid: signedInUserUID)
+            if let user = signedInUser {
+                self.signedInUser = user
+            }
             return signedInUser
         }
         else {

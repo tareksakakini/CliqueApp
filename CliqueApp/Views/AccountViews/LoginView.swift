@@ -51,6 +51,12 @@ struct LoginView: View {
                     }
                 }
             }
+            .onAppear {
+                email = ""
+                password = ""
+                wrongMessage = " "
+                isLoading = false
+            }
     }
     
     private var mainContent: some View {
@@ -212,6 +218,7 @@ struct LoginView: View {
             Task {
                 user = await vm.signInUser(email: email, password: password)
                 if user != nil {
+                    vm.signedInUser = user
                     isVerified = await AuthManager.shared.getEmailVerified()
                     // Always navigate to next screen for successful login
                     goToNextScreen = true

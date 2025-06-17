@@ -62,20 +62,25 @@ struct MySettingsView: View {
                         .foregroundColor(.primary)
                     }
                 }
-            }
-            .onChange(of: selectedImage) {
-                Task {
-                    if let selectedImage {
+        }
+        .onChange(of: selectedImage) {
+            Task {
+                if let selectedImage {
                         await uploadProfileImage(selectedImage)
                     }
                 }
             }
             .navigationDestination(isPresented: $goToLoginScreen) {
-                LoginView()
+                StartingView()
             }
             .navigationDestination(isPresented: $goToAccountDeletedScreen) {
                 AccountDeleted()
             }
+        .onAppear {
+            if let signedInUser = vm.signedInUser {
+                user = signedInUser
+            }
+        }
     }
     
     private var mainContent: some View {
@@ -602,14 +607,14 @@ struct MySettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Sign Out", role: .destructive) {
-                Task {
-                    do {
-                        try AuthManager.shared.signOut()
-                        goToLoginScreen = true
-                    } catch {
-                        print("Sign out failed")
-                    }
+            Task {
+                do {
+                    try AuthManager.shared.signOut()
+                    goToLoginScreen = true
+                } catch {
+                    print("Sign out failed")
                 }
+            }
             }
             Button("Cancel", role: .cancel) { }
         } message: {
@@ -794,13 +799,21 @@ struct MySettingsView: View {
         isUpdatingFullname = true
         showFullnameUpdateResult = false
         
-        let result = await vm.updateUserFullName(fullName: user.fullname)
+        let result = await vm.updateUserFullName(fullName: editedFullname)
         
         DispatchQueue.main.async {
             self.isUpdatingFullname = false
-            self.fullnameUpdateResult = (result.success, result.errorMessage ?? "Unknown error")
+            let message = result.success ? "Full name updated!" : (result.errorMessage ?? "Unknown error")
+            self.fullnameUpdateResult = (result.success, message)
             self.showFullnameUpdateResult = true
-            
+            if result.success {
+                self.user.fullname = self.editedFullname
+                self.editedFullname = self.user.fullname
+                self.isEditingFullname = false // Exit editing mode
+            }
+            if let signedInUser = vm.signedInUser {
+                self.user = signedInUser
+            }
             // Auto-hide the message after a few seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                 self.showFullnameUpdateResult = false
@@ -812,13 +825,21 @@ struct MySettingsView: View {
         isUpdatingUsername = true
         showUsernameUpdateResult = false
         
-        let result = await vm.updateUserUsername(username: user.username)
+        let result = await vm.updateUserUsername(username: editedUsername)
         
         DispatchQueue.main.async {
             self.isUpdatingUsername = false
-            self.usernameUpdateResult = (result.success, result.errorMessage ?? "Unknown error")
+            let message = result.success ? "Username updated!" : (result.errorMessage ?? "Unknown error")
+            self.usernameUpdateResult = (result.success, message)
             self.showUsernameUpdateResult = true
-            
+            if result.success {
+                self.user.username = self.editedUsername
+                self.editedUsername = self.user.username
+                self.isEditingUsername = false // Exit editing mode
+            }
+            if let signedInUser = vm.signedInUser {
+                self.user = signedInUser
+            }
             // Auto-hide the message after a few seconds
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                 self.showUsernameUpdateResult = false
@@ -876,6 +897,11 @@ struct ChangePasswordView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") {
                         dismiss()
                     }
                 }
