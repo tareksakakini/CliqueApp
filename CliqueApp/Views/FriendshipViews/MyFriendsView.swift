@@ -17,7 +17,7 @@ struct MyFriendsView: View {
     
     enum FriendSection: String, CaseIterable {
         case friends = "Friends"
-        case pending = "Pending"
+        case requests = "Requests"
         case sent = "Sent"
     }
     
@@ -134,10 +134,10 @@ struct MyFriendsView: View {
                 Spacer()
                 
                 selectableStatisticItem(
-                    section: .pending,
+                    section: .requests,
                     icon: "envelope.fill",
                     count: vm.friendInviteReceived.count,
-                    title: "Pending"
+                    title: "Requests"
                 )
                 
                 Spacer()
@@ -194,16 +194,6 @@ struct MyFriendsView: View {
                     .font(.system(size: 20, weight: .semibold))
                     .foregroundColor(.primary)
                 Spacer()
-                let count = countForSelectedSection()
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color(.accent))
-                        .cornerRadius(8)
-                }
             }
             
             contentForSelectedSection()
@@ -215,7 +205,7 @@ struct MyFriendsView: View {
         switch selectedSection {
         case .friends:
             return vm.friendship.count
-        case .pending:
+        case .requests:
             return vm.friendInviteReceived.count
         case .sent:
             return vm.friendInviteSent.count
@@ -227,8 +217,8 @@ struct MyFriendsView: View {
         switch selectedSection {
         case .friends:
             friendsListContent()
-        case .pending:
-            pendingRequestsContent()
+        case .requests:
+            requestsContent()
         case .sent:
             sentRequestsContent()
         }
@@ -247,7 +237,11 @@ struct MyFriendsView: View {
             }
         } else {
             LazyVStack(spacing: 12) {
-                ForEach(vm.friendship, id: \.self) { friend_username in
+                ForEach(vm.friendship.sorted { username1, username2 in
+                    let user1 = vm.getUser(username: username1)?.fullname ?? ""
+                    let user2 = vm.getUser(username: username2)?.fullname ?? ""
+                    return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
+                }, id: \.self) { friend_username in
                     ModernPersonPillView(
                         viewingUser: user,
                         displayedUser: vm.getUser(username: friend_username),
@@ -260,7 +254,7 @@ struct MyFriendsView: View {
     }
     
     @ViewBuilder
-    private func pendingRequestsContent() -> some View {
+    private func requestsContent() -> some View {
         if vm.friendInviteReceived.isEmpty {
             emptyStateView(
                 icon: "envelope",
@@ -272,7 +266,11 @@ struct MyFriendsView: View {
             }
         } else {
             LazyVStack(spacing: 12) {
-                ForEach(vm.friendInviteReceived, id: \.self) { request_username in
+                ForEach(vm.friendInviteReceived.sorted { username1, username2 in
+                    let user1 = vm.getUser(username: username1)?.fullname ?? ""
+                    let user2 = vm.getUser(username: username2)?.fullname ?? ""
+                    return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
+                }, id: \.self) { request_username in
                     ModernPersonPillView(
                         viewingUser: user,
                         displayedUser: vm.getUser(username: request_username),
@@ -297,7 +295,11 @@ struct MyFriendsView: View {
             }
         } else {
             LazyVStack(spacing: 12) {
-                ForEach(vm.friendInviteSent, id: \.self) { sent_username in
+                ForEach(vm.friendInviteSent.sorted { username1, username2 in
+                    let user1 = vm.getUser(username: username1)?.fullname ?? ""
+                    let user2 = vm.getUser(username: username2)?.fullname ?? ""
+                    return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
+                }, id: \.self) { sent_username in
                     ModernPersonPillView(
                         viewingUser: user,
                         displayedUser: vm.getUser(username: sent_username),
