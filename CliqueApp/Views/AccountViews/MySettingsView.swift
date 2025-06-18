@@ -1087,6 +1087,8 @@ struct ChangePasswordView: View {
 }
 
 struct AccountDeleted: View {
+    @State private var goToStartingView = false
+    
     var body: some View {
         VStack(spacing: 24) {
             Image(systemName: "checkmark.circle.fill")
@@ -1104,8 +1106,37 @@ struct AccountDeleted: View {
                 .padding(.horizontal, 32)
             
             Spacer()
+            
+            // Button to return to starting page
+            Button(action: {
+                goToStartingView = true
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "house.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("Return to Home")
+                        .font(.system(size: 18, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(16)
+                .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
+            }
+            .padding(.horizontal, 32)
+            .padding(.bottom, 60)
         }
         .padding(.top, 100)
         .navigationBarBackButtonHidden(true)
+        .navigationDestination(isPresented: $goToStartingView) {
+            StartingView()
+        }
     }
 }
