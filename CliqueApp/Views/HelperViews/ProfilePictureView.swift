@@ -36,6 +36,8 @@ struct ProfilePictureView: View {
     }
     
     func loadImage(imageUrl: String) async {
+        // Don't attempt to load if URL is empty or the default placeholder
+        guard !imageUrl.isEmpty && imageUrl != "userDefault" else { return }
         guard let url = URL(string: imageUrl) else { return }
         
         do {
