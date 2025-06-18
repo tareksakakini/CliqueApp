@@ -54,6 +54,19 @@ struct FriendDetailsView: View {
                 }
                 Button("Cancel", role: .cancel) { }
                 
+            case .requestReceived:
+                Button("Accept Friend Request") {
+                    Task {
+                        await acceptFriendRequest()
+                    }
+                }
+                Button("Decline Request", role: .destructive) {
+                    Task {
+                        await rejectFriendRequest()
+                    }
+                }
+                Button("Cancel", role: .cancel) { }
+                
             case .requestSent:
                 Button("Unsend Request", role: .destructive) {
                     Task {
@@ -62,7 +75,12 @@ struct FriendDetailsView: View {
                 }
                 Button("Cancel", role: .cancel) { }
                 
-            default:
+            case .none:
+                Button("Send Friend Request") {
+                    Task {
+                        await sendFriendRequest()
+                    }
+                }
                 Button("Cancel", role: .cancel) { }
             }
         }
@@ -315,56 +333,27 @@ struct FriendDetailsView: View {
             }
             
         case .requestReceived:
-            HStack(spacing: 8) {
-                Button(action: {
-                    Task {
-                        await acceptFriendRequest()
-                    }
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .medium))
-                        Text("Accept")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .cornerRadius(12)
-                    .shadow(color: Color(.accent).opacity(0.3), radius: 8, x: 0, y: 4)
+            Button(action: {
+                showActionSheet = true
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.fill.questionmark")
+                        .font(.system(size: 16, weight: .medium))
+                    Text("Friend Request")
+                        .font(.system(size: 16, weight: .medium))
                 }
-                
-                Button(action: {
-                    Task {
-                        await rejectFriendRequest()
-                    }
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .medium))
-                        Text("Decline")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color.gray, Color.gray.opacity(0.8)]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                        startPoint: .leading,
+                        endPoint: .trailing
                     )
-                    .cornerRadius(12)
-                    .shadow(color: Color.gray.opacity(0.3), radius: 8, x: 0, y: 4)
-                }
+                )
+                .cornerRadius(12)
+                .shadow(color: Color(.accent).opacity(0.3), radius: 8, x: 0, y: 4)
             }
             
         case .requestSent:
@@ -393,9 +382,7 @@ struct FriendDetailsView: View {
             
         case .none:
             Button(action: {
-                Task {
-                    await sendFriendRequest()
-                }
+                showActionSheet = true
             }) {
                 HStack(spacing: 8) {
                     Image(systemName: "person.fill.badge.plus")

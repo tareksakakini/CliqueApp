@@ -67,7 +67,7 @@ struct AddFriendView: View {
                 Spacer()
             }
             .padding(.horizontal, 20)
-            .padding(.top, 10)
+            .padding(.top, 20)
             
             VStack(spacing: 12) {
                 Text("Add Friend")
