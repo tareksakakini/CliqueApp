@@ -19,8 +19,7 @@ struct FriendDetailsView: View {
     @State private var isLoadingFriends = false
     @State private var showFriendsList = false
     @State private var showFullSizeImage = false
-    @State private var showRemoveFriendAlert = false
-    @State private var showUnsendRequestAlert = false
+    @State private var showActionSheet = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -43,25 +42,29 @@ struct FriendDetailsView: View {
         .sheet(isPresented: $showFullSizeImage) {
             FullSizeImageView(imageUrl: friend.profilePic)
         }
-        .alert("Remove Friend", isPresented: $showRemoveFriendAlert) {
-            Button("Remove", role: .destructive) {
-                Task {
-                    await removeFriend()
+        .confirmationDialog("", isPresented: $showActionSheet) {
+            let relationship = getRelationshipStatus()
+            
+            switch relationship {
+            case .friend:
+                Button("Remove Friend", role: .destructive) {
+                    Task {
+                        await removeFriend()
+                    }
                 }
-            }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("Are you sure you want to remove \(friend.fullname) from your friends?")
-        }
-        .alert("Unsend Friend Request", isPresented: $showUnsendRequestAlert) {
-            Button("Unsend", role: .destructive) {
-                Task {
-                    await unsendFriendRequest()
+                Button("Cancel", role: .cancel) { }
+                
+            case .requestSent:
+                Button("Unsend Request", role: .destructive) {
+                    Task {
+                        await unsendFriendRequest()
+                    }
                 }
+                Button("Cancel", role: .cancel) { }
+                
+            default:
+                Button("Cancel", role: .cancel) { }
             }
-            Button("Cancel", role: .cancel) { }
-        } message: {
-            Text("Are you sure you want to unsend your friend request to \(friend.fullname)?")
         }
     }
     
@@ -280,9 +283,6 @@ struct FriendDetailsView: View {
             relationshipButton()
         }
         .padding(20)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
     }
     
     @ViewBuilder
@@ -292,40 +292,53 @@ struct FriendDetailsView: View {
         switch relationship {
         case .friend:
             Button(action: {
-                showRemoveFriendAlert = true
+                showActionSheet = true
             }) {
-                HStack(spacing: 12) {
-                    Image(systemName: "person.2.fill")
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                    Text("Friend")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+                    Text("Friends")
+                        .font(.system(size: 16, weight: .medium))
                 }
-                .padding(.horizontal, 24)
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
                 .padding(.vertical, 12)
-                .background(Color.green)
-                .cornerRadius(8)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.green, Color.green.opacity(0.8)]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(12)
+                .shadow(color: Color.green.opacity(0.3), radius: 8, x: 0, y: 4)
             }
             
         case .requestReceived:
-            HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 Button(action: {
                     Task {
                         await acceptFriendRequest()
                     }
                 }) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 14, weight: .medium))
                         Text("Accept")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 14, weight: .medium))
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(Color.green)
-                    .cornerRadius(8)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+                    .shadow(color: Color(.accent).opacity(0.3), radius: 8, x: 0, y: 4)
                 }
                 
                 Button(action: {
@@ -333,36 +346,49 @@ struct FriendDetailsView: View {
                         await rejectFriendRequest()
                     }
                 }) {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: "xmark")
                             .font(.system(size: 14, weight: .medium))
                         Text("Decline")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 14, weight: .medium))
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(Color.red.opacity(0.8))
-                    .cornerRadius(8)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color.gray, Color.gray.opacity(0.8)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+                    .shadow(color: Color.gray.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
             }
             
         case .requestSent:
             Button(action: {
-                showUnsendRequestAlert = true
+                showActionSheet = true
             }) {
-                HStack(spacing: 12) {
-                    Image(systemName: "paperplane.fill")
+                HStack(spacing: 8) {
+                    Image(systemName: "clock.fill")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white)
-                    Text("Request Sent")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+                    Text("Pending")
+                        .font(.system(size: 16, weight: .medium))
                 }
-                .padding(.horizontal, 24)
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
                 .padding(.vertical, 12)
-                .background(Color.orange)
-                .cornerRadius(8)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color.orange, Color.orange.opacity(0.8)]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+                .cornerRadius(12)
+                .shadow(color: Color.orange.opacity(0.3), radius: 8, x: 0, y: 4)
             }
             
         case .none:
@@ -371,17 +397,22 @@ struct FriendDetailsView: View {
                     await sendFriendRequest()
                 }
             }) {
-                HStack(spacing: 12) {
+                HStack(spacing: 8) {
                     Image(systemName: "person.fill.badge.plus")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.white)
+                        .font(.system(size: 16, weight: .medium))
                     Text("Add Friend")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
+                        .font(.system(size: 16, weight: .medium))
                 }
-                .frame(maxWidth: .infinity)
-                .padding(16)
-                .background(Color(.accent))
+                .foregroundColor(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
                 .cornerRadius(12)
                 .shadow(color: Color(.accent).opacity(0.3), radius: 8, x: 0, y: 4)
             }
