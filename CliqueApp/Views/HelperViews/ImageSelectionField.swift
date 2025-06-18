@@ -15,6 +15,7 @@ struct ImageSelectionField: View {
     @Binding var selectedImage: UIImage?
     var diameter: CGFloat? = nil
     var isPhone: Bool? = nil
+    var enableCropMode: Bool = false
     
     @State private var selectionProxy: PhotosPickerItem? = nil
 
@@ -35,7 +36,9 @@ struct ImageSelectionField: View {
             }
         }
         .task(id: selectionProxy) {
-            await loadImage(from: selectionProxy)
+            if !enableCropMode {
+                await loadImage(from: selectionProxy)
+            }
             imageSelection = selectionProxy
         }
         .onAppear {

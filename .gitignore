@@ -53,3 +53,11 @@ CliqueApp/Views/Signup_SampleView.swift
 CliqueApp/ProfileView_Sample.swift
 
 CliqueApp/ViewModel_Sample.swift
+
+CliqueApp/Views/EventViews/EventImageCropOverlay.swift
+
+CliqueApp/Views/CircularCropOverlay_Sample.swift
+
+CliqueApp/Views/ImageCropView_Sample.swift
+
+CliqueApp/Views/ProfileView_Sample.swift

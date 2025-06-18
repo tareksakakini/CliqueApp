@@ -14,13 +14,14 @@ struct AddInviteesView: View {
     
     @State var user: UserModel
     @Binding var invitees: [UserModel]
-    @Binding var selectedPhoneNumbers: [String]
+    @Binding var selectedContacts: [ContactInfo]
     @State private var selectedPhoneNumber: String?
     
     @State private var searchEntry: String = ""
     @State private var showContactPicker = false
     @State private var showNumberSelection = false
     @State private var phoneOptions: [String] = []
+    @State private var contactOptions: [ContactInfo] = []
 
     var body: some View {
         GeometryReader { geometry in
@@ -40,10 +41,10 @@ struct AddInviteesView: View {
             ActionSheet(
                 title: Text("Choose a number"),
                 message: Text("This contact has multiple numbers"),
-                buttons: phoneOptions.map { number in
-                    .default(Text(number)) {
-                        selectedPhoneNumber = number
-                        selectedPhoneNumbers.append(number)
+                buttons: contactOptions.map { contactInfo in
+                    .default(Text(contactInfo.phoneNumber)) {
+                        selectedContacts.append(contactInfo)
+                        dismiss()
                     }
                 } + [.cancel()]
             )
@@ -86,31 +87,39 @@ struct AddInviteesView: View {
             .padding(.top, 20)
             
             // Contact picker button
-            HStack {
-                Button(action: {
-                    showContactPicker = true
-                }) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "phone.fill")
-                            .font(.system(size: 14, weight: .medium))
-                        Text("Not a user? Add by phone")
-                            .font(.system(size: 14, weight: .medium))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
-                            startPoint: .leading,
-                            endPoint: .trailing
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Button(action: {
+                        showContactPicker = true
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "phone.fill")
+                                .font(.system(size: 14, weight: .medium))
+                            Text("Not a user? Add by phone")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(
+                            LinearGradient(
+                                gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
                         )
-                    )
-                    .cornerRadius(12)
-                    .shadow(color: Color(.accent).opacity(0.3), radius: 8, x: 0, y: 4)
+                        .cornerRadius(12)
+                        .shadow(color: Color(.accent).opacity(0.3), radius: 8, x: 0, y: 4)
+                    }
+                    
+                    
+                    Text("invites sent by text")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .padding(.leading, 4)
+                    
+                    Spacer()
                 }
-                
-                Spacer()
             }
             .padding(20)
         }
@@ -173,18 +182,22 @@ struct AddInviteesView: View {
     }
     
     private var ContactSelector: some View {
-        ContactPicker { selectedNumbers in
-            if selectedNumbers.count == 1 {
-                selectedPhoneNumber = selectedNumbers[0]
-                if let selectedPhoneNumber = selectedPhoneNumber  {
-                    selectedPhoneNumbers.append(selectedPhoneNumber)
+        ContactPicker(
+            onSelect: { selectedNumbers in
+                // Keep for backward compatibility but we'll use the new callback
+            },
+            onSelectWithNames: { contactInfos in
+                if contactInfos.count == 1 {
+                    selectedContacts.append(contactInfos[0])
+                    dismiss()
+                } else if contactInfos.count > 1 {
+                    // For multiple numbers, show action sheet to let user choose
+                    self.contactOptions = contactInfos
+                    self.showNumberSelection = true
                 }
-            } else if selectedNumbers.count > 1 {
-                self.phoneOptions = selectedNumbers
-                self.showNumberSelection = true
+                showContactPicker = false
             }
-            showContactPicker = false
-        }
+        )
     }
 }
 
@@ -273,6 +286,6 @@ struct ModernInviteeSearchPillView: View {
 }
 
 #Preview {
-    AddInviteesView(user: UserData.userData[0], invitees: .constant([]), selectedPhoneNumbers: .constant([]))
+    AddInviteesView(user: UserData.userData[0], invitees: .constant([]), selectedContacts: .constant([]))
         .environmentObject(ViewModel())
 }

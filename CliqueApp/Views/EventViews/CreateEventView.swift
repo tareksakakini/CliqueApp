@@ -23,7 +23,10 @@ struct CreateEventView: View {
     @State var oldEvent: EventModel = EventModel()
     @State var newPhoneNumbers: [String] = []
     @State var inviteesUserModels: [UserModel] = []
+    @State var invitedContacts: [ContactInfo] = []
     @State var imageSelection: PhotosPickerItem? = nil
+    @State var tempSelectedImage: UIImage? = nil
+    @State var showImageCrop = false
     
     @State var showAddInviteeSheet: Bool = false
     @State var showAlert: Bool = false
@@ -45,7 +48,7 @@ struct CreateEventView: View {
                             eventFormCard
                             
                             actionButtons
-                        }
+                    }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 40)
                     }
@@ -69,8 +72,10 @@ struct CreateEventView: View {
                                 await vm.getAllEvents()
                                 event = EventModel()
                                 inviteesUserModels = []
+                                invitedContacts = []
                                 imageSelection = nil
                                 selectedImage = nil
+                                tempSelectedImage = nil
                                 newPhoneNumbers = []
                                 oldEvent = EventModel()
                                 if isNewEvent {
@@ -82,14 +87,52 @@ struct CreateEventView: View {
             } else {
                     Text("This device can't send SMS messages.")
                         .padding()
+                }
             }
-        }
         .sheet(isPresented: $showAddInviteeSheet) {
-            AddInviteesView(user: user, invitees: $inviteesUserModels, selectedPhoneNumbers: $event.invitedPhoneNumbers)
+            AddInviteesView(user: user, invitees: $inviteesUserModels, selectedContacts: $invitedContacts)
                 .presentationDetents([.fraction(0.9)])
         }
+        .sheet(isPresented: $showImageCrop) {
+            if let image = tempSelectedImage {
+                EventImageCropView(
+                    image: image,
+                    onCrop: { croppedImage in
+                        selectedImage = croppedImage
+                        showImageCrop = false
+                        tempSelectedImage = nil
+                        imageSelection = nil
+                    },
+                    onCancel: {
+                        showImageCrop = false
+                        tempSelectedImage = nil
+                        imageSelection = nil
+                    }
+                )
+            }
+        }
+        .onChange(of: imageSelection) { oldValue, newValue in
+            Task {
+                if let photoItem = newValue {
+                    // Convert PhotosPickerItem to UIImage for cropping
+                    do {
+                        guard let imageData = try await photoItem.loadTransferable(type: Data.self),
+                              let uiImage = UIImage(data: imageData) else {
+                            return
+                        }
+                        
+                        DispatchQueue.main.async {
+                            self.tempSelectedImage = uiImage
+                            self.showImageCrop = true
+                        }
+                    } catch {
+                        print("Failed to load image data:", error)
+                    }
+                }
+            }
+        }
         .id(messageEventID)
-    }
+        }
     
     private var backgroundGradient: some View {
         LinearGradient(
@@ -175,9 +218,9 @@ struct CreateEventView: View {
             
             ZStack {
                 if selectedImage != nil {
-                    ImageSelectionField(whichView: "SelectedEventImage", imageSelection: $imageSelection, selectedImage: $selectedImage)
+                    ImageSelectionField(whichView: "SelectedEventImage", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
                 } else {
-                    ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage)
+                    ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
                 }
             }
             .frame(height: 200)
@@ -262,7 +305,7 @@ struct CreateEventView: View {
                                         .stroke(Color(.systemGray4), lineWidth: 1)
                                 )
                         )
-                }
+}
             }
         }
     }
@@ -300,7 +343,7 @@ struct CreateEventView: View {
                 }
             }
             
-            if inviteesUserModels.isEmpty && event.invitedPhoneNumbers.isEmpty {
+            if inviteesUserModels.isEmpty && invitedContacts.isEmpty {
                 VStack(spacing: 8) {
                     Image(systemName: "person.2.circle")
                         .font(.system(size: 32, weight: .light))
@@ -326,7 +369,7 @@ struct CreateEventView: View {
                 )
             } else {
                 LazyVStack(spacing: 0) {
-                    let totalItems = inviteesUserModels.count + event.invitedPhoneNumbers.count
+                    let totalItems = inviteesUserModels.count + invitedContacts.count
                     
                     ForEach(Array(inviteesUserModels.enumerated()), id: \.element) { index, invitee in
                         let inviteeUser = vm.getUser(username: invitee.email)
@@ -339,17 +382,22 @@ struct CreateEventView: View {
                         )
                     }
                     
-                    ForEach(Array(event.invitedPhoneNumbers.enumerated()), id: \.element) { index, number in
-                        ModernNumberPillView(
-                            phoneNumber: number,
-                            selectedPhoneNumbers: $event.invitedPhoneNumbers,
+                    ForEach(Array(invitedContacts.enumerated()), id: \.element.phoneNumber) { index, contact in
+                        ModernContactPillView(
+                            contact: contact,
+                            invitedContacts: $invitedContacts,
                             isLastItem: (inviteesUserModels.count + index) == totalItems - 1
                         )
                     }
                 }
                 .background(Color.white)
                 .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(Color(.systemGray4).opacity(0.3), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 6)
+                .shadow(color: Color.black.opacity(0.04), radius: 4, x: 0, y: 2)
             }
         }
     }
@@ -418,6 +466,7 @@ struct CreateEventView: View {
                     messageEventID = temp_uuid
                     
                     event.attendeesInvited = inviteesUserModels.map({$0.email})
+                    event.invitedPhoneNumbers = invitedContacts.map({$0.phoneNumber})
                     newPhoneNumbers = []
                     for phoneNumber in event.invitedPhoneNumbers {
                         if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
@@ -433,8 +482,10 @@ struct CreateEventView: View {
                         await vm.getAllEvents()
                         event = EventModel()
                         inviteesUserModels = []
+                        invitedContacts = []
                         imageSelection = nil
                         selectedImage = nil
+                        tempSelectedImage = nil
                         newPhoneNumbers = []
                         oldEvent = EventModel()
                         if isNewEvent {
@@ -576,8 +627,8 @@ struct ModernLocationSearchField: View {
                         .stroke(Color.blue.opacity(0.3), lineWidth: 2)
                 )
         )
-    }
-    
+                    }
+                
     private var shouldShowSuggestions: Bool {
         !locationSearchHelper.suggestions.isEmpty && !locationQuery.isEmpty
     }
@@ -620,7 +671,7 @@ struct ModernInviteePillView: View {
                         .fill(Color.black.opacity(0.12))
                         .frame(height: 1)
                         .padding(.leading, 66)
-                }
+            }
             },
             alignment: .bottom
         )
@@ -656,9 +707,9 @@ struct ModernInviteePillView: View {
     }
 }
 
-struct ModernNumberPillView: View {
-    let phoneNumber: String
-    @Binding var selectedPhoneNumbers: [String]
+struct ModernContactPillView: View {
+    let contact: ContactInfo
+    @Binding var invitedContacts: [ContactInfo]
     let isLastItem: Bool
     
     var body: some View {
@@ -674,22 +725,22 @@ struct ModernNumberPillView: View {
                     )
                 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Phone Contact")
+                    Text(contact.name)
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.primary)
                         .lineLimit(1)
                     
-                    Text(phoneNumber)
+                    Text(contact.phoneNumber)
                         .font(.system(size: 14, weight: .regular))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
-                }
+            }
             }
             
             Spacer()
             
             Button {
-                selectedPhoneNumbers.removeAll { $0 == phoneNumber }
+                invitedContacts.removeAll { $0.phoneNumber == contact.phoneNumber }
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 20, weight: .medium))

@@ -2,9 +2,16 @@ import SwiftUI
 import ContactsUI
 import MessageUI
 
+// MARK: - Contact Data Structure
+struct ContactInfo: Equatable {
+    let name: String
+    let phoneNumber: String
+}
+
 // MARK: - Contact Picker Wrapper
 struct ContactPicker: UIViewControllerRepresentable {
     var onSelect: ([String]) -> Void
+    var onSelectWithNames: (([ContactInfo]) -> Void)?
 
     class Coordinator: NSObject, CNContactPickerDelegate {
         var parent: ContactPicker
@@ -15,8 +22,18 @@ struct ContactPicker: UIViewControllerRepresentable {
 
         func contactPicker(_ picker: CNContactPickerViewController, didSelect contact: CNContact) {
             let numbers = contact.phoneNumbers.map { $0.value.stringValue }
+            let contactName = "\(contact.givenName) \(contact.familyName)".trimmingCharacters(in: .whitespaces)
+            let displayName = contactName.isEmpty ? "Unknown Contact" : contactName
+            
             if !numbers.isEmpty {
+                // Call the old callback for backward compatibility
                 parent.onSelect(numbers)
+                
+                // Call the new callback with contact info
+                if let onSelectWithNames = parent.onSelectWithNames {
+                    let contactInfos = numbers.map { ContactInfo(name: displayName, phoneNumber: $0) }
+                    onSelectWithNames(contactInfos)
+                }
             }
         }
 
