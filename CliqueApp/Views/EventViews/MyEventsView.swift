@@ -116,6 +116,7 @@ struct MyEventsView: View {
                             )
                         }
                     }
+                    .id(selectedEventType)
                     .padding(.horizontal, 20)
                 }
             }
