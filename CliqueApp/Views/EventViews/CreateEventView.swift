@@ -33,57 +33,401 @@ struct CreateEventView: View {
     @State var messageEventID: String = ""
 
     var body: some View {
-        
-        ZStack {
-            Color(.accent).ignoresSafeArea()
-            VStack {
-                HeaderView(user: user, title: isNewEvent ? "New Event" : "Update Event", navigationBinder: .constant(false))
-                Spacer()
-                ScrollView() {
-                    EventFields
-                    HStack {
-                        CreateButton
-                        if !isNewEvent {
-                            CancelButton
+        GeometryReader { geometry in
+            ZStack {
+                backgroundGradient
+                
+                VStack(spacing: 0) {
+                    headerSection
+                    
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            eventFormCard
+                            
+                            actionButtons
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 40)
                     }
-                    .padding(.vertical, 50)
                 }
-                Spacer()
             }
-            .onAppear {
-                oldEvent = event
-            }
-            .alert(alertMessage, isPresented: $showAlert) {
-                Button("Dismiss", role: .cancel) { }
-            }
-            .sheet(isPresented: $showMessageComposer) {
-                if MFMessageComposeViewController.canSendText() {
-                    MessageComposer(
-                        recipients: newPhoneNumbers,
-                        body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)",
-                        onFinish: {
-                            Task {
-                                await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                                await vm.getAllEvents()
-                                event = EventModel()
-                                inviteesUserModels = []
-                                imageSelection = nil
-                                selectedImage = nil
-                                newPhoneNumbers = []
-                                oldEvent = EventModel()
-                                if isNewEvent {
-                                    selectedTab = 0
-                                }
+        }
+        .onAppear {
+            oldEvent = event
+        }
+        .alert(alertMessage, isPresented: $showAlert) {
+            Button("Dismiss", role: .cancel) { }
+        }
+        .sheet(isPresented: $showMessageComposer) {
+            if MFMessageComposeViewController.canSendText() {
+                MessageComposer(
+                    recipients: newPhoneNumbers,
+                    body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)",
+                    onFinish: {
+                        Task {
+                            await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                            await vm.getAllEvents()
+                            event = EventModel()
+                            inviteesUserModels = []
+                            imageSelection = nil
+                            selectedImage = nil
+                            newPhoneNumbers = []
+                            oldEvent = EventModel()
+                            if isNewEvent {
+                                selectedTab = 0
                             }
                         }
-                    )
-                }  else {
-                    Text("This device can't send SMS messages.")
-                        .padding()
+                    }
+                )
+            } else {
+                Text("This device can't send SMS messages.")
+                    .padding()
+            }
+        }
+        .sheet(isPresented: $showAddInviteeSheet) {
+            AddInviteesView(user: user, invitees: $inviteesUserModels, selectedPhoneNumbers: $event.invitedPhoneNumbers)
+                .presentationDetents([.fraction(0.9)])
+        }
+        .id(messageEventID)
+    }
+    
+    private var backgroundGradient: some View {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                Color(.systemGray5),
+                Color(.systemGray4).opacity(0.3),
+                Color(.systemGray5).opacity(0.8)
+            ]),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+    }
+    
+    private var headerSection: some View {
+        VStack(spacing: 12) {
+            HStack {
+                Button {
+                    if !isNewEvent {
+                        dismiss()
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Back")
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    .foregroundColor(.primary)
+                }
+                .opacity(!isNewEvent ? 1 : 0)
+                
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            
+            Text(isNewEvent ? "Create Event" : "Update Event")
+                .font(.system(size: 32, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+            
+            Text(isNewEvent ? "Plan something amazing with your friends" : "Make changes to your event")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+        }
+        .padding(.top, 20)
+        .padding(.bottom, 32)
+    }
+    
+    private var eventFormCard: some View {
+        VStack(spacing: 24) {
+            // Event Image Section
+            eventImageSection
+            
+            // Form Fields
+            eventDetailsSection
+            
+            // Date & Time Section
+            dateTimeSection
+            
+            // Invitees Section
+            inviteesSection
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 24)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 24)
+                        .stroke(Color(.accent).opacity(0.1), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 8)
+                .shadow(color: Color(.accent).opacity(0.1), radius: 24, x: 0, y: 12)
+        )
+    }
+    
+    private var eventImageSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Event Photo")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.primary)
+            
+            ZStack {
+                if selectedImage != nil {
+                    ImageSelectionField(whichView: "SelectedEventImage", imageSelection: $imageSelection, selectedImage: $selectedImage)
+                } else {
+                    ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage)
                 }
             }
-            .id(messageEventID)
+            .frame(height: 200)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color(.systemGray6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(Color(.systemGray4), lineWidth: 1)
+                    )
+            )
+        }
+    }
+    
+    private var eventDetailsSection: some View {
+        VStack(spacing: 20) {
+            // Event Title
+            ModernTextField(
+                title: "Event Title",
+                text: $event.title,
+                placeholder: "What's the event called?",
+                icon: "star.fill"
+            )
+            
+            // Location
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Location")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                ModernLocationSearchField(eventLocation: $event.location)
+            }
+        }
+    }
+    
+    private var dateTimeSection: some View {
+        VStack(spacing: 20) {
+            // Start Date & Time
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Starts")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                DatePicker("", selection: $event.startDateTime, displayedComponents: [.date, .hourAndMinute])
+                    .labelsHidden()
+                    .tint(Color(.accent))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
+                            )
+                    )
+            }
+            
+            // End Time Toggle
+            VStack(alignment: .leading, spacing: 12) {
+                ModernCheckbox(
+                    isChecked: $event.noEndTime,
+                    text: "This event doesn't have an end time"
+                )
+                
+                if !event.noEndTime {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Ends")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.primary)
+                        
+                        DatePicker("", selection: $event.endDateTime, displayedComponents: [.date, .hourAndMinute])
+                            .labelsHidden()
+                            .tint(Color(.accent))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 16)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemGray6))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color(.systemGray4), lineWidth: 1)
+                                    )
+                            )
+                    }
+                }
+            }
+        }
+    }
+    
+    private var inviteesSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Invitees")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Button {
+                    showAddInviteeSheet = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "person.fill.badge.plus")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Add People")
+                            .font(.system(size: 14, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(12)
+                    .shadow(color: Color(.accent).opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+            }
+            
+            if inviteesUserModels.isEmpty && event.invitedPhoneNumbers.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "person.2.circle")
+                        .font(.system(size: 32, weight: .light))
+                        .foregroundColor(.secondary)
+                    
+                    Text("No invitees yet")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                    
+                    Text("Tap 'Add People' to invite friends")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray6).opacity(0.5))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(.systemGray4), style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                        )
+                )
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(inviteesUserModels, id: \.self) { invitee in
+                        let inviteeUser = vm.getUser(username: invitee.email)
+                        PersonPillView(
+                            viewingUser: user,
+                            displayedUser: inviteeUser,
+                            personType: "invited",
+                            invitees: $inviteesUserModels
+                        )
+                    }
+                    
+                    ForEach(event.invitedPhoneNumbers, id: \.self) { number in
+                        NumberPillView(
+                            phoneNumber: number,
+                            selectedPhoneNumbers: $event.invitedPhoneNumbers
+                        )
+                    }
+                }
+            }
+        }
+    }
+    
+    private var actionButtons: some View {
+        HStack(spacing: 16) {
+            if !isNewEvent {
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Cancel")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemGray5))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                                )
+                        )
+                }
+            }
+            
+            Button {
+                handleCreateEvent()
+            } label: {
+                Text(isNewEvent ? "Create Event" : "Update Event")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(16)
+                    .shadow(color: Color(.accent).opacity(0.3), radius: 12, x: 0, y: 6)
+            }
+        }
+    }
+    
+    private func handleCreateEvent() {
+        if event.title.count < 3 {
+            alertMessage = "Event title must be at least 3 characters long"
+            showAlert = true
+        } else if event.location.isEmpty {
+            alertMessage = "Please select a location for your event"
+            showAlert = true
+        } else {
+            Task {
+                let temp_uuid = isNewEvent ? UUID().uuidString : event.id
+                messageEventID = temp_uuid
+                
+                event.attendeesInvited = inviteesUserModels.map({$0.email})
+                newPhoneNumbers = []
+                for phoneNumber in event.invitedPhoneNumbers {
+                    if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
+                        newPhoneNumbers.append(phoneNumber)
+                    }
+                }
+                
+                if newPhoneNumbers.count > 0 {
+                    print("MessageEventID: \(messageEventID)")
+                    DispatchQueue.main.async {showMessageComposer = true}
+                } else {
+                    await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                    await vm.getAllEvents()
+                    event = EventModel()
+                    inviteesUserModels = []
+                    imageSelection = nil
+                    selectedImage = nil
+                    newPhoneNumbers = []
+                    oldEvent = EventModel()
+                    if isNewEvent {
+                        selectedTab = 0
+                    }
+                }
+            }
         }
     }
 }
@@ -93,213 +437,141 @@ struct CreateEventView: View {
         .environmentObject(ViewModel())
 }
 
-extension CreateEventView {
+// MARK: - Modern UI Components
+
+struct ModernLocationSearchField: View {
+    @StateObject private var locationSearchHelper = LocationSearchHelper()
+    @Binding var eventLocation: String
+    @State private var locationQuery: String = ""
     
-    private var CancelButton: some View {
-        Button {
-            dismiss()
-        } label: {
-            Text("Back")
-                .frame(width: 150, height: 55)
-                .background(Color(#colorLiteral(red: 0.6642242074, green: 0.6642400622, blue: 0.6642315388, alpha: 1)))
-                .cornerRadius(10)
-                .foregroundColor(.white)
-                .bold()
-                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-        }
-    }
-    
-    private var CreateButton: some View {
-        Button {
-            if event.title.count < 3 {
-                alertMessage = "Event title has to be 3 characters or longer!"
-                showAlert = true
-            } else if event.location.isEmpty {
-                alertMessage = "You have to select a location first!"
-                showAlert = true
-            } else {
-                Task {
-                    let temp_uuid = isNewEvent ? UUID().uuidString : event.id
-                    messageEventID = temp_uuid
-                    
-                    event.attendeesInvited = inviteesUserModels.map({$0.email})
-                    newPhoneNumbers = []
-                    for phoneNumber in event.invitedPhoneNumbers {
-                        if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
-                            newPhoneNumbers.append(phoneNumber)
-                        }
-                    }
-                    
-                    if newPhoneNumbers.count > 0 {
-                        print("MessageEventID: \(messageEventID)")
-                        DispatchQueue.main.async {showMessageComposer = true}
-                    } else {
-                        await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                        await vm.getAllEvents()
-                        event = EventModel()
-                        inviteesUserModels = []
-                        imageSelection = nil
-                        selectedImage = nil
-                        newPhoneNumbers = []
-                        oldEvent = EventModel()
-                        if isNewEvent {
-                            selectedTab = 0
-                        }
-                    }
+    var body: some View {
+        VStack {
+            if eventLocation.isEmpty {
+                locationInputField
+                if shouldShowSuggestions {
+                    suggestionsList
                 }
-            }
-        } label: {
-            Text(isNewEvent ? "Create Event" : "Update Event")
-                .frame(width: 150, height: 55)
-                .background(.white)
-                .cornerRadius(10)
-                .foregroundColor(Color(.accent))
-                .bold()
-                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
-        }
-    }
-    
-    private var ImageSelector: some View {
-        ZStack {
-            if selectedImage != nil {
-                ImageSelectionField(whichView: "SelectedEventImage", imageSelection: $imageSelection, selectedImage: $selectedImage)
             } else {
-                ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage)
+                selectedLocationView
             }
         }
     }
     
-    private var TitleField: some View {
-        VStack(alignment: .leading) {
-            Text("Event Title")
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
+    private var locationInputField: some View {
+        HStack {
+            Image(systemName: "location.fill")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary)
+                .frame(width: 20)
             
-            TextField("", text: $event.title, prompt: Text("Enter your event title here ...").foregroundColor(Color.black.opacity(0.5)))
-                .foregroundColor(.black)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding(.horizontal)
-                .textInputAutocapitalization(.never)
-                .disableAutocorrection(true)
-        }
-    }
-    
-    private var LocationSelector: some View {
-        VStack(alignment: .leading) {
-            Text("Location")
-                .padding(.top, 15)
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
-            
-            LocationSearchField(eventLocation: $event.location)
-        }
-    }
-    
-    private var DateTimeSelector: some View {
-        
-        VStack(alignment: .leading) {
-            Text("Starts")
-                .padding(.top, 15)
-                .padding(.leading, 25)
-                .font(.title2)
-                .foregroundColor(.white)
-            
-            DatePicker("", selection: $event.startDateTime, displayedComponents: [.date, .hourAndMinute])
-                .foregroundColor(.white)
-                .labelsHidden()
-                .tint(.white)
-                .padding()
-                .background(.white)
-                .cornerRadius(10)
-                .padding(.horizontal, 20)
-        
-            HStack() {
-                Text("Ends")
-                    .font(.title2)
-                    .foregroundColor(.white)
-                
-                Spacer()
-                
-                Image(systemName: event.noEndTime ? "checkmark.square.fill" : "square.fill")
-                    .foregroundColor(event.noEndTime ? .blue.opacity(0.5) : .white)
-                    .background(Color.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                    .onTapGesture {
-                        event.noEndTime.toggle()
+            TextField(
+                "Search for a location...",
+                text: Binding(
+                    get: { locationQuery },
+                    set: { newValue in
+                        locationQuery = newValue
+                        locationSearchHelper.updateSearchResults(for: newValue)
                     }
-                
-                Text("Do not include end time")
-                    .foregroundColor(.white)
-                    .font(.footnote)
-            }
-            .padding(.top, 15)
-            .padding(.horizontal, 25)
-            
-            if !event.noEndTime {
-                DatePicker("", selection: $event.endDateTime, displayedComponents: [.date, .hourAndMinute])
-                    .foregroundColor(.white)
-                    .labelsHidden()
-                    .tint(.white)
-                    .padding()
-                    .background(.white)
-                    .cornerRadius(10)
-                    .padding(.horizontal, 20)
-            }
+                )
+            )
+            .font(.system(size: 16, weight: .medium))
+            .textInputAutocapitalization(.never)
+            .disableAutocorrection(true)
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemGray6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+        )
     }
     
-    private var InviteesSelector: some View {
-        VStack(alignment: .leading) {
-            HStack {
-                Text("Invitees")
+    private var suggestionsList: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(locationSearchHelper.suggestions.prefix(5).indices, id: \.self) { index in
+                let suggestion = locationSearchHelper.suggestions[index]
                 
                 Button {
-                    showAddInviteeSheet = true
+                    selectLocation(suggestion.title)
                 } label: {
-                    Image(systemName: "plus.circle")
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(suggestion.title)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                        Text(suggestion.subtitle)
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(Color(.systemBackground))
                 }
-                .sheet(isPresented: $showAddInviteeSheet) {
-                    AddInviteesView(user: user, invitees: $inviteesUserModels, selectedPhoneNumbers: $event.invitedPhoneNumbers)
-                        .presentationDetents([.fraction(0.9)])
+                .buttonStyle(PlainButtonStyle())
+                
+                if index < locationSearchHelper.suggestions.count - 1 {
+                    Divider()
+                        .padding(.horizontal, 16)
                 }
-            }
-            .padding(.top, 15)
-            .padding(.leading, 25)
-            .font(.title2)
-            .foregroundColor(.white)
-            
-            ForEach(inviteesUserModels, id: \.self) { invitee in
-                let inviteeUser = vm.getUser(username: invitee.email)
-                PersonPillView(
-                    viewingUser: user,
-                    displayedUser: inviteeUser,
-                    personType: "invited",
-                    invitees: $inviteesUserModels
-                )
-            }
-            
-            ForEach(event.invitedPhoneNumbers, id: \.self) { number in
-                NumberPillView(
-                    phoneNumber: number,
-                    selectedPhoneNumbers: $event.invitedPhoneNumbers
-                )
             }
         }
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+        )
+        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
     
-    private var EventFields: some View {
-        
-        VStack(alignment: .leading) {
-            ImageSelector
-            TitleField
-            LocationSelector
-            DateTimeSelector
-            InviteesSelector
+    private var selectedLocationView: some View {
+        HStack {
+            Image(systemName: "location.fill")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.blue)
+                .frame(width: 20)
+            
+            Text(eventLocation)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.primary)
+            
+            Spacer()
+            
+            Button(action: { 
+                eventLocation = ""
+                locationQuery = ""
+            }) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemGray6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.blue.opacity(0.3), lineWidth: 2)
+                )
+        )
+    }
+    
+    private var shouldShowSuggestions: Bool {
+        !locationSearchHelper.suggestions.isEmpty && !locationQuery.isEmpty
+    }
+    
+    private func selectLocation(_ location: String) {
+        eventLocation = location
+        locationQuery = ""
+        locationSearchHelper.suggestions = []
     }
 }
 
