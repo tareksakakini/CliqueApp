@@ -19,6 +19,8 @@ struct FriendDetailsView: View {
     @State private var isLoadingFriends = false
     @State private var showFriendsList = false
     @State private var showFullSizeImage = false
+    @State private var showRemoveFriendAlert = false
+    @State private var showUnsendRequestAlert = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -40,6 +42,26 @@ struct FriendDetailsView: View {
         }
         .sheet(isPresented: $showFullSizeImage) {
             FullSizeImageView(imageUrl: friend.profilePic)
+        }
+        .alert("Remove Friend", isPresented: $showRemoveFriendAlert) {
+            Button("Remove", role: .destructive) {
+                Task {
+                    await removeFriend()
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to remove \(friend.fullname) from your friends?")
+        }
+        .alert("Unsend Friend Request", isPresented: $showUnsendRequestAlert) {
+            Button("Unsend", role: .destructive) {
+                Task {
+                    await unsendFriendRequest()
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to unsend your friend request to \(friend.fullname)?")
         }
     }
     
@@ -83,6 +105,9 @@ struct FriendDetailsView: View {
             VStack(spacing: 32) {
                 // Profile Section
                 profileSection
+                
+                // Relationship Status
+                relationshipStatusCard
                 
                 // Details Card
                 detailsCard
@@ -250,6 +275,144 @@ struct FriendDetailsView: View {
         .disabled(!isClickable)
     }
     
+    private var relationshipStatusCard: some View {
+        VStack(spacing: 16) {
+            relationshipButton()
+        }
+        .padding(20)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+    }
+    
+    @ViewBuilder
+    private func relationshipButton() -> some View {
+        let relationship = getRelationshipStatus()
+        
+        switch relationship {
+        case .friend:
+            Button(action: {
+                showRemoveFriendAlert = true
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "person.2.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.green)
+                    Text("Friend")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.black.opacity(0.3))
+                }
+                .padding(16)
+                .background(Color.green.opacity(0.1))
+                .cornerRadius(12)
+            }
+            
+        case .requestReceived:
+            HStack(spacing: 12) {
+                Button(action: {
+                    Task {
+                        await acceptFriendRequest()
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Accept")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.green)
+                    .cornerRadius(8)
+                }
+                
+                Button(action: {
+                    Task {
+                        await rejectFriendRequest()
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .medium))
+                        Text("Decline")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)
+                    .background(Color.red.opacity(0.8))
+                    .cornerRadius(8)
+                }
+            }
+            
+        case .requestSent:
+            Button(action: {
+                showUnsendRequestAlert = true
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "paperplane.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.orange)
+                    Text("Friend Request Sent")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.black.opacity(0.3))
+                }
+                .padding(16)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(12)
+            }
+            
+        case .none:
+            Button(action: {
+                Task {
+                    await sendFriendRequest()
+                }
+            }) {
+                HStack(spacing: 12) {
+                    Image(systemName: "person.fill.badge.plus")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.white)
+                    Text("Add Friend")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(16)
+                .background(Color(.accent))
+                .cornerRadius(12)
+                .shadow(color: Color(.accent).opacity(0.3), radius: 8, x: 0, y: 4)
+            }
+        }
+    }
+    
+    private enum RelationshipStatus {
+        case friend
+        case requestReceived
+        case requestSent
+        case none
+    }
+    
+    private func getRelationshipStatus() -> RelationshipStatus {
+        if vm.friendship.contains(friend.email) {
+            return .friend
+        } else if vm.friendInviteReceived.contains(friend.email) {
+            return .requestReceived
+        } else if vm.friendInviteSent.contains(friend.email) {
+            return .requestSent
+        } else {
+            return .none
+        }
+    }
+    
     private func loadFriendsList() async {
         isLoadingFriends = true
         do {
@@ -265,6 +428,57 @@ struct FriendDetailsView: View {
             }
         }
     }
+    
+    private func removeFriend() async {
+        do {
+            try await DatabaseManager().updateFriends(viewing_user: viewingUser.email, viewed_user: friend.email, action: "remove")
+            await vm.getUserFriends(user_email: viewingUser.email)
+        } catch {
+            print("Failed to remove friendship: \(error.localizedDescription)")
+        }
+    }
+    
+    private func acceptFriendRequest() async {
+        do {
+            let db = DatabaseManager()
+            try await db.updateFriends(viewing_user: viewingUser.email, viewed_user: friend.email, action: "add")
+            await vm.getUserFriends(user_email: viewingUser.email)
+            await vm.getUserFriendRequests(user_email: viewingUser.email)
+            sendPushNotification(notificationText: "\(viewingUser.fullname) just accepted your friend request!", receiverID: friend.subscriptionId)
+        } catch {
+            print("Failed to accept friend request: \(error.localizedDescription)")
+        }
+    }
+    
+    private func rejectFriendRequest() async {
+        do {
+            try await DatabaseManager().removeFriendRequest(sender: friend.email, receiver: viewingUser.email)
+            await vm.getUserFriends(user_email: viewingUser.email)
+            await vm.getUserFriendRequests(user_email: viewingUser.email)
+        } catch {
+            print("Failed to reject friend request: \(error.localizedDescription)")
+        }
+    }
+    
+    private func unsendFriendRequest() async {
+        do {
+            try await DatabaseManager().removeFriendRequest(sender: viewingUser.email, receiver: friend.email)
+            await vm.getUserFriendRequestsSent(user_email: viewingUser.email)
+        } catch {
+            print("Failed to unsend friend request: \(error.localizedDescription)")
+        }
+    }
+    
+    private func sendFriendRequest() async {
+        do {
+            let db = DatabaseManager()
+            try await db.sendFriendRequest(sender: viewingUser.email, receiver: friend.email)
+            await vm.getUserFriendRequestsSent(user_email: viewingUser.email)
+            sendPushNotification(notificationText: "\(viewingUser.fullname) just sent you a friend request!", receiverID: friend.subscriptionId)
+        } catch {
+            print("Friend Request Failed: \(error.localizedDescription)")
+        }
+    }
 }
 
 // MARK: - Friends List View
@@ -275,6 +489,9 @@ struct FriendsFriendsListView: View {
     
     let friend: UserModel
     let friendsList: [String]
+    
+    @State private var selectedFriend: UserModel? = nil
+    @State private var showFriendDetails = false
     
     var body: some View {
         NavigationView {
@@ -313,7 +530,14 @@ struct FriendsFriendsListView: View {
                                 return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
                             }, id: \.self) { friendUsername in
                                 if let friendUser = vm.getUser(username: friendUsername) {
-                                    FriendListItemView(friend: friendUser, viewingUser: friend)
+                                    FriendListItemView(
+                                        friend: friendUser, 
+                                        viewingUser: friend,
+                                        onTap: { selectedFriend in
+                                            self.selectedFriend = selectedFriend
+                                            showFriendDetails = true
+                                        }
+                                    )
                                 }
                             }
                         }
@@ -330,6 +554,11 @@ struct FriendsFriendsListView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showFriendDetails) {
+                if let selectedFriend = selectedFriend {
+                    FriendDetailsView(friend: selectedFriend, viewingUser: friend)
+                }
+            }
         }
     }
 }
@@ -341,9 +570,12 @@ struct FriendListItemView: View {
     
     let friend: UserModel
     let viewingUser: UserModel
+    let onTap: ((UserModel) -> Void)?
     
     var body: some View {
-        NavigationLink(destination: FriendDetailsView(friend: friend, viewingUser: viewingUser)) {
+        Button(action: {
+            onTap?(friend)
+        }) {
             HStack(spacing: 16) {
                 ProfilePictureView(user: friend, diameter: 50, isPhone: false)
                 

@@ -15,6 +15,8 @@ struct AddFriendView: View {
     @State var user: UserModel
     
     @State private var searchEntry: String = ""
+    @State private var selectedPerson: UserModel? = nil
+    @State private var showPersonDetails = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -25,6 +27,11 @@ struct AddFriendView: View {
                     headerSection
                     searchContent
                 }
+            }
+        }
+        .sheet(isPresented: $showPersonDetails) {
+            if let selectedPerson = selectedPerson {
+                FriendDetailsView(friend: selectedPerson, viewingUser: user)
             }
         }
     }
@@ -88,14 +95,22 @@ struct AddFriendView: View {
                                 viewingUser: user,
                                 displayedUser: user_returned,
                                 personType: "requestedFriend",
-                                invitees: .constant([])
+                                invitees: .constant([]),
+                                onTap: { person in
+                                    selectedPerson = person
+                                    showPersonDetails = true
+                                }
                             )
                         } else if user.email != user_returned.email && !ud.friendship.contains(user_returned.email) {
                             ModernSearchPersonPillView(
                                 viewingUser: user,
                                 displayedUser: user_returned,
                                 personType: "stranger",
-                                invitees: .constant([])
+                                invitees: .constant([]),
+                                onTap: { person in
+                                    selectedPerson = person
+                                    showPersonDetails = true
+                                }
                             )
                         }
                     }
@@ -146,21 +161,31 @@ struct ModernSearchPersonPillView: View {
     let displayedUser: UserModel?
     let personType: String // ["friend", "stranger", "invitee", "invited", "requester", "requestedFriend"]
     @Binding var invitees: [UserModel]
+    let onTap: ((UserModel) -> Void)?
     
     var body: some View {
-        HStack(spacing: 16) {
+        Button(action: {
             if let user = displayedUser {
-                profileSection(for: user)
+                onTap?(user)
             }
-            
-            Spacer()
-            
-            actionButtons()
+        }) {
+            HStack(spacing: 16) {
+                if let user = displayedUser {
+                    profileSection(for: user)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.black.opacity(0.3))
+            }
+            .padding(20)
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
         }
-        .padding(20)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+        .buttonStyle(PlainButtonStyle())
     }
     
     private func profileSection(for user: UserModel) -> some View {
@@ -181,57 +206,7 @@ struct ModernSearchPersonPillView: View {
         }
     }
     
-    @ViewBuilder
-    private func actionButtons() -> some View {
-        switch personType {
-        case "stranger":
-            sendFriendRequestButton()
-        case "requestedFriend":
-            statusBadge(text: "Sent", color: Color(.accent))
-        default:
-            EmptyView()
-        }
-    }
-    
-    private func sendFriendRequestButton() -> some View {
-        Button {
-            guard let displayed = displayedUser,
-                  let viewing = viewingUser else { return }
-            Task {
-                do {
-                    let db = DatabaseManager()
-                    try await db.sendFriendRequest(sender: viewing.email, receiver: displayed.email)
-                    await vm.getUserFriendRequestsSent(user_email: viewing.email)
-                    sendPushNotification(notificationText: "\(viewing.fullname) just sent you a friend request!", receiverID: displayed.subscriptionId)
-                } catch {
-                    print("Friend Request Failed: \(error.localizedDescription)")
-                }
-            }
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .medium))
-                Text("Add")
-                    .font(.system(size: 14, weight: .semibold))
-            }
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color(.accent))
-            .cornerRadius(8)
-            .shadow(color: Color(.accent).opacity(0.3), radius: 4, x: 0, y: 2)
-        }
-    }
-    
-    private func statusBadge(text: String, color: Color) -> some View {
-        Text(text)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(color)
-            .cornerRadius(8)
-    }
+
 }
 
 #Preview {

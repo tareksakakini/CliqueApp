@@ -12,6 +12,8 @@ struct MyFriendsView: View {
     @EnvironmentObject private var vm: ViewModel
     @State private var isAddFriendSheetPresented: Bool = false
     @State private var selectedSection: FriendSection = .friends
+    @State private var selectedFriend: UserModel? = nil
+    @State private var showFriendDetails = false
     
     @State var user: UserModel
     
@@ -23,7 +25,7 @@ struct MyFriendsView: View {
     
     var body: some View {
         GeometryReader { geometry in
-            ZStack {
+        ZStack {
                 backgroundGradient
                 
                 VStack(spacing: 0) {
@@ -35,6 +37,11 @@ struct MyFriendsView: View {
         .sheet(isPresented: $isAddFriendSheetPresented) {
             AddFriendView(user: user)
                 .presentationDetents([.fraction(0.9)])
+        }
+        .sheet(isPresented: $showFriendDetails) {
+            if let selectedFriend = selectedFriend {
+                FriendDetailsView(friend: selectedFriend, viewingUser: user)
+            }
         }
     }
     
@@ -242,11 +249,15 @@ struct MyFriendsView: View {
                     let user2 = vm.getUser(username: username2)?.fullname ?? ""
                     return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
                 }, id: \.self) { friend_username in
-                    ModernPersonPillView(
+                                        ModernPersonPillView(
                         viewingUser: user,
                         displayedUser: vm.getUser(username: friend_username),
                         personType: "friend",
-                        invitees: .constant([])
+                        invitees: .constant([]),
+                        onTap: { person in
+                            selectedFriend = person
+                            showFriendDetails = true
+                        }
                     )
                 }
             }
@@ -271,11 +282,15 @@ struct MyFriendsView: View {
                     let user2 = vm.getUser(username: username2)?.fullname ?? ""
                     return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
                 }, id: \.self) { request_username in
-                    ModernPersonPillView(
+                                        ModernPersonPillView(
                         viewingUser: user,
                         displayedUser: vm.getUser(username: request_username),
                         personType: "requester",
-                        invitees: .constant([])
+                        invitees: .constant([]),
+                        onTap: { person in
+                            selectedFriend = person
+                            showFriendDetails = true
+                        }
                     )
                 }
             }
@@ -304,7 +319,11 @@ struct MyFriendsView: View {
                         viewingUser: user,
                         displayedUser: vm.getUser(username: sent_username),
                         personType: "requestedFriend",
-                        invitees: .constant([])
+                        invitees: .constant([]),
+                        onTap: { person in
+                            selectedFriend = person
+                            showFriendDetails = true
+                        }
                     )
                 }
             }
@@ -362,32 +381,31 @@ struct ModernPersonPillView: View {
     let displayedUser: UserModel?
     let personType: String // ["friend", "stranger", "invitee", "invited", "requester", "requestedFriend"]
     @Binding var invitees: [UserModel]
+    let onTap: ((UserModel) -> Void)?
     
     var body: some View {
-        if personType == "friend", let user = displayedUser, let viewingUser = viewingUser {
-            NavigationLink(destination: FriendDetailsView(friend: user, viewingUser: viewingUser)) {
-                personPillContent()
-            }
-            .buttonStyle(PlainButtonStyle())
-        } else {
-            personPillContent()
-        }
-    }
-    
-    private func personPillContent() -> some View {
-        HStack(spacing: 16) {
+        Button(action: {
             if let user = displayedUser {
-                profileSection(for: user)
+                onTap?(user)
             }
-            
-            Spacer()
-            
-            actionButtons()
+        }) {
+            HStack(spacing: 16) {
+                if let user = displayedUser {
+                    profileSection(for: user)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.black.opacity(0.3))
+            }
+            .padding(20)
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
         }
-        .padding(20)
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+        .buttonStyle(PlainButtonStyle())
     }
     
     private func profileSection(for user: UserModel) -> some View {
@@ -408,90 +426,7 @@ struct ModernPersonPillView: View {
         }
     }
     
-    @ViewBuilder
-    private func actionButtons() -> some View {
-        switch personType {
-        case "friend":
-            removeFriendButton()
-        case "requester":
-            acceptRejectButtons()
-        case "requestedFriend":
-            statusBadge(text: "Sent", color: Color(.accent))
-        default:
-            EmptyView()
-        }
-    }
-    
-    private func removeFriendButton() -> some View {
-        Button {
-            guard let displayed = displayedUser,
-                  let viewing = viewingUser else { return }
-            Task {
-                do {
-                    try await DatabaseManager().updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "remove")
-                    await vm.getUserFriends(user_email: viewing.email)
-                } catch {
-                    print("Failed to remove friendship: \(error.localizedDescription)")
-                }
-            }
-        } label: {
-            Image(systemName: "minus.circle.fill")
-                .font(.system(size: 24, weight: .medium))
-                .foregroundColor(.red.opacity(0.8))
-        }
-    }
-    
-    private func acceptRejectButtons() -> some View {
-        HStack(spacing: 12) {
-            Button {
-                guard let displayed = displayedUser,
-                      let viewing = viewingUser else { return }
-                Task {
-                    do {
-                        let db = DatabaseManager()
-                        try await db.updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "add")
-                        await vm.getUserFriends(user_email: viewing.email)
-                        await vm.getUserFriendRequests(user_email: viewing.email)
-                        sendPushNotification(notificationText: "\(viewing.fullname) just accepted your friend request!", receiverID: displayed.subscriptionId)
-                    } catch {
-                        print("Failed to accept friend request: \(error.localizedDescription)")
-                    }
-                }
-            } label: {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundColor(.green)
-            }
-            
-            Button {
-                guard let displayed = displayedUser,
-                      let viewing = viewingUser else { return }
-                Task {
-                    do {
-                        try await DatabaseManager().removeFriendRequest(sender: displayed.email, receiver: viewing.email)
-                        await vm.getUserFriends(user_email: viewing.email)
-                        await vm.getUserFriendRequests(user_email: viewing.email)
-                    } catch {
-                        print("Failed to reject friend request: \(error.localizedDescription)")
-                    }
-                }
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 28, weight: .medium))
-                    .foregroundColor(.red.opacity(0.8))
-            }
-        }
-    }
-    
-    private func statusBadge(text: String, color: Color) -> some View {
-        Text(text)
-            .font(.system(size: 14, weight: .semibold))
-            .foregroundColor(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(color)
-            .cornerRadius(8)
-    }
+
 }
 
 #Preview {
