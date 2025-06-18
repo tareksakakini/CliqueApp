@@ -58,10 +58,6 @@ struct MyEventsView: View {
                 Spacer()
                 
                 ProfilePictureView(user: user, diameter: 50, isPhone: false, isViewingUser: true)
-                
-                Text(user.fullname.components(separatedBy: " ").first ?? "")
-                    .foregroundColor(.primary)
-                    .font(.system(size: 18, weight: .semibold))
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
