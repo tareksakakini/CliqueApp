@@ -199,7 +199,7 @@ struct CreateEventView: View {
                 title: "Event Title",
                 text: $event.title,
                 placeholder: "What's the event called?",
-                icon: "star.fill"
+                icon: "textformat"
             )
             
             // Location
@@ -214,7 +214,7 @@ struct CreateEventView: View {
     }
     
     private var dateTimeSection: some View {
-        VStack(spacing: 20) {
+        VStack(alignment: .leading, spacing: 20) {
             // Start Date & Time
             VStack(alignment: .leading, spacing: 8) {
                 Text("Starts")
@@ -237,32 +237,31 @@ struct CreateEventView: View {
             }
             
             // End Time Toggle
-            VStack(alignment: .leading, spacing: 12) {
-                ModernCheckbox(
-                    isChecked: $event.noEndTime,
-                    text: "This event doesn't have an end time"
-                )
-                
-                if !event.noEndTime {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Ends")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.primary)
-                        
-                        DatePicker("", selection: $event.endDateTime, displayedComponents: [.date, .hourAndMinute])
-                            .labelsHidden()
-                            .tint(Color(.accent))
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 16)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color(.systemGray6))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color(.systemGray4), lineWidth: 1)
-                                    )
-                            )
-                    }
+            ModernCheckbox(
+                isChecked: $event.noEndTime,
+                text: "This event doesn't have an end time"
+            )
+            
+            // End Date & Time (aligned with Start Date & Time)
+            if !event.noEndTime {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Ends")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    DatePicker("", selection: $event.endDateTime, displayedComponents: [.date, .hourAndMinute])
+                        .labelsHidden()
+                        .tint(Color(.accent))
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color(.systemGray6))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color(.systemGray4), lineWidth: 1)
+                                )
+                        )
                 }
             }
         }
@@ -326,24 +325,31 @@ struct CreateEventView: View {
                         )
                 )
             } else {
-                VStack(spacing: 8) {
-                    ForEach(inviteesUserModels, id: \.self) { invitee in
+                LazyVStack(spacing: 0) {
+                    let totalItems = inviteesUserModels.count + event.invitedPhoneNumbers.count
+                    
+                    ForEach(Array(inviteesUserModels.enumerated()), id: \.element) { index, invitee in
                         let inviteeUser = vm.getUser(username: invitee.email)
-                        PersonPillView(
+                        ModernInviteePillView(
                             viewingUser: user,
                             displayedUser: inviteeUser,
                             personType: "invited",
-                            invitees: $inviteesUserModels
+                            invitees: $inviteesUserModels,
+                            isLastItem: index == totalItems - 1
                         )
                     }
                     
-                    ForEach(event.invitedPhoneNumbers, id: \.self) { number in
-                        NumberPillView(
+                    ForEach(Array(event.invitedPhoneNumbers.enumerated()), id: \.element) { index, number in
+                        ModernNumberPillView(
                             phoneNumber: number,
-                            selectedPhoneNumbers: $event.invitedPhoneNumbers
+                            selectedPhoneNumbers: $event.invitedPhoneNumbers,
+                            isLastItem: (inviteesUserModels.count + index) == totalItems - 1
                         )
                     }
                 }
+                .background(Color.white)
+                .cornerRadius(16)
+                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
             }
         }
     }
@@ -392,11 +398,19 @@ struct CreateEventView: View {
     }
     
     private func handleCreateEvent() {
+        let now = Date()
+        
         if event.title.count < 3 {
             alertMessage = "Event title must be at least 3 characters long"
             showAlert = true
         } else if event.location.isEmpty {
             alertMessage = "Please select a location for your event"
+            showAlert = true
+        } else if event.startDateTime < now {
+            alertMessage = "Event start time cannot be in the past"
+            showAlert = true
+        } else if !event.noEndTime && event.endDateTime <= event.startDateTime {
+            alertMessage = "Event end time must be after the start time"
             showAlert = true
         } else {
             Task {
@@ -572,6 +586,130 @@ struct ModernLocationSearchField: View {
         eventLocation = location
         locationQuery = ""
         locationSearchHelper.suggestions = []
+    }
+}
+
+// MARK: - Modern Invitee List Components
+
+struct ModernInviteePillView: View {
+    @EnvironmentObject private var vm: ViewModel
+    
+    let viewingUser: UserModel?
+    let displayedUser: UserModel?
+    let personType: String
+    @Binding var invitees: [UserModel]
+    let isLastItem: Bool
+    
+    var body: some View {
+        HStack(spacing: 14) {
+            if let user = displayedUser {
+                profileSection(for: user)
+            }
+            
+            Spacer()
+            
+            removeButton
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color.clear)
+        .overlay(
+            Group {
+                if !isLastItem {
+                    Rectangle()
+                        .fill(Color.black.opacity(0.12))
+                        .frame(height: 1)
+                        .padding(.leading, 66)
+                }
+            },
+            alignment: .bottom
+        )
+    }
+    
+    private func profileSection(for user: UserModel) -> some View {
+        HStack(spacing: 12) {
+            ProfilePictureView(user: user, diameter: 42, isPhone: false)
+            
+            VStack(alignment: .leading, spacing: 3) {
+                Text(user.fullname)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                
+                Text(user.username.isEmpty ? "@username" : "@\(user.username)")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundColor(user.username.isEmpty ? .secondary.opacity(0.6) : .secondary)
+                    .lineLimit(1)
+            }
+        }
+    }
+    
+    private var removeButton: some View {
+        Button {
+            guard let user = displayedUser else { return }
+            invitees.removeAll { $0 == user }
+        } label: {
+            Image(systemName: "xmark.circle.fill")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(.secondary)
+        }
+    }
+}
+
+struct ModernNumberPillView: View {
+    let phoneNumber: String
+    @Binding var selectedPhoneNumbers: [String]
+    let isLastItem: Bool
+    
+    var body: some View {
+        HStack(spacing: 14) {
+            HStack(spacing: 12) {
+                Circle()
+                    .fill(Color(.accent).opacity(0.1))
+                    .frame(width: 42, height: 42)
+                    .overlay(
+                        Image(systemName: "phone.fill")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(Color(.accent))
+                    )
+                
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Phone Contact")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.primary)
+                        .lineLimit(1)
+                    
+                    Text(phoneNumber)
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            
+            Spacer()
+            
+            Button {
+                selectedPhoneNumbers.removeAll { $0 == phoneNumber }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(Color.clear)
+        .overlay(
+            Group {
+                if !isLastItem {
+                    Rectangle()
+                        .fill(Color.black.opacity(0.12))
+                        .frame(height: 1)
+                        .padding(.leading, 66)
+                }
+            },
+            alignment: .bottom
+        )
     }
 }
 

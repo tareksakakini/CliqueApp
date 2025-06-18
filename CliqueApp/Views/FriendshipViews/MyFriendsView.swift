@@ -241,16 +241,18 @@ struct MyFriendsView: View {
             }
         } else {
             LazyVStack(spacing: 0) {
-                ForEach(vm.friendship.sorted { username1, username2 in
+                let sortedFriends = vm.friendship.sorted { username1, username2 in
                     let user1 = vm.getUser(username: username1)?.fullname ?? ""
                     let user2 = vm.getUser(username: username2)?.fullname ?? ""
                     return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
-                }, id: \.self) { friend_username in
-                                        ModernPersonPillView(
+                }
+                ForEach(Array(sortedFriends.enumerated()), id: \.element) { index, friend_username in
+                    ModernPersonPillView(
                         viewingUser: user,
                         displayedUser: vm.getUser(username: friend_username),
                         personType: "friend",
                         invitees: .constant([]),
+                        isLastItem: index == sortedFriends.count - 1,
                         onTap: { person in
                             selectedFriend = person
                         }
@@ -276,16 +278,18 @@ struct MyFriendsView: View {
             }
         } else {
             LazyVStack(spacing: 0) {
-                ForEach(vm.friendInviteReceived.sorted { username1, username2 in
+                let sortedRequests = vm.friendInviteReceived.sorted { username1, username2 in
                     let user1 = vm.getUser(username: username1)?.fullname ?? ""
                     let user2 = vm.getUser(username: username2)?.fullname ?? ""
                     return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
-                }, id: \.self) { request_username in
-                                        ModernPersonPillView(
+                }
+                ForEach(Array(sortedRequests.enumerated()), id: \.element) { index, request_username in
+                    ModernPersonPillView(
                         viewingUser: user,
                         displayedUser: vm.getUser(username: request_username),
                         personType: "requester",
                         invitees: .constant([]),
+                        isLastItem: index == sortedRequests.count - 1,
                         onTap: { person in
                             selectedFriend = person
                         }
@@ -311,16 +315,18 @@ struct MyFriendsView: View {
             }
         } else {
             LazyVStack(spacing: 0) {
-                ForEach(vm.friendInviteSent.sorted { username1, username2 in
+                let sortedSent = vm.friendInviteSent.sorted { username1, username2 in
                     let user1 = vm.getUser(username: username1)?.fullname ?? ""
                     let user2 = vm.getUser(username: username2)?.fullname ?? ""
                     return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
-                }, id: \.self) { sent_username in
+                }
+                ForEach(Array(sortedSent.enumerated()), id: \.element) { index, sent_username in
                     ModernPersonPillView(
                         viewingUser: user,
                         displayedUser: vm.getUser(username: sent_username),
                         personType: "requestedFriend",
                         invitees: .constant([]),
+                        isLastItem: index == sortedSent.count - 1,
                         onTap: { person in
                             selectedFriend = person
                         }
@@ -384,6 +390,7 @@ struct ModernPersonPillView: View {
     let displayedUser: UserModel?
     let personType: String // ["friend", "stranger", "invitee", "invited", "requester", "requestedFriend"]
     @Binding var invitees: [UserModel]
+    let isLastItem: Bool
     let onTap: ((UserModel) -> Void)?
     
     var body: some View {
@@ -403,11 +410,15 @@ struct ModernPersonPillView: View {
             .padding(.vertical, 12)
             .background(Color.clear)
             .overlay(
-                // More pronounced bottom divider
-                Rectangle()
-                    .fill(Color.black.opacity(0.12))
-                    .frame(height: 1)
-                    .padding(.leading, 66), // Align with text, not profile picture
+                // Bottom divider - only show if not the last item
+                Group {
+                    if !isLastItem {
+                        Rectangle()
+                            .fill(Color.black.opacity(0.12))
+                            .frame(height: 1)
+                            .padding(.leading, 66) // Align with text, not profile picture
+                    }
+                },
                 alignment: .bottom
             )
         }
