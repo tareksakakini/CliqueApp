@@ -102,7 +102,7 @@ struct MySettingsView: View {
                 backgroundGradient
                 
                 ScrollView {
-                    VStack(spacing: 24) {
+                    VStack(spacing: 16) {
                         headerSection
                         
                         profileSection
@@ -143,7 +143,7 @@ struct MySettingsView: View {
                 .padding(.horizontal, 16)
         }
         .padding(.top, 20)
-        .padding(.bottom, 32)
+        .padding(.bottom, 16)
     }
     
     private var profileSection: some View {
@@ -235,7 +235,7 @@ struct MySettingsView: View {
                 }
                 .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
             }
-            .padding(.top, 32)
+            .padding(.top, 16)
             
             // User Info Card
             userInfoCard
