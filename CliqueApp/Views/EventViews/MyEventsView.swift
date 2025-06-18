@@ -357,8 +357,6 @@ struct ModernEventPillView: View {
         let status: (text: String, color: Color, icon: String)? = {
             if inviteView && !isEventPast {
                 return ("Invited", .blue, "envelope.fill")
-            } else if isEventPast {
-                return ("Completed", .gray, "checkmark.circle.fill")
             }
             return nil
         }()
