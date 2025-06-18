@@ -16,7 +16,6 @@ struct AddFriendView: View {
     
     @State private var searchEntry: String = ""
     @State private var selectedPerson: UserModel? = nil
-    @State private var showPersonDetails = false
     
     var body: some View {
         GeometryReader { geometry in
@@ -29,10 +28,8 @@ struct AddFriendView: View {
                 }
             }
         }
-        .sheet(isPresented: $showPersonDetails) {
-            if let selectedPerson = selectedPerson {
-                FriendDetailsView(friend: selectedPerson, viewingUser: user)
-            }
+        .sheet(item: $selectedPerson) { person in
+            FriendDetailsView(friend: person, viewingUser: user)
         }
     }
     
@@ -88,7 +85,7 @@ struct AddFriendView: View {
             searchField
             
             ScrollView {
-                LazyVStack(spacing: 12) {
+                LazyVStack(spacing: 0) {
                     ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user), id: \.email) { user_returned in
                         if ud.friendInviteSent.contains(user_returned.email) {
                             ModernSearchPersonPillView(
@@ -98,7 +95,6 @@ struct AddFriendView: View {
                                 invitees: .constant([]),
                                 onTap: { person in
                                     selectedPerson = person
-                                    showPersonDetails = true
                                 }
                             )
                         } else if user.email != user_returned.email && !ud.friendship.contains(user_returned.email) {
@@ -109,12 +105,14 @@ struct AddFriendView: View {
                                 invitees: .constant([]),
                                 onTap: { person in
                                     selectedPerson = person
-                                    showPersonDetails = true
                                 }
                             )
                         }
                     }
                 }
+                .background(Color.white)
+                .cornerRadius(16)
+                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
             }
@@ -169,33 +167,40 @@ struct ModernSearchPersonPillView: View {
                 onTap?(user)
             }
         }) {
-            HStack(spacing: 16) {
+            HStack(spacing: 14) {
                 if let user = displayedUser {
                     profileSection(for: user)
                 }
                 
                 Spacer()
             }
-            .padding(20)
-            .background(Color.white)
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color.clear)
+            .overlay(
+                // More pronounced bottom divider
+                Rectangle()
+                    .fill(Color.black.opacity(0.12))
+                    .frame(height: 1)
+                    .padding(.leading, 66), // Align with text, not profile picture
+                alignment: .bottom
+            )
         }
         .buttonStyle(PlainButtonStyle())
     }
     
     private func profileSection(for user: UserModel) -> some View {
         HStack(spacing: 12) {
-            ProfilePictureView(user: user, diameter: 50, isPhone: false)
+            ProfilePictureView(user: user, diameter: 42, isPhone: false)
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(user.fullname)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 
                 Text(user.username.isEmpty ? "@username" : "@\(user.username)")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundColor(user.username.isEmpty ? .secondary.opacity(0.6) : .secondary)
                     .lineLimit(1)
             }
