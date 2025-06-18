@@ -13,7 +13,6 @@ struct MyFriendsView: View {
     @State private var isAddFriendSheetPresented: Bool = false
     @State private var selectedSection: FriendSection = .friends
     @State private var selectedFriend: UserModel? = nil
-    @State private var showFriendDetails = false
     
     @State var user: UserModel
     
@@ -38,10 +37,8 @@ struct MyFriendsView: View {
             AddFriendView(user: user)
                 .presentationDetents([.fraction(0.9)])
         }
-        .sheet(isPresented: $showFriendDetails) {
-            if let selectedFriend = selectedFriend {
-                FriendDetailsView(friend: selectedFriend, viewingUser: user)
-            }
+        .sheet(item: $selectedFriend) { friend in
+            FriendDetailsView(friend: friend, viewingUser: user)
         }
     }
     
@@ -256,7 +253,6 @@ struct MyFriendsView: View {
                         invitees: .constant([]),
                         onTap: { person in
                             selectedFriend = person
-                            showFriendDetails = true
                         }
                     )
                 }
@@ -289,7 +285,6 @@ struct MyFriendsView: View {
                         invitees: .constant([]),
                         onTap: { person in
                             selectedFriend = person
-                            showFriendDetails = true
                         }
                     )
                 }
@@ -322,7 +317,6 @@ struct MyFriendsView: View {
                         invitees: .constant([]),
                         onTap: { person in
                             selectedFriend = person
-                            showFriendDetails = true
                         }
                     )
                 }

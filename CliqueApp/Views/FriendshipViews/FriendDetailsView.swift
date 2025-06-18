@@ -491,7 +491,6 @@ struct FriendsFriendsListView: View {
     let friendsList: [String]
     
     @State private var selectedFriend: UserModel? = nil
-    @State private var showFriendDetails = false
     
     var body: some View {
         NavigationView {
@@ -535,7 +534,6 @@ struct FriendsFriendsListView: View {
                                         viewingUser: friend,
                                         onTap: { selectedFriend in
                                             self.selectedFriend = selectedFriend
-                                            showFriendDetails = true
                                         }
                                     )
                                 }
@@ -554,10 +552,8 @@ struct FriendsFriendsListView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showFriendDetails) {
-                if let selectedFriend = selectedFriend {
-                    FriendDetailsView(friend: selectedFriend, viewingUser: friend)
-                }
+            .sheet(item: $selectedFriend) { friend in
+                FriendDetailsView(friend: friend, viewingUser: self.friend)
             }
         }
     }

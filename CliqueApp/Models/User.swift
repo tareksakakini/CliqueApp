@@ -8,7 +8,8 @@
 import Foundation
 import FirebaseCore
 
-struct UserModel: Hashable {
+struct UserModel: Hashable, Identifiable {
+    var id: String { uid }
     var uid: String = ""
     var fullname: String = ""
     var username: String = ""
