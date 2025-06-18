@@ -389,10 +389,6 @@ struct ModernPersonPillView: View {
                 }
                 
                 Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.black.opacity(0.3))
             }
             .padding(20)
             .background(Color.white)

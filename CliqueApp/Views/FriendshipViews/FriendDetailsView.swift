@@ -96,7 +96,7 @@ struct FriendDetailsView: View {
                 Spacer()
             }
             .padding(.horizontal, 20)
-            .padding(.top, 10)
+            .padding(.top, 20)
         }
     }
     
@@ -296,19 +296,16 @@ struct FriendDetailsView: View {
             }) {
                 HStack(spacing: 12) {
                     Image(systemName: "person.2.fill")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.green)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
                     Text("Friend")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black.opacity(0.3))
+                        .foregroundColor(.white)
                 }
-                .padding(16)
-                .background(Color.green.opacity(0.1))
-                .cornerRadius(12)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .background(Color.green)
+                .cornerRadius(8)
             }
             
         case .requestReceived:
@@ -356,19 +353,16 @@ struct FriendDetailsView: View {
             }) {
                 HStack(spacing: 12) {
                     Image(systemName: "paperplane.fill")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.orange)
-                    Text("Friend Request Sent")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.white)
+                    Text("Request Sent")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black.opacity(0.3))
+                        .foregroundColor(.white)
                 }
-                .padding(16)
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(12)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
+                .background(Color.orange)
+                .cornerRadius(8)
             }
             
         case .none:
@@ -588,10 +582,6 @@ struct FriendListItemView: View {
                 }
                 
                 Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.black.opacity(0.3))
             }
             .padding(20)
             .background(Color.white)
