@@ -51,37 +51,37 @@ struct CreateEventView: View {
                     }
                 }
             }
-        }
-        .onAppear {
-            oldEvent = event
-        }
-        .alert(alertMessage, isPresented: $showAlert) {
-            Button("Dismiss", role: .cancel) { }
-        }
-        .sheet(isPresented: $showMessageComposer) {
-            if MFMessageComposeViewController.canSendText() {
-                MessageComposer(
-                    recipients: newPhoneNumbers,
-                    body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)",
-                    onFinish: {
-                        Task {
-                            await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                            await vm.getAllEvents()
-                            event = EventModel()
-                            inviteesUserModels = []
-                            imageSelection = nil
-                            selectedImage = nil
-                            newPhoneNumbers = []
-                            oldEvent = EventModel()
-                            if isNewEvent {
-                                selectedTab = 0
+            }
+            .onAppear {
+                oldEvent = event
+            }
+            .alert(alertMessage, isPresented: $showAlert) {
+                Button("Dismiss", role: .cancel) { }
+            }
+            .sheet(isPresented: $showMessageComposer) {
+                if MFMessageComposeViewController.canSendText() {
+                    MessageComposer(
+                        recipients: newPhoneNumbers,
+                        body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)",
+                        onFinish: {
+                            Task {
+                                await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                                await vm.getAllEvents()
+                                event = EventModel()
+                                inviteesUserModels = []
+                                imageSelection = nil
+                                selectedImage = nil
+                                newPhoneNumbers = []
+                                oldEvent = EventModel()
+                                if isNewEvent {
+                                    selectedTab = 0
+                                }
                             }
                         }
-                    }
-                )
+                    )
             } else {
-                Text("This device can't send SMS messages.")
-                    .padding()
+                    Text("This device can't send SMS messages.")
+                        .padding()
             }
         }
         .sheet(isPresented: $showAddInviteeSheet) {
@@ -357,9 +357,9 @@ struct CreateEventView: View {
     private var actionButtons: some View {
         HStack(spacing: 16) {
             if !isNewEvent {
-                Button {
-                    dismiss()
-                } label: {
+        Button {
+            dismiss()
+        } label: {
                     Text("Cancel")
                         .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(.secondary)
@@ -381,7 +381,7 @@ struct CreateEventView: View {
             } label: {
                 Text(isNewEvent ? "Create Event" : "Update Event")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.white)
+                .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
                     .background(
@@ -400,10 +400,10 @@ struct CreateEventView: View {
     private func handleCreateEvent() {
         let now = Date()
         
-        if event.title.count < 3 {
+            if event.title.count < 3 {
             alertMessage = "Event title must be at least 3 characters long"
-            showAlert = true
-        } else if event.location.isEmpty {
+                showAlert = true
+            } else if event.location.isEmpty {
             alertMessage = "Please select a location for your event"
             showAlert = true
         } else if event.startDateTime < now {
@@ -411,38 +411,38 @@ struct CreateEventView: View {
             showAlert = true
         } else if !event.noEndTime && event.endDateTime <= event.startDateTime {
             alertMessage = "Event end time must be after the start time"
-            showAlert = true
-        } else {
-            Task {
-                let temp_uuid = isNewEvent ? UUID().uuidString : event.id
-                messageEventID = temp_uuid
-                
-                event.attendeesInvited = inviteesUserModels.map({$0.email})
-                newPhoneNumbers = []
-                for phoneNumber in event.invitedPhoneNumbers {
-                    if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
-                        newPhoneNumbers.append(phoneNumber)
-                    }
-                }
-                
-                if newPhoneNumbers.count > 0 {
-                    print("MessageEventID: \(messageEventID)")
-                    DispatchQueue.main.async {showMessageComposer = true}
-                } else {
-                    await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                    await vm.getAllEvents()
-                    event = EventModel()
-                    inviteesUserModels = []
-                    imageSelection = nil
-                    selectedImage = nil
+                showAlert = true
+            } else {
+                Task {
+                    let temp_uuid = isNewEvent ? UUID().uuidString : event.id
+                    messageEventID = temp_uuid
+                    
+                    event.attendeesInvited = inviteesUserModels.map({$0.email})
                     newPhoneNumbers = []
-                    oldEvent = EventModel()
-                    if isNewEvent {
-                        selectedTab = 0
+                    for phoneNumber in event.invitedPhoneNumbers {
+                        if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
+                            newPhoneNumbers.append(phoneNumber)
+                        }
+                    }
+                    
+                    if newPhoneNumbers.count > 0 {
+                        print("MessageEventID: \(messageEventID)")
+                        DispatchQueue.main.async {showMessageComposer = true}
+                    } else {
+                        await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                        await vm.getAllEvents()
+                        event = EventModel()
+                        inviteesUserModels = []
+                        imageSelection = nil
+                        selectedImage = nil
+                        newPhoneNumbers = []
+                        oldEvent = EventModel()
+                        if isNewEvent {
+                            selectedTab = 0
+                        }
                     }
                 }
             }
-        }
     }
 }
 
@@ -489,8 +489,8 @@ struct ModernLocationSearchField: View {
                 )
             )
             .font(.system(size: 16, weight: .medium))
-            .textInputAutocapitalization(.never)
-            .disableAutocorrection(true)
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
@@ -554,9 +554,9 @@ struct ModernLocationSearchField: View {
             Text(eventLocation)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.primary)
-            
-            Spacer()
-            
+                
+                Spacer()
+                
             Button(action: { 
                 eventLocation = ""
                 locationQuery = ""
@@ -610,7 +610,7 @@ struct ModernInviteePillView: View {
             
             removeButton
         }
-        .padding(.horizontal, 20)
+                    .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(Color.clear)
         .overlay(
