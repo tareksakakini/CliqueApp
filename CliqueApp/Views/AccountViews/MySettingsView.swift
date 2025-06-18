@@ -44,8 +44,7 @@ struct MySettingsView: View {
     @State private var showUsernameUpdateResult = false
     @State private var showPhotosPicker = false
     @State private var tempSelectedImage: UIImage? = nil
-    @State private var showImageCropper = false
-    @State private var imageToProcess: UIImage? = nil
+    @State private var showImageCrop = false
     
     var body: some View {
         mainContent
@@ -78,22 +77,7 @@ struct MySettingsView: View {
                 user = signedInUser
             }
         }
-        .onChange(of: imageSelection) { _, newValue in
-            Task {
-                if let newValue {
-                    await loadImage(from: newValue)
-                    if let selectedImage {
-                        // Show the image cropper instead of directly uploading
-                        DispatchQueue.main.async {
-                            self.imageToProcess = selectedImage
-                            self.showImageCropper = true
-                            self.selectedImage = nil
-                            self.imageSelection = nil
-                        }
-                    }
-                }
-            }
-        }
+
     }
     
     private var mainContent: some View {
@@ -715,22 +699,23 @@ struct MySettingsView: View {
             }
         }
         .photosPicker(isPresented: $showPhotosPicker, selection: $imageSelection, matching: .images)
-        .sheet(isPresented: $showImageCropper) {
-            if let imageToProcess = imageToProcess {
-                ImageCropperView(
-                    image: imageToProcess,
-                    cropSize: CGSize(width: 300, height: 300),
+        .sheet(isPresented: $showImageCrop) {
+            if let image = tempSelectedImage {
+                ProfileImageCropView(
+                    image: image,
                     onCrop: { croppedImage in
                         // Upload the cropped image
                         Task {
                             await uploadProfileImage(croppedImage)
                         }
-                        showImageCropper = false
-                        self.imageToProcess = nil
+                        showImageCrop = false
+                        tempSelectedImage = nil
+                        imageSelection = nil
                     },
                     onCancel: {
-                        showImageCropper = false
-                        self.imageToProcess = nil
+                        showImageCrop = false
+                        tempSelectedImage = nil
+                        imageSelection = nil
                     }
                 )
             }
@@ -774,6 +759,26 @@ struct MySettingsView: View {
                 }
             }
         }
+        .onChange(of: imageSelection) { oldValue, newValue in
+            Task {
+                if let photoItem = newValue {
+                    // Convert PhotosPickerItem to UIImage for cropping
+                    do {
+                        guard let imageData = try await photoItem.loadTransferable(type: Data.self),
+                              let uiImage = UIImage(data: imageData) else {
+                            return
+                        }
+                        
+                        DispatchQueue.main.async {
+                            self.tempSelectedImage = uiImage
+                            self.showImageCrop = true
+                        }
+                    } catch {
+                        print("Failed to load image data:", error)
+                    }
+                }
+            }
+        }
         .onChange(of: user.profilePic) { oldValue, newValue in
             // Force image refresh when profile URL changes
             if oldValue != newValue && !newValue.isEmpty {
@@ -783,18 +788,6 @@ struct MySettingsView: View {
     }
     
     // MARK: - Helper Methods
-    
-    private func loadImage(from item: PhotosPickerItem?) async {
-        guard let item else { return }
-        do {
-            if let data = try await item.loadTransferable(type: Data.self),
-               let uiImage = UIImage(data: data) {
-                selectedImage = uiImage
-            }
-        } catch {
-            print("Failed to load image data:", error)
-        }
-    }
     
     private func uploadProfileImage(_ uiImage: UIImage) async {
         isUploadingImage = true
