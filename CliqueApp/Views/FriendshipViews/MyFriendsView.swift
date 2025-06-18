@@ -240,7 +240,7 @@ struct MyFriendsView: View {
                 isAddFriendSheetPresented = true
             }
         } else {
-            LazyVStack(spacing: 12) {
+            LazyVStack(spacing: 0) {
                 ForEach(vm.friendship.sorted { username1, username2 in
                     let user1 = vm.getUser(username: username1)?.fullname ?? ""
                     let user2 = vm.getUser(username: username2)?.fullname ?? ""
@@ -257,6 +257,9 @@ struct MyFriendsView: View {
                     )
                 }
             }
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
         }
     }
     
@@ -272,7 +275,7 @@ struct MyFriendsView: View {
                 // No action for pending requests empty state
             }
         } else {
-            LazyVStack(spacing: 12) {
+            LazyVStack(spacing: 0) {
                 ForEach(vm.friendInviteReceived.sorted { username1, username2 in
                     let user1 = vm.getUser(username: username1)?.fullname ?? ""
                     let user2 = vm.getUser(username: username2)?.fullname ?? ""
@@ -289,6 +292,9 @@ struct MyFriendsView: View {
                     )
                 }
             }
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
         }
     }
     
@@ -304,7 +310,7 @@ struct MyFriendsView: View {
                 isAddFriendSheetPresented = true
             }
         } else {
-            LazyVStack(spacing: 12) {
+            LazyVStack(spacing: 0) {
                 ForEach(vm.friendInviteSent.sorted { username1, username2 in
                     let user1 = vm.getUser(username: username1)?.fullname ?? ""
                     let user2 = vm.getUser(username: username2)?.fullname ?? ""
@@ -321,6 +327,9 @@ struct MyFriendsView: View {
                     )
                 }
             }
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
         }
     }
     
@@ -383,33 +392,40 @@ struct ModernPersonPillView: View {
                 onTap?(user)
             }
         }) {
-            HStack(spacing: 16) {
+            HStack(spacing: 14) {
                 if let user = displayedUser {
                     profileSection(for: user)
                 }
                 
                 Spacer()
             }
-            .padding(20)
-            .background(Color.white)
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color.clear)
+            .overlay(
+                // More pronounced bottom divider
+                Rectangle()
+                    .fill(Color.black.opacity(0.12))
+                    .frame(height: 1)
+                    .padding(.leading, 66), // Align with text, not profile picture
+                alignment: .bottom
+            )
         }
         .buttonStyle(PlainButtonStyle())
     }
     
     private func profileSection(for user: UserModel) -> some View {
         HStack(spacing: 12) {
-            ProfilePictureView(user: user, diameter: 50, isPhone: false)
+            ProfilePictureView(user: user, diameter: 42, isPhone: false)
             
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(user.fullname)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 16, weight: .medium))
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 
                 Text(user.username.isEmpty ? "@username" : "@\(user.username)")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 14, weight: .regular))
                     .foregroundColor(user.username.isEmpty ? .secondary.opacity(0.6) : .secondary)
                     .lineLimit(1)
             }
