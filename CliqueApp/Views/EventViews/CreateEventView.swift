@@ -129,9 +129,9 @@ struct CreateEventView: View {
                         print("Failed to load image data:", error)
                     }
                 }
+                }
             }
-        }
-        .id(messageEventID)
+            .id(messageEventID)
         }
     
     private var backgroundGradient: some View {

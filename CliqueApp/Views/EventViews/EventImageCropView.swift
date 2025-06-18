@@ -99,14 +99,26 @@ struct EventImageCropView: View {
     // MARK: - Helper Methods
     
     private func setupInitialScale(in screenSize: CGSize) {
-        // Calculate the optimal initial scale to fit the image nicely in the crop rectangle
+        // Calculate the optimal initial scale using the same logic as cropImage()
         let imageSize = image.size
+        let imageAspectRatio = imageSize.width / imageSize.height
+        let screenAspectRatio = screenSize.width / screenSize.height
         
-        let fitWidth = cropSize.width
-        let fitHeight = cropSize.height
+        // Calculate how the image is displayed
+        let displayWidth: CGFloat
+        let displayHeight: CGFloat
         
-        let scaleToFitWidth = fitWidth / imageSize.width
-        let scaleToFitHeight = fitHeight / imageSize.height
+        if imageAspectRatio > screenAspectRatio {
+            displayWidth = screenSize.width
+            displayHeight = screenSize.width / imageAspectRatio
+        } else {
+            displayHeight = screenSize.height
+            displayWidth = screenSize.height * imageAspectRatio
+        }
+        
+        // Calculate scale needed to fill the crop area
+        let scaleToFitWidth = cropSize.width / displayWidth
+        let scaleToFitHeight = cropSize.height / displayHeight
         
         // Use the larger scale factor to ensure the image covers the crop area
         let initialScale = max(scaleToFitWidth, scaleToFitHeight) * 1.1 // 10% larger for better coverage
@@ -116,20 +128,21 @@ struct EventImageCropView: View {
     }
     
     private func constrainOffset(_ proposedOffset: CGSize, in screenSize: CGSize) -> CGSize {
-        // Calculate the actual displayed image size
+        // Calculate the actual displayed image size using the same logic as cropImage()
         let imageSize = image.size
         let imageAspectRatio = imageSize.width / imageSize.height
+        let screenAspectRatio = screenSize.width / screenSize.height
         
         // Determine how the image is displayed (aspect fit)
         let displayWidth: CGFloat
         let displayHeight: CGFloat
         
-        if imageAspectRatio > screenSize.width / screenSize.height {
-            // Image is wider relative to screen
+        if imageAspectRatio > screenAspectRatio {
+            // Image is wider relative to screen - fit to width
             displayWidth = screenSize.width
             displayHeight = screenSize.width / imageAspectRatio
         } else {
-            // Image is taller relative to screen
+            // Image is taller relative to screen - fit to height
             displayHeight = screenSize.height
             displayWidth = screenSize.height * imageAspectRatio
         }
@@ -156,41 +169,52 @@ struct EventImageCropView: View {
         let imageSize = image.size
         let outputSize = CGSize(width: 640, height: 400) // Final event image size (16:10 ratio)
         
-        // Calculate the crop rectangle in image coordinates
-        let imageAspectRatio = imageSize.width / imageSize.height
+        // Get the actual screen size being used for display
+        let screenSize = UIScreen.main.bounds.size
         
-        // Determine the displayed image size (how it appears on screen)
-        let screenBounds = UIScreen.main.bounds
+        // Calculate how the image is actually displayed (aspect fit within screen)
+        let imageAspectRatio = imageSize.width / imageSize.height
+        let screenAspectRatio = screenSize.width / screenSize.height
+        
         let displayWidth: CGFloat
         let displayHeight: CGFloat
         
-        if imageAspectRatio > 1 {
-            displayWidth = screenBounds.width
-            displayHeight = screenBounds.width / imageAspectRatio
+        if imageAspectRatio > screenAspectRatio {
+            // Image is wider relative to screen - fit to width
+            displayWidth = screenSize.width
+            displayHeight = screenSize.width / imageAspectRatio
         } else {
-            displayHeight = screenBounds.height
-            displayWidth = screenBounds.height * imageAspectRatio
+            // Image is taller relative to screen - fit to height
+            displayHeight = screenSize.height
+            displayWidth = screenSize.height * imageAspectRatio
         }
         
-        // Scale factor from display coordinates to image coordinates
-        let scaleToImage = max(imageSize.width / displayWidth, imageSize.height / displayHeight)
+        // Calculate the scale factor from displayed image to actual image
+        let imageToDisplayScale = min(displayWidth / imageSize.width, displayHeight / imageSize.height)
         
-        // Calculate the crop area in image coordinates
-        let cropSizeInImage = CGSize(
-            width: cropSize.width * scaleToImage / scale,
-            height: cropSize.height * scaleToImage / scale
-        )
+        // Calculate the crop rectangle in the original image coordinates
+        // The crop size in image coordinates, accounting for user's zoom
+        let cropWidthInImage = cropSize.width / (imageToDisplayScale * scale)
+        let cropHeightInImage = cropSize.height / (imageToDisplayScale * scale)
         
-        // Center of the crop area, accounting for user's pan
-        let cropCenterX = (imageSize.width / 2) - (offset.width * scaleToImage / scale)
-        let cropCenterY = (imageSize.height / 2) - (offset.height * scaleToImage / scale)
+        // Calculate the center point in image coordinates, accounting for user's pan
+        let imageCenterX = imageSize.width / 2
+        let imageCenterY = imageSize.height / 2
+        
+        // Convert the user's offset to image coordinates
+        let offsetXInImage = offset.width / (imageToDisplayScale * scale)
+        let offsetYInImage = offset.height / (imageToDisplayScale * scale)
+        
+        // Calculate the crop rectangle center
+        let cropCenterX = imageCenterX - offsetXInImage
+        let cropCenterY = imageCenterY - offsetYInImage
         
         // Define the crop rectangle
         let cropRect = CGRect(
-            x: cropCenterX - cropSizeInImage.width / 2,
-            y: cropCenterY - cropSizeInImage.height / 2,
-            width: cropSizeInImage.width,
-            height: cropSizeInImage.height
+            x: cropCenterX - cropWidthInImage / 2,
+            y: cropCenterY - cropHeightInImage / 2,
+            width: cropWidthInImage,
+            height: cropHeightInImage
         )
         
         // Ensure crop rect is within image bounds
