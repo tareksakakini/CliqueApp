@@ -16,9 +16,22 @@ struct MyEventsView: View {
     
     @State private var selectedEventType: EventType = .upcoming
     
+    init(user: UserModel, isInviteView: Bool) {
+        self.user = user
+        self.isInviteView = isInviteView
+        // Set default tab based on view type
+        self._selectedEventType = State(initialValue: isInviteView ? .pending : .upcoming)
+    }
+    
     enum EventType: String, CaseIterable {
         case upcoming = "Upcoming"
         case past = "Past"
+        case pending = "Pending"
+        case declined = "Declined"
+    }
+    
+    private var eventTypes: [EventType] {
+        return isInviteView ? [.pending, .declined] : [.upcoming, .past]
     }
     
     var body: some View {
@@ -66,7 +79,7 @@ struct MyEventsView: View {
     
     private var eventToggleSection: some View {
         HStack(spacing: 0) {
-            ForEach(EventType.allCases, id: \.self) { eventType in
+            ForEach(eventTypes, id: \.self) { eventType in
                 Button(action: {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         selectedEventType = eventType
@@ -124,22 +137,47 @@ struct MyEventsView: View {
     }
     
     private var filteredEvents: [EventModel] {
-        let allEvents = vm.events.filter { event in
-            let checklist = isInviteView ? event.attendeesInvited : event.attendeesAccepted + [event.host]
-            return checklist.contains(user.email)
-        }
-        
-        let now = Date()
-        
-        switch selectedEventType {
-        case .upcoming:
-            return allEvents
-                .filter { $0.startDateTime >= now }
-                .sorted { $0.startDateTime < $1.startDateTime }
-        case .past:
-            return allEvents
-                .filter { $0.startDateTime < now }
-                .sorted { $0.startDateTime > $1.startDateTime }
+        if isInviteView {
+            // For invite view, filter based on pending/declined status and exclude past events
+            let now = Date()
+            
+            switch selectedEventType {
+            case .pending:
+                return vm.events
+                    .filter { event in
+                        event.attendeesInvited.contains(user.email) && event.startDateTime >= now
+                    }
+                    .sorted { $0.startDateTime < $1.startDateTime }
+            case .declined:
+                return vm.events
+                    .filter { event in
+                        event.attendeesDeclined.contains(user.email) && event.startDateTime >= now
+                    }
+                    .sorted { $0.startDateTime < $1.startDateTime }
+            default:
+                return []
+            }
+        } else {
+            // For events view, filter based on upcoming/past
+            let allEvents = vm.events.filter { event in
+                let checklist = event.attendeesAccepted + [event.host]
+                return checklist.contains(user.email)
+            }
+            
+            let now = Date()
+            
+            switch selectedEventType {
+            case .upcoming:
+                return allEvents
+                    .filter { $0.startDateTime >= now }
+                    .sorted { $0.startDateTime < $1.startDateTime }
+            case .past:
+                return allEvents
+                    .filter { $0.startDateTime < now }
+                    .sorted { $0.startDateTime > $1.startDateTime }
+            default:
+                return []
+            }
         }
     }
     
@@ -149,7 +187,7 @@ struct MyEventsView: View {
                 .fill(Color.black.opacity(0.05))
                 .frame(width: 80, height: 80)
                 .overlay(
-                    Image(systemName: selectedEventType == .upcoming ? "calendar.badge.plus" : "calendar.badge.clock")
+                    Image(systemName: emptyStateIcon)
                         .font(.system(size: 32, weight: .medium))
                         .foregroundColor(.black.opacity(0.3))
                 )
@@ -166,7 +204,7 @@ struct MyEventsView: View {
                     .padding(.horizontal, 20)
             }
             
-            if selectedEventType == .upcoming {
+            if selectedEventType == .upcoming || selectedEventType == .pending {
                 Text("Pull down to refresh")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.secondary.opacity(0.7))
@@ -180,23 +218,60 @@ struct MyEventsView: View {
         .padding(.top, 40)
     }
     
+    private var emptyStateIcon: String {
+        switch selectedEventType {
+        case .upcoming:
+            return "calendar.badge.plus"
+        case .past:
+            return "calendar.badge.clock"
+        case .pending:
+            return "envelope"
+        case .declined:
+            return "envelope.badge.fill"
+        }
+    }
+    
     private var emptyStateTitle: String {
         if isInviteView {
-            return selectedEventType == .upcoming ? "No Pending Invites" : "No Past Invites"
+            switch selectedEventType {
+            case .pending:
+                return "No Pending Invites"
+            case .declined:
+                return "No Declined Invites"
+            default:
+                return "No Invites"
+            }
         } else {
-            return selectedEventType == .upcoming ? "No Upcoming Events" : "No Past Events"
+            switch selectedEventType {
+            case .upcoming:
+                return "No Upcoming Events"
+            case .past:
+                return "No Past Events"
+            default:
+                return "No Events"
+            }
         }
     }
     
     private var emptyStateSubtitle: String {
         if isInviteView {
-            return selectedEventType == .upcoming 
-                ? "Event invitations will appear here when you receive them"
-                : "Your past event invitations will be shown here"
+            switch selectedEventType {
+            case .pending:
+                return "Event invitations will appear here when you receive them"
+            case .declined:
+                return "Events you've declined will be shown here"
+            default:
+                return "Your event invitations will appear here"
+            }
         } else {
-            return selectedEventType == .upcoming 
-                ? "Your upcoming events will appear here. Create your first event or accept invitations to get started!"
-                : "Events you've attended will be shown here"
+            switch selectedEventType {
+            case .upcoming:
+                return "Your upcoming events will appear here. Create your first event or accept invitations to get started!"
+            case .past:
+                return "Events you've attended will be shown here"
+            default:
+                return "Your events will appear here"
+            }
         }
     }
 }
@@ -352,8 +427,12 @@ struct ModernEventPillView: View {
     @ViewBuilder
     private var statusBadge: some View {
         let status: (text: String, color: Color, icon: String)? = {
-            if inviteView && !isEventPast {
-                return ("Invited", .blue, "envelope.fill")
+            if inviteView {
+                if event.attendeesInvited.contains(user.email) {
+                    return ("Pending", .orange, "clock.fill")
+                } else if event.attendeesDeclined.contains(user.email) {
+                    return ("Declined", .red, "xmark.circle.fill")
+                }
             }
             return nil
         }()

@@ -19,6 +19,8 @@ struct EventDetailView: View {
     @State private var showEditView = false
     @State private var scrollOffset: CGFloat = 0
     @State private var showDeleteConfirmation = false
+    @State private var showDeclineConfirmation = false
+    @State private var isAcceptingInvite = false
     
     private var isEventPast: Bool {
         event.startDateTime < Date()
@@ -530,15 +532,24 @@ struct EventDetailView: View {
             if inviteView && isInvited {
                 // Accept/Decline buttons for invites
                 HStack(spacing: 16) {
+                    // Accept Button with Progress Indicator
                     Button(action: {
                         Task {
+                            isAcceptingInvite = true
                             await vm.acceptButtonPressed(user: user, event: event)
                             await vm.getAllEvents()
+                            isAcceptingInvite = false
                         }
                     }) {
                         HStack(spacing: 8) {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 16, weight: .semibold))
+                            if isAcceptingInvite {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            } else {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
                             Text("Accept")
                                 .font(.system(size: 16, weight: .semibold))
                         }
@@ -555,12 +566,11 @@ struct EventDetailView: View {
                         .cornerRadius(16)
                         .shadow(color: .green.opacity(0.3), radius: 8, x: 0, y: 4)
                     }
+                    .disabled(isAcceptingInvite)
                     
+                    // Decline Button with Confirmation
                     Button(action: {
-                        Task {
-                            await vm.declineButtonPressed(user: user, event: event)
-                            await vm.getAllEvents()
-                        }
+                        showDeclineConfirmation = true
                     }) {
                         HStack(spacing: 8) {
                             Image(systemName: "xmark")
@@ -607,6 +617,21 @@ struct EventDetailView: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 24)
+        .confirmationDialog(
+            "Decline Invitation",
+            isPresented: $showDeclineConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Decline", role: .destructive) {
+                Task {
+                    await vm.declineButtonPressed(user: user, event: event)
+                    await vm.getAllEvents()
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to decline this invitation? The host will be notified.")
+        }
     }
     
     // MARK: - Delete Button Section
