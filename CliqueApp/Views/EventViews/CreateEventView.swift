@@ -57,6 +57,10 @@ struct CreateEventView: View {
             }
             .onAppear {
                 oldEvent = event
+                // Load existing invitees when editing an event
+                if !isNewEvent {
+                    loadExistingInvitees()
+                }
             }
             .alert(alertMessage, isPresented: $showAlert) {
                 Button("Dismiss", role: .cancel) { }
@@ -494,6 +498,23 @@ struct CreateEventView: View {
                     }
                 }
             }
+    }
+    
+    private func loadExistingInvitees() {
+        // Load existing user invitees
+        inviteesUserModels = []
+        for inviteeEmail in event.attendeesInvited {
+            if let user = vm.getUser(username: inviteeEmail) {
+                inviteesUserModels.append(user)
+            }
+        }
+        
+        // Load existing phone contact invitees
+        invitedContacts = []
+        for phoneNumber in event.invitedPhoneNumbers {
+            let contact = ContactInfo(name: phoneNumber, phoneNumber: phoneNumber)
+            invitedContacts.append(contact)
+        }
     }
 }
 
