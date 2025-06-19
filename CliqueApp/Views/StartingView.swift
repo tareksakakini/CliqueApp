@@ -60,7 +60,6 @@ extension StartingView {
                 Image("yalla_transparent")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .clipShape(Rectangle().offset(x: 0, y: 7).size(width: 400, height: 120))
                     .frame(width: 200, height: 80)
                     .foregroundColor(.white)
                     .scaleEffect(logoScale)

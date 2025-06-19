@@ -339,7 +339,7 @@ struct FriendDetailsView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "person.fill.questionmark")
                         .font(.system(size: 16, weight: .medium))
-                    Text("Friend Request")
+                    Text("Friendship Requested")
                         .font(.system(size: 16, weight: .medium))
                 }
                 .foregroundColor(.white)
