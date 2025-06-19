@@ -22,6 +22,7 @@ struct EventDetailView: View {
     @State private var showDeclineConfirmation = false
     @State private var showLeaveConfirmation = false
     @State private var isAcceptingInvite = false
+    @State private var isAcceptingDeclinedInvite = false
     
     private var isEventPast: Bool {
         event.startDateTime < Date()
@@ -37,6 +38,10 @@ struct EventDetailView: View {
     
     private var isInvited: Bool {
         event.attendeesInvited.contains(user.email)
+    }
+    
+    private var hasDeclined: Bool {
+        event.attendeesDeclined.contains(user.email)
     }
     
     private var durationText: String {
@@ -611,6 +616,41 @@ struct EventDetailView: View {
                     )
                     .cornerRadius(16)
                 }
+            } else if inviteView && hasDeclined {
+                // Accept declined invite button
+                Button(action: {
+                    Task {
+                        isAcceptingDeclinedInvite = true
+                        await acceptDeclinedInvite()
+                        isAcceptingDeclinedInvite = false
+                    }
+                }) {
+                    HStack(spacing: 8) {
+                        if isAcceptingDeclinedInvite {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                        } else {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        Text("Accept Invite")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [.green, .green.opacity(0.8)]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(16)
+                    .shadow(color: .green.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .disabled(isAcceptingDeclinedInvite)
             }
         }
         .padding(.horizontal, 20)
@@ -690,6 +730,22 @@ struct EventDetailView: View {
     }
     
     // MARK: - Helper Functions
+    
+    private func acceptDeclinedInvite() async {
+        do {
+            let databaseManager = DatabaseManager()
+            try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "acceptDeclined")
+            await vm.getAllEvents()
+            
+            // Send notification to host
+            if let host = vm.getUser(username: event.host), event.host != user.email {
+                let notificationText = "\(user.fullname) has accepted your event invitation!"
+                sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+            }
+        } catch {
+            print("Failed to accept declined invite: \(error.localizedDescription)")
+        }
+    }
     
     private func deleteEvent() async {
         do {

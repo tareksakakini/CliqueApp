@@ -193,6 +193,16 @@ class DatabaseManager {
                     } else if action == "reject" {
                         attendeesDeclined.append(userId)
                     }
+                } else if action == "acceptDeclined" {
+                    // Move user from declined to accepted
+                    guard let index = attendeesDeclined.firstIndex(of: userId) else {
+                        print("User not found in attendeesDeclined list")
+                        return nil
+                    }
+                    attendeesDeclined.remove(at: index)
+                    if !attendeesAccepted.contains(userId) {
+                        attendeesAccepted.append(userId)
+                    }
                 } else if action == "leave" {
                     if userId == host {
                         host = ""

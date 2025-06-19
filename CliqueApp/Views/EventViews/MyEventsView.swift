@@ -472,7 +472,9 @@ struct ModernEventPillView: View {
             }
         }
     }
-
+    
+    
+    
     private func loadEventImage(imageUrl: String) async {
         guard !imageUrl.isEmpty, let url = URL(string: imageUrl) else { return }
         
