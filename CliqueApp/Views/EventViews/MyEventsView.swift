@@ -354,8 +354,6 @@ struct ModernEventPillView: View {
         let status: (text: String, color: Color, icon: String)? = {
             if inviteView && !isEventPast {
                 return ("Invited", .blue, "envelope.fill")
-            } else if isEventPast {
-                return ("Completed", .gray, "checkmark.circle.fill")
             }
             return nil
         }()
@@ -377,7 +375,9 @@ struct ModernEventPillView: View {
     }
     
     private var socialSection: some View {
-        HStack(spacing: 16) {
+        HStack {
+            Spacer()
+            
             // Host Info
             if let host = vm.getUser(username: event.host) {
                 VStack(alignment: .trailing, spacing: 4) {
@@ -389,23 +389,6 @@ struct ModernEventPillView: View {
                             .font(.system(size: 14, weight: .medium))
                             .lineLimit(1)
                         ProfilePictureView(user: host, diameter: 24, isPhone: false)
-                    }
-                }
-            }
-            
-            // Attendees
-            let attendees = event.attendeesAccepted
-            if !attendees.isEmpty {
-                VStack(alignment: .trailing, spacing: 4) {
-                     Text("ATTENDING")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .foregroundColor(.secondary)
-                    HStack {
-                        AvatarStackView(attendees: attendees)
-                        if attendees.count > 3 {
-                             Text("+\(attendees.count)")
-                                .font(.system(size: 14, weight: .medium))
-                        }
                     }
                 }
             }
@@ -428,26 +411,7 @@ struct ModernEventPillView: View {
     }
 }
 
-// MARK: - Avatar Stack
 
-struct AvatarStackView: View {
-    @EnvironmentObject private var vm: ViewModel
-    let attendees: [String]
-    
-    var body: some View {
-        HStack(spacing: -12) {
-            ForEach(attendees.prefix(3), id: \.self) { attendeeEmail in
-                if let user = vm.getUser(username: attendeeEmail) {
-                    ProfilePictureView(user: user, diameter: 24, isPhone: false)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white, lineWidth: 2)
-                        )
-                }
-            }
-        }
-    }
-}
 
 #Preview {
     MyEventsView(user: UserData.userData[0], isInviteView: false)
