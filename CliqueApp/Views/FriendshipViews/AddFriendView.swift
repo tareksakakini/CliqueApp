@@ -176,7 +176,9 @@ struct ModernSearchPersonPillView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.clear)
+            .contentShape(Rectangle()) // This ensures the entire area is tappable
             .overlay(
                 // More pronounced bottom divider
                 Rectangle()
