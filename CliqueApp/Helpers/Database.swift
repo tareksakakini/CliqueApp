@@ -45,7 +45,7 @@ class DatabaseManager {
         }
     }
     
-    func addEventToFirestore(id: String, title: String, location: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
+    func addEventToFirestore(id: String, title: String, location: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], attendeesDeclined: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], declinedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
         let eventRef = db.collection("events").document(id)
         
         let eventData: [String: Any] = [
@@ -57,9 +57,11 @@ class DatabaseManager {
             "noEndTime": noEndTime,
             "attendeesAccepted": attendeesAccepted,
             "attendeesInvited": attendeesInvited,
+            "attendeesDeclined": attendeesDeclined,
             "host": host,
             "invitedPhoneNumbers": invitedPhoneNumbers,
-            "acceptedPhoneNumbers": acceptedPhoneNumbers
+            "acceptedPhoneNumbers": acceptedPhoneNumbers,
+            "declinedPhoneNumbers": declinedPhoneNumbers
         ]
         
         do {
@@ -76,7 +78,7 @@ class DatabaseManager {
         }
     }
     
-    func updateEventInFirestore(id: String, title: String, location: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
+    func updateEventInFirestore(id: String, title: String, location: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], attendeesDeclined: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], declinedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
         let eventRef = db.collection("events").document(id)
         
         let updatedEventData: [String: Any] = [
@@ -87,9 +89,11 @@ class DatabaseManager {
             "noEndTime": noEndTime,
             "attendeesAccepted": attendeesAccepted,
             "attendeesInvited": attendeesInvited,
+            "attendeesDeclined": attendeesDeclined,
             "host": host,
             "invitedPhoneNumbers": invitedPhoneNumbers,
-            "acceptedPhoneNumbers": acceptedPhoneNumbers
+            "acceptedPhoneNumbers": acceptedPhoneNumbers,
+            "declinedPhoneNumbers": declinedPhoneNumbers
         ]
         
         do {
@@ -173,6 +177,7 @@ class DatabaseManager {
                 
                 var attendeesInvited = eventData["attendeesInvited"] as? [String] ?? []
                 var attendeesAccepted = eventData["attendeesAccepted"] as? [String] ?? []
+                var attendeesDeclined = eventData["attendeesDeclined"] as? [String] ?? []
                 var host = eventData["host"] as? String ?? ""
                 
                 if action == "reject" || action == "accept" {
@@ -181,10 +186,12 @@ class DatabaseManager {
                         print("User not found in inviteeAttended list")
                         return nil
                     }
-                    // Remove from attended
+                    // Remove from invited
                     attendeesInvited.remove(at: index)
                     if action == "accept" {
                         attendeesAccepted.append(userId)
+                    } else if action == "reject" {
+                        attendeesDeclined.append(userId)
                     }
                 } else if action == "leave" {
                     if userId == host {
@@ -202,6 +209,7 @@ class DatabaseManager {
                 transaction.updateData([
                     "attendeesInvited": attendeesInvited,
                     "attendeesAccepted": attendeesAccepted,
+                    "attendeesDeclined": attendeesDeclined,
                     "host": host
                 ], forDocument: eventRef)
                 

@@ -17,10 +17,12 @@ struct EventModel: Hashable {
     var noEndTime: Bool = false
     var attendeesAccepted: [String] = []
     var attendeesInvited: [String] = []
+    var attendeesDeclined: [String] = []
     var host: String = ""
     var eventPic: String = ""
     var invitedPhoneNumbers: [String] = []
     var acceptedPhoneNumbers: [String] = []
+    var declinedPhoneNumbers: [String] = []
     
     func initFromFirestore(eventData: [String: Any]) -> EventModel {
         var event = EventModel()
@@ -32,10 +34,12 @@ struct EventModel: Hashable {
         event.noEndTime = eventData["noEndTime"] as? Bool ?? false
         event.attendeesAccepted = eventData["attendeesAccepted"] as? [String] ?? []
         event.attendeesInvited = eventData["attendeesInvited"] as? [String] ?? []
+        event.attendeesDeclined = eventData["attendeesDeclined"] as? [String] ?? []
         event.host = eventData["host"] as? String ?? ""
         event.eventPic = eventData["eventPic"] as? String ?? ""
         event.invitedPhoneNumbers = eventData["invitedPhoneNumbers"] as? [String] ?? []
         event.acceptedPhoneNumbers = eventData["acceptedPhoneNumbers"] as? [String] ?? []
+        event.declinedPhoneNumbers = eventData["declinedPhoneNumbers"] as? [String] ?? []
         return event
     }
 }

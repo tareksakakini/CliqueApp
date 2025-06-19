@@ -18,6 +18,7 @@ struct EventDetailView: View {
     @State private var eventImage: UIImage? = nil
     @State private var showEditView = false
     @State private var scrollOffset: CGFloat = 0
+    @State private var showDeleteConfirmation = false
     
     private var isEventPast: Bool {
         event.startDateTime < Date()
@@ -57,11 +58,15 @@ struct EventDetailView: View {
                         customNavigationBar
                         heroImageSection
                         locationCard
-                        attendeesCard
+                        inviteesCard
                         hostCard
                         
                         if !isEventPast && !isHost {
                             actionButtonsSection
+                        }
+                        
+                        if isHost {
+                            deleteButtonSection
                         }
                     }
                     .padding(.bottom, 40)
@@ -334,22 +339,23 @@ struct EventDetailView: View {
         .padding(.top, 16)
     }
     
-    // MARK: - Attendees Card
+    // MARK: - Invitees Card
     
-    private var attendeesCard: some View {
+    private var inviteesCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "person.3.fill")
                     .font(.system(size: 18, weight: .medium))
                     .foregroundColor(Color(.accent))
                 
-                Text("ATTENDEES")
+                Text("INVITEES")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
                 
                 Spacer()
                 
-                Text("\(event.attendeesAccepted.count + event.acceptedPhoneNumbers.count)")
+                let totalInvitees = event.attendeesAccepted.count + event.attendeesInvited.count + event.attendeesDeclined.count + event.acceptedPhoneNumbers.count + event.invitedPhoneNumbers.count + event.declinedPhoneNumbers.count
+                Text("\(totalInvitees)")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(Color(.accent))
                     .padding(.horizontal, 8)
@@ -358,30 +364,56 @@ struct EventDetailView: View {
                     .cornerRadius(8)
             }
             
-            LazyVStack(spacing: 12) {
-                // Accepted attendees
-                ForEach(event.attendeesAccepted, id: \.self) { attendeeEmail in
-                    if let attendee = vm.getUser(username: attendeeEmail) {
-                        attendeeRow(user: attendee, status: .accepted)
-                    }
-                }
+            // Coming Section
+            let comingCount = event.attendeesAccepted.count + event.acceptedPhoneNumbers.count
+            if comingCount > 0 {
+                inviteeSectionHeader(title: "Coming", count: comingCount, color: .green)
                 
-                // Accepted phone numbers
-                ForEach(event.acceptedPhoneNumbers, id: \.self) { phoneNumber in
-                    phoneAttendeeRow(phoneNumber: phoneNumber, status: .accepted)
-                }
-                
-                // Invited attendees (only show if not past event)
-                if !isEventPast {
-                    ForEach(event.attendeesInvited, id: \.self) { attendeeEmail in
+                LazyVStack(spacing: 12) {
+                    ForEach(event.attendeesAccepted, id: \.self) { attendeeEmail in
                         if let attendee = vm.getUser(username: attendeeEmail) {
-                            attendeeRow(user: attendee, status: .invited)
+                            attendeeRow(user: attendee, status: .coming)
                         }
                     }
                     
-                    // Invited phone numbers
+                    ForEach(event.acceptedPhoneNumbers, id: \.self) { phoneNumber in
+                        phoneAttendeeRow(phoneNumber: phoneNumber, status: .coming)
+                    }
+                }
+            }
+            
+            // Pending Section
+            let pendingCount = event.attendeesInvited.count + event.invitedPhoneNumbers.count
+            if pendingCount > 0 {
+                inviteeSectionHeader(title: "Pending", count: pendingCount, color: .orange)
+                
+                LazyVStack(spacing: 12) {
+                    ForEach(event.attendeesInvited, id: \.self) { attendeeEmail in
+                        if let attendee = vm.getUser(username: attendeeEmail) {
+                            attendeeRow(user: attendee, status: .pending)
+                        }
+                    }
+                    
                     ForEach(event.invitedPhoneNumbers, id: \.self) { phoneNumber in
-                        phoneAttendeeRow(phoneNumber: phoneNumber, status: .invited)
+                        phoneAttendeeRow(phoneNumber: phoneNumber, status: .pending)
+                    }
+                }
+            }
+            
+            // Not Coming Section
+            let notComingCount = event.attendeesDeclined.count + event.declinedPhoneNumbers.count
+            if notComingCount > 0 {
+                inviteeSectionHeader(title: "Not Coming", count: notComingCount, color: .red)
+                
+                LazyVStack(spacing: 12) {
+                    ForEach(event.attendeesDeclined, id: \.self) { attendeeEmail in
+                        if let attendee = vm.getUser(username: attendeeEmail) {
+                            attendeeRow(user: attendee, status: .notComing)
+                        }
+                    }
+                    
+                    ForEach(event.declinedPhoneNumbers, id: \.self) { phoneNumber in
+                        phoneAttendeeRow(phoneNumber: phoneNumber, status: .notComing)
                     }
                 }
             }
@@ -395,8 +427,27 @@ struct EventDetailView: View {
         .padding(.top, 16)
     }
     
+    private func inviteeSectionHeader(title: String, count: Int, color: Color) -> some View {
+        HStack {
+            Text(title.uppercased())
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundColor(.secondary)
+            
+            Spacer()
+            
+            Text("\(count)")
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(color)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(color.opacity(0.1))
+                .cornerRadius(6)
+        }
+        .padding(.top, 8)
+    }
+    
     enum AttendeeStatus {
-        case accepted, invited
+        case coming, pending, notComing
     }
     
     private func attendeeRow(user: UserModel, status: AttendeeStatus) -> some View {
@@ -415,9 +466,9 @@ struct EventDetailView: View {
             
             Spacer()
             
-            Image(systemName: status == .accepted ? "checkmark.circle.fill" : "clock.circle")
+            Image(systemName: statusIcon(for: status))
                 .font(.system(size: 18, weight: .medium))
-                .foregroundColor(status == .accepted ? .green : .orange)
+                .foregroundColor(statusColor(for: status))
         }
     }
     
@@ -444,9 +495,31 @@ struct EventDetailView: View {
             
             Spacer()
             
-            Image(systemName: status == .accepted ? "checkmark.circle.fill" : "clock.circle")
+            Image(systemName: statusIcon(for: status))
                 .font(.system(size: 18, weight: .medium))
-                .foregroundColor(status == .accepted ? .green : .orange)
+                .foregroundColor(statusColor(for: status))
+        }
+    }
+    
+    private func statusIcon(for status: AttendeeStatus) -> String {
+        switch status {
+        case .coming:
+            return "checkmark.circle.fill"
+        case .pending:
+            return "clock.circle"
+        case .notComing:
+            return "xmark.circle.fill"
+        }
+    }
+    
+    private func statusColor(for status: AttendeeStatus) -> Color {
+        switch status {
+        case .coming:
+            return .green
+        case .pending:
+            return .orange
+        case .notComing:
+            return .red
         }
     }
     
@@ -536,7 +609,63 @@ struct EventDetailView: View {
         .padding(.top, 24)
     }
     
+    // MARK: - Delete Button Section
+    
+    private var deleteButtonSection: some View {
+        VStack(spacing: 16) {
+            Button(action: {
+                showDeleteConfirmation = true
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "trash")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text("Delete Event")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                .foregroundColor(.red)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(Color(.systemBackground))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .stroke(.red, lineWidth: 2)
+                )
+                .cornerRadius(16)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 32)
+        .confirmationDialog(
+            "Delete Event",
+            isPresented: $showDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Event", role: .destructive) {
+                Task {
+                    await deleteEvent()
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to delete this event? This action cannot be undone and all attendees will be notified.")
+        }
+    }
+    
     // MARK: - Helper Functions
+    
+    private func deleteEvent() async {
+        do {
+            let databaseManager = DatabaseManager()
+            try await databaseManager.deleteEventFromFirestore(id: event.id)
+            await vm.getAllEvents()
+            
+            await MainActor.run {
+                dismiss()
+            }
+        } catch {
+            print("Error deleting event: \(error)")
+        }
+    }
     
     private func loadEventImage() async {
         guard !event.eventPic.isEmpty,
