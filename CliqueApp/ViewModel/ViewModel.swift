@@ -196,8 +196,21 @@ class ViewModel: ObservableObject {
             let firestoreService = DatabaseManager()
             let user = try await firestoreService.getUserFromFirestore(uid: signedInUser.uid)
             
+            print("🔐 User authenticated: \(user.uid)")
+            
+            // CRITICAL: Clear any existing OneSignal association first
+            print("🧹 Clearing any existing OneSignal associations...")
+            await clearOneSignalForUser()
+            
             // Set up OneSignal for this user
+            print("🔗 Setting up OneSignal for new user...")
             await setupOneSignalForUser(userID: user.uid)
+            
+            // Verify the setup worked
+            let verified = await verifyOneSignalState(expectedUserID: user.uid)
+            if !verified {
+                print("⚠️ WARNING: OneSignal setup verification failed for user \(user.uid)")
+            }
             
             print("User signed in: \(user.uid)")
             return user
@@ -414,14 +427,25 @@ class ViewModel: ObservableObject {
     
     func signoutButtonPressed() async {
         do {
+            print("🚪 Starting sign out process...")
+            
             // Clear OneSignal user association before signing out
+            print("🧹 Clearing OneSignal associations...")
             await clearOneSignalForUser()
+            
+            // Verify the clearing worked
+            let verified = await verifyOneSignalState(expectedUserID: nil)
+            if !verified {
+                print("⚠️ WARNING: OneSignal clearing verification failed")
+                // Force clear again
+                await clearOneSignalForUser()
+            }
             
             try Auth.auth().signOut()
             self.signedInUser = nil
-            print("User signed out successfully")
+            print("✅ User signed out successfully")
         } catch {
-            print("Failed to sign out: \(error.localizedDescription)")
+            print("❌ Failed to sign out: \(error.localizedDescription)")
         }
     }
     

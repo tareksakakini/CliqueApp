@@ -35,8 +35,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             print("User accepted notifications: \(accepted)")
         }, fallbackToSettings: true)
         
+        // Initialize OneSignal with clean state
+        Task {
+            await initializeOneSignalCleanState()
+        }
+        
         return true
-        
-        
     }
 }

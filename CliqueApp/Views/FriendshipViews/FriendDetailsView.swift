@@ -593,7 +593,7 @@ struct FriendListItemView: View {
                         .foregroundColor(.primary)
                         .lineLimit(1)
                     
-                    Text(friend.username.isEmpty ? "@username" : "@\(friend.username)")
+                    Text(friend.username.isEmpty ? "@[username not set]" : "@\(friend.username)")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundColor(friend.username.isEmpty ? .secondary.opacity(0.6) : .secondary)
                         .lineLimit(1)

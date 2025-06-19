@@ -58,9 +58,23 @@ struct MainView: View {
         .task {
             await vm.refreshData(user_email: user.email)
             
-            // Ensure OneSignal is properly configured for this user
+            print("📱 MainView loaded for user: \(user.uid)")
+            
+            // CRITICAL: Ensure OneSignal is properly configured for this user
+            print("🔍 Checking OneSignal configuration...")
             if !isOneSignalConfiguredForUser(expectedUserID: user.uid) {
+                print("❌ OneSignal not properly configured, fixing...")
+                // Clear any wrong association first
+                await clearOneSignalForUser()
                 await setupOneSignalForUser(userID: user.uid)
+                
+                // Verify it worked
+                let verified = await verifyOneSignalState(expectedUserID: user.uid)
+                if !verified {
+                    print("⚠️ CRITICAL: OneSignal setup still failed in MainView!")
+                }
+            } else {
+                print("✅ OneSignal correctly configured")
             }
             
             await vm.updateOneSignalSubscriptionId(user: user)

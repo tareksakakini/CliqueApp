@@ -248,7 +248,7 @@ struct ModernInviteeSearchPillView: View {
                     .foregroundColor(.primary)
                     .lineLimit(1)
                 
-                Text(user.username.isEmpty ? "@username" : "@\(user.username)")
+                Text(user.username.isEmpty ? "@[username not set]" : "@\(user.username)")
                     .font(.system(size: 14, weight: .regular))
                     .foregroundColor(user.username.isEmpty ? .secondary.opacity(0.6) : .secondary)
                     .lineLimit(1)
