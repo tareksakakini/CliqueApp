@@ -43,6 +43,7 @@ struct EventDetailView: View {
                 
                 ScrollView {
                     LazyVStack(spacing: 0) {
+                        customNavigationBar
                         heroImageSection
                         eventDetailsCard
                         locationCard
@@ -58,10 +59,6 @@ struct EventDetailView: View {
                 .ignoresSafeArea(.container, edges: .top)
             }
             .navigationBarHidden(true)
-            .overlay(
-                customNavigationBar,
-                alignment: .top
-            )
         }
         .task {
             await loadEventImage()
@@ -166,7 +163,7 @@ struct EventDetailView: View {
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
         }
         .padding(.horizontal, 20)
-        .padding(.top, 100)
+        .padding(.top, 20)
     }
     
     // MARK: - Custom Navigation Bar
@@ -198,7 +195,7 @@ struct EventDetailView: View {
             }
         }
         .padding(.horizontal, 44)
-        .padding(.top, 50)
+        .padding(.top, 70)
     }
     
     // MARK: - Status Badge
