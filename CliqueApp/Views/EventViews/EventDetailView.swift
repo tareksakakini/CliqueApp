@@ -20,6 +20,7 @@ struct EventDetailView: View {
     @State private var scrollOffset: CGFloat = 0
     @State private var showDeleteConfirmation = false
     @State private var showDeclineConfirmation = false
+    @State private var showLeaveConfirmation = false
     @State private var isAcceptingInvite = false
     
     private var isEventPast: Bool {
@@ -592,10 +593,7 @@ struct EventDetailView: View {
             } else if isAttending {
                 // Leave event button
                 Button(action: {
-                    Task {
-                        await vm.leaveButtonPressed(user: user, event: event)
-                        await vm.getAllEvents()
-                    }
+                    showLeaveConfirmation = true
                 }) {
                     HStack(spacing: 8) {
                         Image(systemName: "arrow.left.circle")
@@ -631,6 +629,21 @@ struct EventDetailView: View {
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("Are you sure you want to decline this invitation? The host will be notified.")
+        }
+        .confirmationDialog(
+            "Leave Event",
+            isPresented: $showLeaveConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Leave Event", role: .destructive) {
+                Task {
+                    await vm.leaveButtonPressed(user: user, event: event)
+                    await vm.getAllEvents()
+                }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to leave this event? The host will be notified that you can no longer attend.")
         }
     }
     

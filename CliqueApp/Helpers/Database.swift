@@ -202,6 +202,10 @@ class DatabaseManager {
                             return nil
                         }
                         attendeesAccepted.remove(at: index)
+                        // Move user to declined list when leaving
+                        if !attendeesDeclined.contains(userId) {
+                            attendeesDeclined.append(userId)
+                        }
                     }
                 }
                 
