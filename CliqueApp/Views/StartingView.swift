@@ -31,6 +31,14 @@ struct StartingView: View {
         .task {
             signedInUser = await vm.getSignedInUser()
             isEmailVerified = await AuthManager.shared.getEmailVerified()
+            
+            // If user is already signed in, ensure OneSignal is properly configured
+            if let user = signedInUser, isEmailVerified {
+                if !isOneSignalConfiguredForUser(expectedUserID: user.uid) {
+                    await setupOneSignalForUser(userID: user.uid)
+                }
+            }
+            
             isLoading = false
         }
     }

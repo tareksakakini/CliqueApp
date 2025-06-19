@@ -57,6 +57,12 @@ struct MainView: View {
         .navigationBarHidden(true)
         .task {
             await vm.refreshData(user_email: user.email)
+            
+            // Ensure OneSignal is properly configured for this user
+            if !isOneSignalConfiguredForUser(expectedUserID: user.uid) {
+                await setupOneSignalForUser(userID: user.uid)
+            }
+            
             await vm.updateOneSignalSubscriptionId(user: user)
             await vm.loadProfilePic(imageUrl: user.profilePic)
         }

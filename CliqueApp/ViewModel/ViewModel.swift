@@ -168,6 +168,10 @@ class ViewModel: ObservableObject {
             let firestoreService = DatabaseManager()
             try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: email, fullname: fullname, username: username, profilePic: "userDefault", gender: gender)
             let user = try await firestoreService.getUserFromFirestore(uid: signup_user.uid)
+            
+            // Set up OneSignal for the new user
+            await setupOneSignalForUser(userID: user.uid)
+            
             return user
         } catch {
             print("Sign up failed: \(error.localizedDescription)")
@@ -191,6 +195,10 @@ class ViewModel: ObservableObject {
             let signedInUser = try await AuthManager.shared.signIn(email: email, password: password)
             let firestoreService = DatabaseManager()
             let user = try await firestoreService.getUserFromFirestore(uid: signedInUser.uid)
+            
+            // Set up OneSignal for this user
+            await setupOneSignalForUser(userID: user.uid)
+            
             print("User signed in: \(user.uid)")
             return user
         } catch {
@@ -200,16 +208,26 @@ class ViewModel: ObservableObject {
     }
     
     func updateOneSignalSubscriptionId(user: UserModel) async {
+        // Ensure OneSignal is properly configured for this user first
+        if !isOneSignalConfiguredForUser(expectedUserID: user.uid) {
+            print("OneSignal not configured for user \(user.uid), setting up...")
+            await setupOneSignalForUser(userID: user.uid)
+            
+            // Wait a bit for OneSignal to process the login
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+        }
+        
         if let playerId = await getOneSignalSubscriptionId() {
             print("OneSignal Subscription ID: \(playerId)")
             do {
                 let firestoreService = DatabaseManager()
                 try await firestoreService.updateUserSubscriptionId(uid: user.uid, subscriptionId: playerId)
+                print("Successfully updated subscription ID for user \(user.uid)")
             } catch {
                 print("Updating subscription id failed: \(error.localizedDescription)")
             }
         } else {
-            print("Failed to retrieve OneSignal Subscription ID.")
+            print("Failed to retrieve OneSignal Subscription ID for user \(user.uid)")
         }
     }
     
@@ -396,6 +414,9 @@ class ViewModel: ObservableObject {
     
     func signoutButtonPressed() async {
         do {
+            // Clear OneSignal user association before signing out
+            await clearOneSignalForUser()
+            
             try Auth.auth().signOut()
             self.signedInUser = nil
             print("User signed out successfully")

@@ -627,6 +627,9 @@ struct MySettingsView: View {
             Button("Sign Out", role: .destructive) {
             Task {
                 do {
+                    // Clear OneSignal association before signing out
+                    await clearOneSignalForUser()
+                    
                     try AuthManager.shared.signOut()
                     goToLoginScreen = true
                 } catch {
@@ -647,6 +650,9 @@ struct MySettingsView: View {
                 isDeletingAccount = true
                 Task {
                     do {
+                        // Clear OneSignal association before deleting account
+                        await clearOneSignalForUser()
+                        
                         let databaseManager = DatabaseManager()
                         try await databaseManager.deleteUserAccount(uid: user.uid, email: user.email)
                         deleteResult = (success: true, message: "Account deleted successfully")

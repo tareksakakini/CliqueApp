@@ -45,3 +45,57 @@ func getOneSignalSubscriptionId() async -> String? {
     return OneSignal.User.pushSubscription.id
 }
 
+// MARK: - OneSignal User Management
+
+/// Sets up OneSignal for a signed-in user
+func setupOneSignalForUser(userID: String) async {
+    print("[OneSignal] Setting up OneSignal for user: \(userID)")
+    
+    // Set the external user ID to associate this device with the user
+    OneSignal.login(userID)
+    
+    // Wait a moment for the login to complete
+    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+    
+    print("[OneSignal] External user ID set to: \(userID)")
+    await logOneSignalState()
+}
+
+/// Clears OneSignal association when user signs out
+func clearOneSignalForUser() async {
+    print("[OneSignal] Clearing OneSignal user association")
+    
+    // Log out from OneSignal to disassociate this device from the user
+    OneSignal.logout()
+    
+    print("[OneSignal] User association cleared")
+    await logOneSignalState()
+}
+
+/// Gets the current OneSignal external user ID
+func getCurrentOneSignalExternalUserId() -> String? {
+    return OneSignal.User.externalId
+}
+
+/// Checks if OneSignal is properly configured for the current user
+func isOneSignalConfiguredForUser(expectedUserID: String) -> Bool {
+    guard let currentExternalId = getCurrentOneSignalExternalUserId() else {
+        print("[OneSignal] No external user ID found")
+        return false
+    }
+    
+    let isConfigured = currentExternalId == expectedUserID
+    print("[OneSignal] Configured for user \(expectedUserID): \(isConfigured) (current: \(currentExternalId))")
+    return isConfigured
+}
+
+/// Logs current OneSignal state for debugging
+func logOneSignalState() async {
+    let externalId = getCurrentOneSignalExternalUserId() ?? "None"
+    let subscriptionId = await getOneSignalSubscriptionId() ?? "None"
+    
+    print("[OneSignal] Current State:")
+    print("  - External User ID: \(externalId)")
+    print("  - Subscription ID: \(subscriptionId)")
+}
+
