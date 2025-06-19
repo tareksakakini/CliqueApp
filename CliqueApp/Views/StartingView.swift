@@ -13,6 +13,7 @@ struct StartingView: View {
     @State private var signedInUser: UserModel? = nil
     @State private var isLoading: Bool = true
     @State private var isEmailVerified: Bool = false
+    @State private var logoScale: CGFloat = 1.0
     
     var body: some View {
         NavigationStack {
@@ -45,10 +46,27 @@ extension StartingView {
     private var LoadingView: some View {
         ZStack {
             Color(.accent).ignoresSafeArea()
-            ProgressView()
-                .progressViewStyle(CircularProgressViewStyle())
-                .scaleEffect(1.5)
-                .tint(.white)
+            
+            VStack(spacing: 32) {
+                // Logo with pulse animation
+                Image("yalla_transparent")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(Rectangle().offset(x: 0, y: 7).size(width: 400, height: 120))
+                    .frame(width: 200, height: 80)
+                    .foregroundColor(.white)
+                    .scaleEffect(logoScale)
+                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: logoScale)
+                
+                // Spinning wheel below logo
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle())
+                    .scaleEffect(1.2)
+                    .tint(.white)
+            }
+        }
+        .onAppear {
+            logoScale = 1.05
         }
     }
     
