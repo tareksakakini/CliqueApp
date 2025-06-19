@@ -117,15 +117,15 @@ struct MyEventsView: View {
                     emptyStateView
                 } else {
                     LazyVStack(spacing: 16) {
-                        ForEach(filteredEvents, id: \.self) { event in
+                        ForEach(filteredEvents, id: \.id) { event in
                             ModernEventPillView(
                                 event: event,
                                 user: user,
                                 inviteView: isInviteView
                             )
+                            .id("\(selectedEventType.rawValue)-\(event.id)")
                         }
                     }
-                    .id(selectedEventType)
                     .padding(.horizontal, 20)
                 }
             }
@@ -293,18 +293,17 @@ struct ModernEventPillView: View {
     }
     
     var body: some View {
-        Button(action: {
-            showEventDetail = true
-        }) {
-            VStack(alignment: .leading, spacing: 0) {
-                eventImageSection
-                eventDetailsSection
-            }
-            .background(Color.white)
-            .cornerRadius(20)
-            .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
+        VStack(alignment: .leading, spacing: 0) {
+            eventImageSection
+            eventDetailsSection
         }
-        .buttonStyle(PlainButtonStyle())
+        .background(Color.white)
+        .cornerRadius(20)
+        .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
+        .contentShape(RoundedRectangle(cornerRadius: 20))
+        .onTapGesture {
+            showEventDetail = true
+        }
         .fullScreenCover(isPresented: $showEventDetail) {
             EventDetailView(
                 event: event,
