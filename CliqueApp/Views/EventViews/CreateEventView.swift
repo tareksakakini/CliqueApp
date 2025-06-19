@@ -561,7 +561,7 @@ struct ModernLocationSearchField: View {
                 let suggestion = locationSearchHelper.suggestions[index]
                 
                 Button {
-                    selectLocation(suggestion.title)
+                    selectLocation(suggestion.title, fullAddress: suggestion.subtitle)
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(suggestion.title)
@@ -596,17 +596,30 @@ struct ModernLocationSearchField: View {
     }
     
     private var selectedLocationView: some View {
-        HStack {
+        let locationParts = eventLocation.components(separatedBy: "||")
+        let locationTitle = locationParts.first ?? eventLocation
+        let locationAddress = locationParts.count > 1 ? locationParts[1] : ""
+        
+        return HStack {
             Image(systemName: "location.fill")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.blue)
                 .frame(width: 20)
             
-            Text(eventLocation)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.primary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(locationTitle)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.primary)
                 
-                Spacer()
+                if !locationAddress.isEmpty {
+                    Text(locationAddress)
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+                
+            Spacer()
                 
             Button(action: { 
                 eventLocation = ""
@@ -627,14 +640,15 @@ struct ModernLocationSearchField: View {
                         .stroke(Color.blue.opacity(0.3), lineWidth: 2)
                 )
         )
-                    }
+    }
                 
     private var shouldShowSuggestions: Bool {
         !locationSearchHelper.suggestions.isEmpty && !locationQuery.isEmpty
     }
     
-    private func selectLocation(_ location: String) {
-        eventLocation = location
+    private func selectLocation(_ title: String, fullAddress: String) {
+        // Store both title and full address in a structured format
+        eventLocation = "\(title)||\(fullAddress)"
         locationQuery = ""
         locationSearchHelper.suggestions = []
     }

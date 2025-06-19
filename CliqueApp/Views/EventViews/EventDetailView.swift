@@ -255,7 +255,11 @@ struct EventDetailView: View {
     // MARK: - Location Card
     
     private var locationCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        let locationParts = event.location.components(separatedBy: "||")
+        let locationTitle = locationParts.first ?? event.location
+        let locationAddress = locationParts.count > 1 ? locationParts[1] : ""
+        
+        return VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "location.fill")
                     .font(.system(size: 18, weight: .medium))
@@ -266,10 +270,19 @@ struct EventDetailView: View {
                     .foregroundColor(.secondary)
             }
             
-            Text(event.location)
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
-                .multilineTextAlignment(.leading)
+            VStack(alignment: .leading, spacing: 8) {
+                Text(locationTitle)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .multilineTextAlignment(.leading)
+                
+                if !locationAddress.isEmpty {
+                    Text(locationAddress)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.leading)
+                }
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(24)

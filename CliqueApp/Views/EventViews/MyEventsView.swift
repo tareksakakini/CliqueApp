@@ -290,7 +290,7 @@ struct ModernEventPillView: View {
                 HStack {
                     Image(systemName: "location.fill")
                         .font(.caption)
-                    Text(event.location)
+                    Text(event.location.components(separatedBy: "||").first ?? event.location)
                         .font(.system(size: 14, weight: .medium))
                 }
                 .foregroundColor(.white.opacity(0.9))
