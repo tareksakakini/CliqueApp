@@ -35,6 +35,17 @@ struct EventDetailView: View {
         event.attendeesInvited.contains(user.email)
     }
     
+    private var durationText: String {
+        let duration = vm.calculateDuration(startDateTime: event.startDateTime, endDateTime: event.endDateTime)
+        if duration.hours > 0 && duration.minutes > 0 {
+            return "\(duration.hours)h \(duration.minutes)m"
+        } else if duration.hours > 0 {
+            return "\(duration.hours)h"
+        } else {
+            return "\(duration.minutes)m"
+        }
+    }
+    
     var body: some View {
         NavigationView {
             ZStack {
@@ -45,7 +56,6 @@ struct EventDetailView: View {
                     LazyVStack(spacing: 0) {
                         customNavigationBar
                         heroImageSection
-                        eventDetailsCard
                         locationCard
                         attendeesCard
                         hostCard
@@ -146,6 +156,15 @@ struct EventDetailView: View {
                             Text(vm.formatTime(time: event.startDateTime))
                                 .font(.system(size: 16, weight: .medium))
                         }
+                        
+                        if !event.noEndTime {
+                            HStack(spacing: 6) {
+                                Image(systemName: "timer")
+                                    .font(.system(size: 14, weight: .medium))
+                                Text(durationText)
+                                    .font(.system(size: 16, weight: .medium))
+                            }
+                        }
                     }
                     .foregroundColor(.white.opacity(0.9))
                     .shadow(color: .black.opacity(0.5), radius: 1, x: 0, y: 1)
@@ -231,56 +250,7 @@ struct EventDetailView: View {
         }
     }
     
-    // MARK: - Event Details Card
-    
-    private var eventDetailsCard: some View {
-        VStack(spacing: 20) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("DATE & TIME")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.secondary)
-                    
-                    Text(vm.formatDate(date: event.startDateTime))
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.primary)
-                    
-                    HStack(spacing: 4) {
-                        Text(vm.formatTime(time: event.startDateTime))
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                        
-                        if !event.noEndTime {
-                            Text("- \(vm.formatTime(time: event.endDateTime))")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                
-                Spacer()
-                
-                VStack {
-                    Text(event.startDateTime.formatted(.dateTime.day()))
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(Color(.accent))
-                    
-                    Text(event.startDateTime.formatted(Date.FormatStyle().month(.abbreviated)).uppercased())
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(Color(.accent))
-                }
-                .padding(12)
-                .background(Color(.accent).opacity(0.1))
-                .cornerRadius(12)
-            }
-        }
-        .padding(24)
-        .background(Color(.systemBackground))
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
-    }
+
     
     // MARK: - Location Card
     
