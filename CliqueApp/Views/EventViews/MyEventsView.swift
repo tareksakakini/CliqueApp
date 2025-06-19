@@ -210,7 +210,7 @@ struct ModernEventPillView: View {
     let user: UserModel
     let inviteView: Bool
     
-    @State private var showSheet: Bool = false
+    @State private var showEventDetail: Bool = false
     @State private var eventImage: UIImage? = nil
     
     private var isEventPast: Bool {
@@ -219,7 +219,7 @@ struct ModernEventPillView: View {
     
     var body: some View {
         Button(action: {
-            showSheet = true
+            showEventDetail = true
         }) {
             VStack(alignment: .leading, spacing: 0) {
                 eventImageSection
@@ -230,15 +230,12 @@ struct ModernEventPillView: View {
             .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
         }
         .buttonStyle(PlainButtonStyle())
-        .sheet(isPresented: $showSheet) {
-            EventResponseView(
-                user: user,
+        .fullScreenCover(isPresented: $showEventDetail) {
+            EventDetailView(
                 event: event,
-                inviteView: inviteView,
-                isPresented: $showSheet,
-                eventImage: $eventImage
+                user: user,
+                inviteView: inviteView
             )
-            .presentationDetents([.fraction(0.5)])
         }
         .task {
             await loadEventImage(imageUrl: event.eventPic)
@@ -357,6 +354,8 @@ struct ModernEventPillView: View {
         let status: (text: String, color: Color, icon: String)? = {
             if inviteView && !isEventPast {
                 return ("Invited", .blue, "envelope.fill")
+            } else if isEventPast {
+                return ("Completed", .gray, "checkmark.circle.fill")
             }
             return nil
         }()
