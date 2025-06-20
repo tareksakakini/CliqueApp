@@ -257,6 +257,62 @@ struct CreateEventView: View {
                 
                 ModernLocationSearchField(eventLocation: $event.location)
             }
+            
+            // Description
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Description")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.primary)
+                    
+                    Spacer()
+                    
+                    Text("\(event.description.count)/300")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(event.description.count > 300 ? .red : .secondary)
+                }
+                
+                TextEditor(text: $event.description)
+                    .font(.system(size: 16))
+                    .scrollContentBackground(.hidden)
+                    .background(Color.clear)
+                    .frame(minHeight: 80, maxHeight: 120)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(event.description.count > 300 ? Color.red : Color(.systemGray4), lineWidth: 1)
+                            )
+                    )
+                    .overlay(
+                        Group {
+                            if event.description.isEmpty {
+                                HStack {
+                                    VStack {
+                                        HStack {
+                                            Text("Tell your friends more about this event...")
+                                                .font(.system(size: 16))
+                                                .foregroundColor(.secondary)
+                                                .padding(.leading, 16)
+                                                .padding(.top, 12)
+                                            Spacer()
+                                        }
+                                        Spacer()
+                                    }
+                                    Spacer()
+                                }
+                            }
+                        }
+                    )
+                    .onChange(of: event.description) { _, newValue in
+                        if newValue.count > 300 {
+                            event.description = String(newValue.prefix(300))
+                        }
+                    }
+            }
         }
     }
     

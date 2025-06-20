@@ -15,6 +15,7 @@ struct EventDetailView: View {
     let user: UserModel
     let inviteView: Bool
     
+    @State private var currentEvent: EventModel
     @State private var eventImage: UIImage? = nil
     @State private var showEditView = false
     @State private var scrollOffset: CGFloat = 0
@@ -24,28 +25,35 @@ struct EventDetailView: View {
     @State private var isAcceptingInvite = false
     @State private var isAcceptingDeclinedInvite = false
     
+    init(event: EventModel, user: UserModel, inviteView: Bool) {
+        self.event = event
+        self.user = user
+        self.inviteView = inviteView
+        self._currentEvent = State(initialValue: event)
+    }
+    
     private var isEventPast: Bool {
-        event.startDateTime < Date()
+        currentEvent.startDateTime < Date()
     }
     
     private var isHost: Bool {
-        event.host == user.email
+        currentEvent.host == user.email
     }
     
     private var isAttending: Bool {
-        event.attendeesAccepted.contains(user.email)
+        currentEvent.attendeesAccepted.contains(user.email)
     }
     
     private var isInvited: Bool {
-        event.attendeesInvited.contains(user.email)
+        currentEvent.attendeesInvited.contains(user.email)
     }
     
     private var hasDeclined: Bool {
-        event.attendeesDeclined.contains(user.email)
+        currentEvent.attendeesDeclined.contains(user.email)
     }
     
     private var durationText: String {
-        let duration = vm.calculateDuration(startDateTime: event.startDateTime, endDateTime: event.endDateTime)
+        let duration = vm.calculateDuration(startDateTime: currentEvent.startDateTime, endDateTime: currentEvent.endDateTime)
         if duration.hours > 0 && duration.minutes > 0 {
             return "\(duration.hours)h \(duration.minutes)m"
         } else if duration.hours > 0 {
@@ -66,6 +74,11 @@ struct EventDetailView: View {
                         customNavigationBar
                         heroImageSection
                         locationCard
+                        
+                        if !currentEvent.description.isEmpty {
+                            descriptionCard
+                        }
+                        
                         inviteesCard
                         hostCard
                         
@@ -79,18 +92,23 @@ struct EventDetailView: View {
                     }
                     .padding(.bottom, 40)
                 }
-                .ignoresSafeArea(.container, edges: .top)
+                .refreshable {
+                    await refreshEventData()
+                }
+                .clipped()
+                .ignoresSafeArea(.container, edges: .bottom)
             }
             .navigationBarHidden(true)
         }
         .task {
+            await refreshEventData()
             await loadEventImage()
         }
         .fullScreenCover(isPresented: $showEditView) {
             CreateEventView(
                 user: user,
                 selectedTab: .constant(0),
-                event: event,
+                event: currentEvent,
                 isNewEvent: false,
                 selectedImage: eventImage
             )
@@ -109,7 +127,7 @@ struct EventDetailView: View {
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(maxHeight: 250)
-                    } else if !event.eventPic.isEmpty {
+                    } else if !currentEvent.eventPic.isEmpty {
                         Rectangle()
                             .fill(Color(.systemGray4))
                             .frame(height: 200)
@@ -150,27 +168,27 @@ struct EventDetailView: View {
                 
                 // Event Title and Date
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(event.title)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
+                                    Text(currentEvent.title)
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
+                
+                HStack(spacing: 16) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "calendar")
+                            .font(.system(size: 14, weight: .medium))
+                        Text(vm.formatDate(date: currentEvent.startDateTime))
+                            .font(.system(size: 16, weight: .medium))
+                    }
                     
-                    HStack(spacing: 16) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "calendar")
-                                .font(.system(size: 14, weight: .medium))
-                            Text(vm.formatDate(date: event.startDateTime))
-                                .font(.system(size: 16, weight: .medium))
-                        }
-                        
-                        HStack(spacing: 6) {
-                            Image(systemName: "clock")
-                                .font(.system(size: 14, weight: .medium))
-                            Text(vm.formatTime(time: event.startDateTime))
-                                .font(.system(size: 16, weight: .medium))
-                        }
-                        
-                        if !event.noEndTime {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock")
+                            .font(.system(size: 14, weight: .medium))
+                        Text(vm.formatTime(time: currentEvent.startDateTime))
+                            .font(.system(size: 16, weight: .medium))
+                    }
+                    
+                    if !currentEvent.noEndTime {
                             HStack(spacing: 6) {
                                 Image(systemName: "timer")
                                     .font(.system(size: 14, weight: .medium))
@@ -227,7 +245,7 @@ struct EventDetailView: View {
             }
         }
         .padding(.horizontal, 44)
-        .padding(.top, 70)
+        .padding(.top, 20)
     }
     
     // MARK: - Status Badge
@@ -268,8 +286,8 @@ struct EventDetailView: View {
     // MARK: - Location Card
     
     private var locationCard: some View {
-        let locationParts = event.location.components(separatedBy: "||")
-        let locationTitle = locationParts.first ?? event.location
+                    let locationParts = currentEvent.location.components(separatedBy: "||")
+            let locationTitle = locationParts.first ?? currentEvent.location
         let locationAddress = locationParts.count > 1 ? locationParts[1] : ""
         
         return VStack(alignment: .leading, spacing: 16) {
@@ -306,6 +324,35 @@ struct EventDetailView: View {
         .padding(.top, 16)
     }
     
+    // MARK: - Description Card
+    
+    private var descriptionCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Image(systemName: "text.alignleft")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(Color(.accent))
+                
+                Text("DESCRIPTION")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundColor(.secondary)
+            }
+            
+            Text(currentEvent.description)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.primary)
+                .multilineTextAlignment(.leading)
+                .lineLimit(nil)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(24)
+        .background(Color(.systemBackground))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+    }
+    
     // MARK: - Host Card
     
     private var hostCard: some View {
@@ -320,7 +367,7 @@ struct EventDetailView: View {
                     .foregroundColor(.secondary)
             }
             
-            if let host = vm.getUser(username: event.host) {
+            if let host = vm.getUser(username: currentEvent.host) {
                 HStack(spacing: 12) {
                     ProfilePictureView(user: host, diameter: 50, isPhone: false)
                     
@@ -362,7 +409,7 @@ struct EventDetailView: View {
                 
                 Spacer()
                 
-                let totalInvitees = event.attendeesAccepted.count + event.attendeesInvited.count + event.attendeesDeclined.count + event.acceptedPhoneNumbers.count + event.invitedPhoneNumbers.count + event.declinedPhoneNumbers.count
+                let totalInvitees = currentEvent.attendeesAccepted.count + currentEvent.attendeesInvited.count + currentEvent.attendeesDeclined.count + currentEvent.acceptedPhoneNumbers.count + currentEvent.invitedPhoneNumbers.count + currentEvent.declinedPhoneNumbers.count
                 Text("\(totalInvitees)")
                     .font(.system(size: 16, weight: .bold))
                     .foregroundColor(Color(.accent))
@@ -373,54 +420,54 @@ struct EventDetailView: View {
             }
             
             // Coming Section
-            let comingCount = event.attendeesAccepted.count + event.acceptedPhoneNumbers.count
+            let comingCount = currentEvent.attendeesAccepted.count + currentEvent.acceptedPhoneNumbers.count
             if comingCount > 0 {
                 inviteeSectionHeader(title: "Coming", count: comingCount, color: .green)
                 
                 LazyVStack(spacing: 12) {
-                    ForEach(event.attendeesAccepted, id: \.self) { attendeeEmail in
+                    ForEach(currentEvent.attendeesAccepted, id: \.self) { attendeeEmail in
                         if let attendee = vm.getUser(username: attendeeEmail) {
                             attendeeRow(user: attendee, status: .coming)
                         }
                     }
                     
-                    ForEach(event.acceptedPhoneNumbers, id: \.self) { phoneNumber in
+                    ForEach(currentEvent.acceptedPhoneNumbers, id: \.self) { phoneNumber in
                         phoneAttendeeRow(phoneNumber: phoneNumber, status: .coming)
                     }
                 }
             }
             
             // Pending Section
-            let pendingCount = event.attendeesInvited.count + event.invitedPhoneNumbers.count
+            let pendingCount = currentEvent.attendeesInvited.count + currentEvent.invitedPhoneNumbers.count
             if pendingCount > 0 {
                 inviteeSectionHeader(title: "Pending", count: pendingCount, color: .orange)
                 
                 LazyVStack(spacing: 12) {
-                    ForEach(event.attendeesInvited, id: \.self) { attendeeEmail in
+                    ForEach(currentEvent.attendeesInvited, id: \.self) { attendeeEmail in
                         if let attendee = vm.getUser(username: attendeeEmail) {
                             attendeeRow(user: attendee, status: .pending)
                         }
                     }
                     
-                    ForEach(event.invitedPhoneNumbers, id: \.self) { phoneNumber in
+                    ForEach(currentEvent.invitedPhoneNumbers, id: \.self) { phoneNumber in
                         phoneAttendeeRow(phoneNumber: phoneNumber, status: .pending)
                     }
                 }
             }
             
             // Not Coming Section
-            let notComingCount = event.attendeesDeclined.count + event.declinedPhoneNumbers.count
+            let notComingCount = currentEvent.attendeesDeclined.count + currentEvent.declinedPhoneNumbers.count
             if notComingCount > 0 {
                 inviteeSectionHeader(title: "Not Coming", count: notComingCount, color: .red)
                 
                 LazyVStack(spacing: 12) {
-                    ForEach(event.attendeesDeclined, id: \.self) { attendeeEmail in
+                    ForEach(currentEvent.attendeesDeclined, id: \.self) { attendeeEmail in
                         if let attendee = vm.getUser(username: attendeeEmail) {
                             attendeeRow(user: attendee, status: .notComing)
                         }
                     }
                     
-                    ForEach(event.declinedPhoneNumbers, id: \.self) { phoneNumber in
+                    ForEach(currentEvent.declinedPhoneNumbers, id: \.self) { phoneNumber in
                         phoneAttendeeRow(phoneNumber: phoneNumber, status: .notComing)
                     }
                 }
@@ -734,11 +781,11 @@ struct EventDetailView: View {
     private func acceptDeclinedInvite() async {
         do {
             let databaseManager = DatabaseManager()
-            try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "acceptDeclined")
+            try await databaseManager.respondInvite(eventId: currentEvent.id, userId: user.email, action: "acceptDeclined")
             await vm.getAllEvents()
             
             // Send notification to host
-            if let host = vm.getUser(username: event.host), event.host != user.email {
+            if let host = vm.getUser(username: currentEvent.host), currentEvent.host != user.email {
                 let notificationText = "\(user.fullname) has accepted your event invitation!"
                 sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
             }
@@ -750,7 +797,7 @@ struct EventDetailView: View {
     private func deleteEvent() async {
         do {
             let databaseManager = DatabaseManager()
-            try await databaseManager.deleteEventFromFirestore(id: event.id)
+            try await databaseManager.deleteEventFromFirestore(id: currentEvent.id)
             await vm.getAllEvents()
             
             await MainActor.run {
@@ -761,9 +808,17 @@ struct EventDetailView: View {
         }
     }
     
+    private func refreshEventData() async {
+        if let refreshedEvent = await vm.refreshEventById(id: event.id) {
+            await MainActor.run {
+                currentEvent = refreshedEvent
+            }
+        }
+    }
+    
     private func loadEventImage() async {
-        guard !event.eventPic.isEmpty,
-              let url = URL(string: event.eventPic) else { return }
+        guard !currentEvent.eventPic.isEmpty,
+              let url = URL(string: currentEvent.eventPic) else { return }
         
         do {
             let (data, _) = try await URLSession.shared.data(from: url)

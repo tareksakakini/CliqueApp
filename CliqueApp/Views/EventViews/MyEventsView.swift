@@ -287,6 +287,7 @@ struct ModernEventPillView: View {
     
     @State private var showEventDetail: Bool = false
     @State private var eventImage: UIImage? = nil
+    @State private var refreshedEvent: EventModel?
     
     private var isEventPast: Bool {
         event.startDateTime < Date()
@@ -302,14 +303,30 @@ struct ModernEventPillView: View {
         .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
         .contentShape(RoundedRectangle(cornerRadius: 20))
         .onTapGesture {
-            showEventDetail = true
+            Task {
+                // Refresh the event data before showing details
+                if let fresh = await vm.refreshEventById(id: event.id) {
+                    refreshedEvent = fresh
+                } else {
+                    refreshedEvent = event
+                }
+                showEventDetail = true
+            }
         }
         .fullScreenCover(isPresented: $showEventDetail) {
-            EventDetailView(
-                event: event,
-                user: user,
-                inviteView: inviteView
-            )
+            if let eventToShow = refreshedEvent {
+                EventDetailView(
+                    event: eventToShow,
+                    user: user,
+                    inviteView: inviteView
+                )
+            } else {
+                EventDetailView(
+                    event: event,
+                    user: user,
+                    inviteView: inviteView
+                )
+            }
         }
         .task {
             await loadEventImage(imageUrl: event.eventPic)

@@ -12,6 +12,7 @@ struct EventModel: Hashable {
     var id: String = ""
     var title: String = ""
     var location: String = ""
+    var description: String = ""
     var startDateTime: Date = Date()
     var endDateTime: Date = Date()
     var noEndTime: Bool = false
@@ -29,6 +30,7 @@ struct EventModel: Hashable {
         event.id = eventData["id"] as? String ?? ""
         event.title = eventData["title"] as? String ?? "No Name"
         event.location = eventData["location"] as? String ?? "No Location"
+        event.description = eventData["description"] as? String ?? ""
         event.startDateTime = (eventData["startDateTime"] as? Timestamp)?.dateValue() ?? Date()
         event.endDateTime = (eventData["endDateTime"] as? Timestamp)?.dateValue() ?? Date()
         event.noEndTime = eventData["noEndTime"] as? Bool ?? false

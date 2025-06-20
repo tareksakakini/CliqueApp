@@ -81,6 +81,24 @@ class ViewModel: ObservableObject {
         }
     }
     
+    func refreshEventById(id: String) async -> EventModel? {
+        let firestoreService = DatabaseManager()
+        do {
+            let refreshedEvent = try await firestoreService.getEventById(id: id)
+            if let event = refreshedEvent {
+                // Update the event in the local cache
+                if let index = self.events.firstIndex(where: { $0.id == id }) {
+                    self.events[index] = event
+                }
+                print("Refreshed event with ID: \(id)")
+                return event
+            }
+        } catch {
+            print("Failed to refresh event: \(error.localizedDescription)")
+        }
+        return nil
+    }
+    
     func getAllUsers() async {
         let firestoreService = DatabaseManager()
         do {
@@ -294,9 +312,9 @@ class ViewModel: ObservableObject {
         do {
             let firestoreService = DatabaseManager()
             if isNewEvent {
-                try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, startDateTime: event.startDateTime, endDateTime: event.endDateTime, noEndTime: event.noEndTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, attendeesDeclined: [], host: user.email, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], declinedPhoneNumbers: [], selectedImage: selectedImage)
+                try await firestoreService.addEventToFirestore(id: eventID, title: event.title, location: event.location, description: event.description, startDateTime: event.startDateTime, endDateTime: event.endDateTime, noEndTime: event.noEndTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, attendeesDeclined: [], host: user.email, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], declinedPhoneNumbers: [], selectedImage: selectedImage)
             } else {
-                try await firestoreService.updateEventInFirestore(id: eventID, title: event.title, location: event.location, startDateTime: event.startDateTime, endDateTime: event.endDateTime, noEndTime: event.noEndTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, attendeesDeclined: [], host: user.email, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], declinedPhoneNumbers: [], selectedImage: selectedImage)
+                try await firestoreService.updateEventInFirestore(id: eventID, title: event.title, location: event.location, description: event.description, startDateTime: event.startDateTime, endDateTime: event.endDateTime, noEndTime: event.noEndTime, attendeesAccepted: [], attendeesInvited: event.attendeesInvited, attendeesDeclined: [], host: user.email, invitedPhoneNumbers: event.invitedPhoneNumbers, acceptedPhoneNumbers: [], declinedPhoneNumbers: [], selectedImage: selectedImage)
             }
             
             var newInvitees: [String] = []

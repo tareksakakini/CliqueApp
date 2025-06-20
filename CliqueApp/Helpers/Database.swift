@@ -45,13 +45,14 @@ class DatabaseManager {
         }
     }
     
-    func addEventToFirestore(id: String, title: String, location: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], attendeesDeclined: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], declinedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
+    func addEventToFirestore(id: String, title: String, location: String, description: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], attendeesDeclined: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], declinedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
         let eventRef = db.collection("events").document(id)
         
         let eventData: [String: Any] = [
             "id": id,
             "title": title,
             "location": location,
+            "description": description,
             "startDateTime": startDateTime,
             "endDateTime": endDateTime,
             "noEndTime": noEndTime,
@@ -78,12 +79,13 @@ class DatabaseManager {
         }
     }
     
-    func updateEventInFirestore(id: String, title: String, location: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], attendeesDeclined: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], declinedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
+    func updateEventInFirestore(id: String, title: String, location: String, description: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], attendeesDeclined: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], declinedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
         let eventRef = db.collection("events").document(id)
         
         let updatedEventData: [String: Any] = [
             "title": title,
             "location": location,
+            "description": description,
             "startDateTime": startDateTime,
             "endDateTime": endDateTime,
             "noEndTime": noEndTime,
@@ -138,6 +140,23 @@ class DatabaseManager {
             return events
         } catch {
             print("Error fetching events: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
+    @MainActor
+    func getEventById(id: String) async throws -> EventModel? {
+        let eventRef = db.collection("events").document(id)
+        
+        do {
+            let snapshot = try await eventRef.getDocument()
+            guard let data = snapshot.data() else {
+                print("Event with ID \(id) not found")
+                return nil
+            }
+            return EventModel().initFromFirestore(eventData: data)
+        } catch {
+            print("Error fetching event: \(error.localizedDescription)")
             throw error
         }
     }
