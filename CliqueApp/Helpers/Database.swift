@@ -574,6 +574,12 @@ class DatabaseManager {
             var eventUpdated = false
             var updatedEvent = event
             
+            // Get the actual Firestore document to check rsvps field
+            let eventRef = db.collection("events").document(event.id)
+            let eventDoc = try await eventRef.getDocument()
+            let eventData = eventDoc.data() ?? [:]
+            let rsvps = eventData["rsvps"] as? [String: Bool] ?? [:]
+            
             // Check invited phone numbers
             if let matchingPhone = event.invitedPhoneNumbers.first(where: { phoneNumbersMatch($0, phoneNumber) }) {
                 // Remove from phone invitations and add to regular invitations
@@ -596,8 +602,42 @@ class DatabaseManager {
                 print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (accepted)")
             }
             
-            // Check declined phone numbers (stored in rsvps)
-            // We'll need to check the rsvps field in the database directly
+            // Check declined phone numbers
+            if let matchingPhone = event.declinedPhoneNumbers.first(where: { phoneNumbersMatch($0, phoneNumber) }) {
+                // Remove from phone declines and add to regular declines
+                updatedEvent.declinedPhoneNumbers.removeAll { phoneNumbersMatch($0, phoneNumber) }
+                if !updatedEvent.attendeesDeclined.contains(user.email) {
+                    updatedEvent.attendeesDeclined.append(user.email)
+                }
+                eventUpdated = true
+                print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (declined)")
+            }
+            
+            // Check for phone numbers in rsvps field (legacy support and web app responses)
+            for (rsvpPhone, isAccepted) in rsvps {
+                if phoneNumbersMatch(rsvpPhone, phoneNumber) {
+                    if isAccepted {
+                        // This phone number has accepted the invitation via rsvps
+                        if !updatedEvent.attendeesAccepted.contains(user.email) {
+                            updatedEvent.attendeesAccepted.append(user.email)
+                        }
+                        print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (accepted via rsvps)")
+                    } else {
+                        // This phone number has declined the invitation via rsvps
+                        if !updatedEvent.attendeesDeclined.contains(user.email) {
+                            updatedEvent.attendeesDeclined.append(user.email)
+                        }
+                        print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (declined via rsvps)")
+                    }
+                    
+                    // Remove the rsvp entry since we're converting to user-based invitation
+                    var updatedRsvps = rsvps
+                    updatedRsvps.removeValue(forKey: rsvpPhone)
+                    try await eventRef.updateData(["rsvps": updatedRsvps])
+                    eventUpdated = true
+                    break
+                }
+            }
             
             if eventUpdated {
                 // Update the event in Firestore

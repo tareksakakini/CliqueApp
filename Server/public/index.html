@@ -565,20 +565,23 @@
       const matchingAccepted = acceptedPhones.find(phone => 
         phoneNumbersMatch(phone, enteredPhone)
       );
+      const matchingDeclined = (currentEventData.declinedPhoneNumbers || []).find(phone => 
+        phoneNumbersMatch(phone, enteredPhone)
+      );
       
       // Check if phone number exists in RSVPs (could be declined)
       const matchingRSVP = Object.keys(rsvps).find(phone => 
         phoneNumbersMatch(phone, enteredPhone)
       );
 
-      const matchingPhone = matchingInvited || matchingAccepted || matchingRSVP;
+      const matchingPhone = matchingInvited || matchingAccepted || matchingDeclined || matchingRSVP;
 
       if (matchingPhone) {
         matchedPhoneNumber = matchingPhone;
         
         // Check if they've already responded
-        if (matchingAccepted || matchingRSVP) {
-          const hasAccepted = matchingAccepted || rsvps[matchingPhone] === true;
+        if (matchingAccepted || matchingDeclined || matchingRSVP) {
+          const hasAccepted = matchingAccepted || (rsvps[matchingPhone] === true && !matchingDeclined);
           showExistingResponseStep(matchingPhone, hasAccepted);
         } else {
           // First time responding
@@ -711,6 +714,7 @@
       const eventData = eventSnap.data();
       const invited = eventData.invitedPhoneNumbers || [];
       const accepted = eventData.acceptedPhoneNumbers || [];
+      const declined = eventData.declinedPhoneNumbers || [];
 
       // Remove from invited list (if present)
       const updatedInvited = invited.filter(num => num !== matchedPhoneNumber);
@@ -726,10 +730,20 @@
           ? accepted
           : [...accepted, matchedPhoneNumber];
         updateData.acceptedPhoneNumbers = updatedAccepted;
+        
+        // Remove from declined list if previously declined
+        const updatedDeclined = declined.filter(num => num !== matchedPhoneNumber);
+        updateData.declinedPhoneNumbers = updatedDeclined;
       } else {
         // Remove from accepted list if declining (handles changing from accept to decline)
         const updatedAccepted = accepted.filter(num => num !== matchedPhoneNumber);
         updateData.acceptedPhoneNumbers = updatedAccepted;
+        
+        // Add to declined list if not already there
+        const updatedDeclined = declined.includes(matchedPhoneNumber)
+          ? declined
+          : [...declined, matchedPhoneNumber];
+        updateData.declinedPhoneNumbers = updatedDeclined;
       }
 
       try {
@@ -837,16 +851,30 @@
         }));
         const allInvited = [...invitedUsers, ...invitedPhoneUsers];
 
-        // Process declined attendees (from rsvps)
-        const rsvps = e.rsvps || {};
-        const declinedPhones = Object.keys(rsvps).filter(phone => rsvps[phone] === false);
+        // Process declined attendees (from both declinedPhoneNumbers and attendeesDeclined)
+        const declinedEmails = e.attendeesDeclined || [];
+        const declinedPhones = e.declinedPhoneNumbers || [];
+        const declinedUsers = await Promise.all(declinedEmails.map(email => getUserByEmail(email)));
         const declinedPhoneUsers = declinedPhones.map(phone => ({ 
           fullname: maskPhoneNumber(phone), 
           email: phone, 
           username: maskPhoneNumber(phone),
           isPhoneNumber: true
         }));
-        const allDeclined = [...declinedPhoneUsers];
+        
+        // Also check rsvps for backwards compatibility with legacy declined entries
+        const rsvps = e.rsvps || {};
+        const legacyDeclinedPhones = Object.keys(rsvps).filter(phone => 
+          rsvps[phone] === false && !declinedPhones.includes(phone)
+        );
+        const legacyDeclinedPhoneUsers = legacyDeclinedPhones.map(phone => ({ 
+          fullname: maskPhoneNumber(phone), 
+          email: phone, 
+          username: maskPhoneNumber(phone),
+          isPhoneNumber: true
+        }));
+        
+        const allDeclined = [...declinedUsers, ...declinedPhoneUsers, ...legacyDeclinedPhoneUsers];
 
         const totalInvitees = allAccepted.length + allInvited.length + allDeclined.length;
 
@@ -855,11 +883,12 @@
         const invitedHTML = allInvited.map(user => createAttendeeItem(user, false)).join('');
         const declinedHTML = allDeclined.map(user => createAttendeeItem(user, false)).join('');
 
-        // Check if there are any phone numbers (invited, accepted, or in rsvps)
+        // Check if there are any phone numbers (invited, accepted, declined, or in rsvps)
         const allInvitedPhones = e.invitedPhoneNumbers || [];
         const allAcceptedPhones = e.acceptedPhoneNumbers || [];
+        const allDeclinedPhones = e.declinedPhoneNumbers || [];
         const allRsvpPhones = Object.keys(e.rsvps || {});
-        const hasAnyPhoneNumbers = allInvitedPhones.length > 0 || allAcceptedPhones.length > 0 || allRsvpPhones.length > 0;
+        const hasAnyPhoneNumbers = allInvitedPhones.length > 0 || allAcceptedPhones.length > 0 || allDeclinedPhones.length > 0 || allRsvpPhones.length > 0;
 
         // Set hero background if event has image
         const heroStyle = e.eventPic ? 
