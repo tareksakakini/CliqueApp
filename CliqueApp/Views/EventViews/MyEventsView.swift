@@ -81,9 +81,7 @@ struct MyEventsView: View {
         HStack(spacing: 0) {
             ForEach(eventTypes, id: \.self) { eventType in
                 Button(action: {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        selectedEventType = eventType
-                    }
+                    selectedEventType = eventType
                 }) {
                     Text(eventType.rawValue)
                         .font(.system(size: 16, weight: .semibold))
