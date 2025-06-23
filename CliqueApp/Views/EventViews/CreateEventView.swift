@@ -31,6 +31,7 @@ struct CreateEventView: View {
     @State var showAddInviteeSheet: Bool = false
     @State var showAlert: Bool = false
     @State var alertMessage: String = ""
+    @State var showCreateWithAI: Bool = false
     
     @State var showMessageComposer = false
     @State var messageEventID: String = ""
@@ -64,6 +65,9 @@ struct CreateEventView: View {
             }
             .alert(alertMessage, isPresented: $showAlert) {
                 Button("Dismiss", role: .cancel) { }
+            }
+            .fullScreenCover(isPresented: $showCreateWithAI) {
+                AIEventCreationView()
             }
             .sheet(isPresented: $showMessageComposer) {
                 if MFMessageComposeViewController.canSendText() {
@@ -182,6 +186,37 @@ struct CreateEventView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
+            
+            // Create with AI Button (only for new events)
+            if isNewEvent {
+                Button {
+                    showCreateWithAI = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 16, weight: .semibold))
+                        Text("Create with AI")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.purple,
+                                Color.blue
+                            ]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(25)
+                    .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+            }
         }
         .padding(.top, 20)
         .padding(.bottom, 32)
