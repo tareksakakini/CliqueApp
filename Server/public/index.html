@@ -764,6 +764,18 @@
               Your response has been updated.
             </div>
           </div>
+          
+          <!-- App Download Promotion -->
+          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 20px; margin: 24px 0; color: white; text-align: center;">
+            <div style="font-size: 20px; margin-bottom: 8px;">📱</div>
+            <div style="font-weight: 600; font-size: 16px; margin-bottom: 8px;">
+              Want to see all your invitations?
+            </div>
+            <div style="font-size: 14px; line-height: 1.4; opacity: 0.9;">
+              Download the Yalla App to link your phone number and access all your past and future invitations in one place.
+            </div>
+          </div>
+          
           <div style="text-align: center; margin-top: 20px;">
             <button class="button" style="background: #667eea;" onclick="showPhoneInputStep()">
               Make Another Change
@@ -996,9 +1008,20 @@
                    ` : ''}
                 </div>
               </div>
+              ${hasAnyPhoneNumbers ? `
+                <!-- App Promotion Message -->
+                <div class="info-card">
+                  <div class="card-content">
+                    <div style="text-align: center; font-size: 14px; color: #64748b;">
+                      💡 <strong>Tip:</strong> Download the Yalla App to link your phone number and manage all your invitations in one place!
+                    </div>
+                  </div>
+                </div>
+              ` : ''}
             </div>
 
-                         ${hasAnyPhoneNumbers ? `
+                                     ${hasAnyPhoneNumbers ? `
+               
                <div class="rsvp-section">
                  <div id="rsvpContent">
                    <div class="rsvp-title">Enter Your Phone Number</div>
@@ -1012,11 +1035,16 @@
                </div>
              ` : ''}
 
-             <div class="app-download">
-               <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener">
-                 <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store">
-               </a>
-             </div>
+                         <div class="app-download" style="text-align: center; margin: 30px 0; padding: 20px;">
+              <div style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 16px;">
+                Get the Yalla App
+              </div>
+              <div style="display: flex; justify-content: center;">
+                <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener" style="transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                  <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height: 40px;">
+                </a>
+              </div>
+            </div>
            </div>
          `;
       } else {
