@@ -188,6 +188,10 @@
       border-radius: 50%;
     }
 
+    .phone-avatar {
+      background: #10b981 !important;
+    }
+
     .attendee-name {
       font-weight: 500;
       color: #374151;
@@ -262,16 +266,20 @@
     }
 
     .app-download {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      z-index: 1000;
+      text-align: center;
+      padding: 20px;
+      margin-top: 16px;
     }
 
     .app-download img {
-      height: 40px;
+      height: 50px;
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: transform 0.2s ease;
+    }
+
+    .app-download img:hover {
+      transform: translateY(-2px);
     }
 
     .section-divider {
@@ -350,15 +358,9 @@
     .icon-crown::before { content: "👑"; margin-right: 4px; }
     .icon-timer::before { content: "⏱️"; margin-right: 4px; }
   </style>
-</head>
-<body>
-  <div class="app-download">
-    <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener">
-      <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store">
-    </a>
-  </div>
-
-  <div id="output">
+  </head>
+  <body>
+    <div id="output">
     <div class="container">
       <div style="text-align: center; padding: 50px 20px;">
         <div style="font-size: 18px; color: #6b7280;">Loading event details...</div>
@@ -426,6 +428,24 @@
       return fallbackUser;
     }
 
+    function maskPhoneNumber(phoneNumber) {
+      // Remove any non-digit characters for processing
+      const digitsOnly = phoneNumber.replace(/\D/g, '');
+      
+      if (digitsOnly.length < 4) {
+        return phoneNumber; // Return as-is if too short
+      }
+      
+      // Get last 4 digits
+      const lastFour = digitsOnly.slice(-4);
+      
+      // Create masked version with asterisks
+      const maskedLength = Math.max(6, digitsOnly.length - 4); // At least 6 asterisks
+      const asterisks = '*'.repeat(maskedLength);
+      
+      return asterisks + lastFour;
+    }
+
     function formatTimestamp(timestamp) {
       const date = timestamp.toDate();
       return date.toLocaleDateString(undefined, {
@@ -445,8 +465,15 @@
     }
 
     function createAttendeeItem(user, isAccepted = true) {
-      const initials = user.fullname.split(' ').map(n => n[0]).join('').toUpperCase();
+      // For phone numbers, use "☎" as initials, for regular users use their name initials
+      const initials = user.isPhoneNumber 
+        ? "☎" 
+        : user.fullname.split(' ').map(n => n[0]).join('').toUpperCase();
+      
       const hasValidProfilePic = user.profilePic && user.profilePic !== 'userDefault' && user.profilePic.trim() !== '';
+      
+      // Set background color based on user type
+      const avatarClass = user.isPhoneNumber ? 'attendee-avatar phone-avatar' : 'attendee-avatar';
       
       const avatarContent = hasValidProfilePic 
         ? `<img src="${user.profilePic}" alt="${user.fullname}" onerror="this.style.display='none'; this.parentElement.innerHTML='${initials}';">`
@@ -454,18 +481,178 @@
       
       return `
         <li class="attendee-item">
-          <div class="attendee-avatar">${avatarContent}</div>
+          <div class="${avatarClass}">${avatarContent}</div>
           <span class="attendee-name">${user.fullname}</span>
         </li>
       `;
     }
 
-    window.updateRSVP = async function(isAccepted) {
-      const phoneSelect = document.getElementById('phoneSelect');
-      const userKey = phoneSelect.value.trim();
+    let currentEventData = null;
+    let matchedPhoneNumber = null;
 
-      if (!userKey) {
-        alert("Please select your phone number before responding.");
+    window.checkPhoneNumber = async function() {
+      const phoneInput = document.getElementById('phoneInput');
+      const enteredPhone = phoneInput.value.trim();
+
+      if (!enteredPhone) {
+        alert("Please enter your phone number.");
+        return;
+      }
+
+      if (!currentEventData) {
+        const eventRef = doc(db, "events", eventId);
+        const eventSnap = await getDoc(eventRef);
+        if (eventSnap.exists()) {
+          currentEventData = eventSnap.data();
+        } else {
+          alert("Event not found.");
+          return;
+        }
+      }
+
+      const invitedPhones = currentEventData.invitedPhoneNumbers || [];
+      const acceptedPhones = currentEventData.acceptedPhoneNumbers || [];
+      const rsvps = currentEventData.rsvps || {};
+
+      // Check if phone number exists in any of the lists
+      const matchingInvited = invitedPhones.find(phone => 
+        phone.replace(/\D/g, '') === enteredPhone.replace(/\D/g, '')
+      );
+      const matchingAccepted = acceptedPhones.find(phone => 
+        phone.replace(/\D/g, '') === enteredPhone.replace(/\D/g, '')
+      );
+      
+      // Check if phone number exists in RSVPs (could be declined)
+      const matchingRSVP = Object.keys(rsvps).find(phone => 
+        phone.replace(/\D/g, '') === enteredPhone.replace(/\D/g, '')
+      );
+
+      const matchingPhone = matchingInvited || matchingAccepted || matchingRSVP;
+
+      if (matchingPhone) {
+        matchedPhoneNumber = matchingPhone;
+        
+        // Check if they've already responded
+        if (matchingAccepted || matchingRSVP) {
+          const hasAccepted = matchingAccepted || rsvps[matchingPhone] === true;
+          showExistingResponseStep(matchingPhone, hasAccepted);
+        } else {
+          // First time responding
+          showConfirmationStep(matchingPhone);
+        }
+      } else {
+        showNoMatchStep();
+      }
+    };
+
+    window.showNoMatchStep = function() {
+      const rsvpContent = document.getElementById('rsvpContent');
+      rsvpContent.innerHTML = `
+        <div class="rsvp-title">Phone Number Not Found</div>
+        <div style="margin-bottom: 20px; color: #6b7280; line-height: 1.6;">
+          The phone number you entered was not found in the invitation list for this event.
+        </div>
+        <button class="button" style="background: #6b7280; width: 100%;" onclick="showPhoneInputStep()">
+          Back
+        </button>
+      `;
+    };
+
+    window.showExistingResponseStep = function(phoneNumber, hasAccepted) {
+      const rsvpContent = document.getElementById('rsvpContent');
+      const statusColor = hasAccepted ? '#10b981' : '#ef4444';
+      const statusIcon = hasAccepted ? '✅' : '❌';
+      const statusText = hasAccepted ? 'Accepted' : 'Declined';
+      
+      rsvpContent.innerHTML = `
+        <div class="rsvp-title">Your Current Response</div>
+        <div style="margin-bottom: 20px;">
+          <div style="background: #f9fafb; padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">Phone Number</div>
+            <div style="color: #6b7280; margin-bottom: 12px;">${phoneNumber}</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">${statusIcon}</span>
+              <span style="font-weight: 600; color: ${statusColor};">You ${statusText} this invitation</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 16px; color: #6b7280; text-align: center;">
+          Would you like to change your response?
+        </div>
+        <div class="button-group" style="margin-bottom: 16px;">
+          <button class="button" style="background: #6b7280;" onclick="showPhoneInputStep()">Back</button>
+          <button class="button" style="background: #667eea;" onclick="showChangeRSVPStep()">Change Response</button>
+        </div>
+      `;
+    };
+
+    window.showConfirmationStep = function(phoneNumber) {
+      const rsvpContent = document.getElementById('rsvpContent');
+      rsvpContent.innerHTML = `
+        <div class="rsvp-title">Confirm Your Details</div>
+        <div style="margin-bottom: 20px;">
+          <div style="background: #f9fafb; padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">Phone Number</div>
+            <div style="color: #6b7280;">${phoneNumber}</div>
+          </div>
+        </div>
+        <div class="button-group" style="margin-bottom: 16px;">
+          <button class="button" style="background: #6b7280;" onclick="showPhoneInputStep()">Cancel</button>
+          <button class="button" style="background: #667eea;" onclick="showRSVPStep()">Confirm</button>
+        </div>
+      `;
+    };
+
+    window.showChangeRSVPStep = function() {
+      const rsvpContent = document.getElementById('rsvpContent');
+      rsvpContent.innerHTML = `
+        <div class="rsvp-title">Change Your Response</div>
+        <div style="margin-bottom: 20px;">
+          <div style="background: #f9fafb; padding: 16px; border-radius: 12px;">
+            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">Responding as</div>
+            <div style="color: #6b7280;">${matchedPhoneNumber}</div>
+          </div>
+        </div>
+        <div class="button-group">
+          <button class="button accept-btn" onclick="updateRSVP(true)">Accept</button>
+          <button class="button reject-btn" onclick="updateRSVP(false)">Decline</button>
+        </div>
+      `;
+    };
+
+    window.showRSVPStep = function() {
+      const rsvpContent = document.getElementById('rsvpContent');
+      rsvpContent.innerHTML = `
+        <div class="rsvp-title">Respond to Invitation</div>
+        <div style="margin-bottom: 20px;">
+          <div style="background: #f9fafb; padding: 16px; border-radius: 12px;">
+            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">Responding as</div>
+            <div style="color: #6b7280;">${matchedPhoneNumber}</div>
+          </div>
+        </div>
+        <div class="button-group">
+          <button class="button accept-btn" onclick="updateRSVP(true)">Accept</button>
+          <button class="button reject-btn" onclick="updateRSVP(false)">Decline</button>
+        </div>
+      `;
+    };
+
+    window.showPhoneInputStep = function() {
+      const rsvpContent = document.getElementById('rsvpContent');
+      rsvpContent.innerHTML = `
+        <div class="rsvp-title">Enter Your Phone Number</div>
+        <input type="tel" id="phoneInput" placeholder="Enter your phone number" 
+               style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; color: #374151; margin-bottom: 16px; transition: border-color 0.2s ease;"
+               onfocus="this.style.borderColor='#667eea'" onblur="this.style.borderColor='#e5e7eb'">
+        <button class="button" style="background: #667eea; width: 100%;" onclick="checkPhoneNumber()">
+          Continue
+        </button>
+      `;
+    };
+
+    window.updateRSVP = async function(isAccepted) {
+      if (!matchedPhoneNumber) {
+        alert("No phone number selected.");
         return;
       }
 
@@ -481,23 +668,50 @@
       const invited = eventData.invitedPhoneNumbers || [];
       const accepted = eventData.acceptedPhoneNumbers || [];
 
-      const updatedInvited = invited.filter(num => num !== userKey);
+      // Remove from invited list (if present)
+      const updatedInvited = invited.filter(num => num !== matchedPhoneNumber);
+      
       let updateData = {
-        [`rsvps.${userKey}`]: isAccepted,
+        [`rsvps.${matchedPhoneNumber}`]: isAccepted,
         invitedPhoneNumbers: updatedInvited
       };
 
       if (isAccepted) {
-        const updatedAccepted = accepted.includes(userKey)
+        // Add to accepted list if not already there
+        const updatedAccepted = accepted.includes(matchedPhoneNumber)
           ? accepted
-          : [...accepted, userKey];
+          : [...accepted, matchedPhoneNumber];
+        updateData.acceptedPhoneNumbers = updatedAccepted;
+      } else {
+        // Remove from accepted list if declining (handles changing from accept to decline)
+        const updatedAccepted = accepted.filter(num => num !== matchedPhoneNumber);
         updateData.acceptedPhoneNumbers = updatedAccepted;
       }
 
       try {
         await updateDoc(eventRef, updateData);
-        alert(`You have ${isAccepted ? "accepted" : "rejected"} the invite as ${userKey}.`);
-        location.reload();
+        
+        // Update current event data for future checks
+        currentEventData = { ...eventData, ...updateData };
+        
+        const rsvpContent = document.getElementById('rsvpContent');
+        rsvpContent.innerHTML = `
+          <div class="rsvp-title">Response Updated</div>
+          <div style="text-align: center; margin: 20px 0;">
+            <div style="font-size: 48px; margin-bottom: 16px;">${isAccepted ? '✅' : '❌'}</div>
+            <div style="font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 8px;">
+              ${isAccepted ? 'Invitation Accepted' : 'Invitation Declined'}
+            </div>
+            <div style="color: #6b7280;">
+              Your response has been updated.
+            </div>
+          </div>
+          <div style="text-align: center; margin-top: 20px;">
+            <button class="button" style="background: #667eea;" onclick="showPhoneInputStep()">
+              Make Another Change
+            </button>
+          </div>
+        `;
       } catch (error) {
         console.error("Error updating RSVP:", error);
         alert("Error updating RSVP status.");
@@ -559,26 +773,49 @@
         const acceptedEmails = e.attendeesAccepted || [];
         const acceptedPhones = e.acceptedPhoneNumbers || [];
         const acceptedUsers = await Promise.all(acceptedEmails.map(email => getUserByEmail(email)));
-        const acceptedPhoneUsers = acceptedPhones.map(phone => ({ fullname: phone, email: phone, username: phone }));
+        const acceptedPhoneUsers = acceptedPhones.map(phone => ({ 
+          fullname: maskPhoneNumber(phone), 
+          email: phone, 
+          username: maskPhoneNumber(phone),
+          isPhoneNumber: true
+        }));
         const allAccepted = [...acceptedUsers, ...acceptedPhoneUsers];
 
         // Process invited attendees (both emails and phone numbers)
         const invitedEmails = e.attendeesInvited || [];
         const invitedPhones = e.invitedPhoneNumbers || [];
         const invitedUsers = await Promise.all(invitedEmails.map(email => getUserByEmail(email)));
-        const invitedPhoneUsers = invitedPhones.map(phone => ({ fullname: phone, email: phone, username: phone }));
+        const invitedPhoneUsers = invitedPhones.map(phone => ({ 
+          fullname: maskPhoneNumber(phone), 
+          email: phone, 
+          username: maskPhoneNumber(phone),
+          isPhoneNumber: true
+        }));
         const allInvited = [...invitedUsers, ...invitedPhoneUsers];
 
-        const totalInvitees = allAccepted.length + allInvited.length;
+        // Process declined attendees (from rsvps)
+        const rsvps = e.rsvps || {};
+        const declinedPhones = Object.keys(rsvps).filter(phone => rsvps[phone] === false);
+        const declinedPhoneUsers = declinedPhones.map(phone => ({ 
+          fullname: maskPhoneNumber(phone), 
+          email: phone, 
+          username: maskPhoneNumber(phone),
+          isPhoneNumber: true
+        }));
+        const allDeclined = [...declinedPhoneUsers];
+
+        const totalInvitees = allAccepted.length + allInvited.length + allDeclined.length;
 
         // Create attendee HTML
         const acceptedHTML = allAccepted.map(user => createAttendeeItem(user, true)).join('');
         const invitedHTML = allInvited.map(user => createAttendeeItem(user, false)).join('');
+        const declinedHTML = allDeclined.map(user => createAttendeeItem(user, false)).join('');
 
-        // Phone options for RSVP
-        const phoneOptions = (e.invitedPhoneNumbers || [])
-          .map(num => `<option value="${num}">${num}</option>`)
-          .join("");
+        // Check if there are any phone numbers (invited, accepted, or in rsvps)
+        const allInvitedPhones = e.invitedPhoneNumbers || [];
+        const allAcceptedPhones = e.acceptedPhoneNumbers || [];
+        const allRsvpPhones = Object.keys(e.rsvps || {});
+        const hasAnyPhoneNumbers = allInvitedPhones.length > 0 || allAcceptedPhones.length > 0 || allRsvpPhones.length > 0;
 
         // Set hero background if event has image
         const heroStyle = e.eventPic ? 
@@ -674,25 +911,41 @@
                        ${invitedHTML}
                      </ul>
                    ` : ''}
+                   
+                   ${allDeclined.length > 0 ? `
+                     <div class="section-divider">
+                       <div class="status-indicator" style="background: #ef4444;"></div>
+                       <span>Not Coming (${allDeclined.length})</span>
+                     </div>
+                     <ul class="attendee-list">
+                       ${declinedHTML}
+                     </ul>
+                   ` : ''}
                 </div>
               </div>
             </div>
 
-            ${phoneOptions ? `
-              <div class="rsvp-section">
-                <div class="rsvp-title">Respond to Invitation</div>
-                <select id="phoneSelect">
-                  <option value="">Select your phone number</option>
-                  ${phoneOptions}
-                </select>
-                <div class="button-group">
-                  <button class="button accept-btn" onclick="updateRSVP(true)">Accept</button>
-                  <button class="button reject-btn" onclick="updateRSVP(false)">Decline</button>
-                </div>
-              </div>
-            ` : ''}
-          </div>
-        `;
+                         ${hasAnyPhoneNumbers ? `
+               <div class="rsvp-section">
+                 <div id="rsvpContent">
+                   <div class="rsvp-title">Enter Your Phone Number</div>
+                   <input type="tel" id="phoneInput" placeholder="Enter your phone number" 
+                          style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; color: #374151; margin-bottom: 16px; transition: border-color 0.2s ease;"
+                          onfocus="this.style.borderColor='#667eea'" onblur="this.style.borderColor='#e5e7eb'">
+                   <button class="button" style="background: #667eea; width: 100%;" onclick="checkPhoneNumber()">
+                     Continue
+                   </button>
+                 </div>
+               </div>
+             ` : ''}
+
+             <div class="app-download">
+               <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener">
+                 <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store">
+               </a>
+             </div>
+           </div>
+         `;
       } else {
         output.innerHTML = `
           <div class="container">

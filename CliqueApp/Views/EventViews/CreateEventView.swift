@@ -464,24 +464,28 @@ struct CreateEventView: View {
     
     private var actionButtons: some View {
         HStack(spacing: 16) {
-            if !isNewEvent {
-        Button {
-            dismiss()
-        } label: {
-                    Text("Cancel")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(.systemGray5))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16)
-                                        .stroke(Color(.systemGray4), lineWidth: 1)
-                                )
-                        )
+            Button {
+                if isNewEvent {
+                    // When creating a new event from the tab, go back to My Events tab
+                    selectedTab = 0
+                } else {
+                    // When editing an existing event (modal), dismiss the modal
+                    dismiss()
                 }
+            } label: {
+                Text("Cancel")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemGray5))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
+                            )
+                    )
             }
             
             Button {
