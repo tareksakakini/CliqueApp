@@ -16,9 +16,12 @@ struct ChatMessage: Identifiable {
 
 struct AIEventCreationView: View {
     @Environment(\.dismiss) var dismiss
+    @StateObject private var openAIService = OpenAIService()
     @State private var messages: [ChatMessage] = []
     @State private var currentInput: String = ""
     @State private var isTyping: Bool = false
+    @State private var showErrorAlert: Bool = false
+    @State private var errorMessage: String = ""
     
     var body: some View {
         NavigationView {
@@ -88,6 +91,11 @@ struct AIEventCreationView: View {
         }
         .onAppear {
             addWelcomeMessage()
+        }
+        .alert("Error", isPresented: $showErrorAlert) {
+            Button("OK") { }
+        } message: {
+            Text(errorMessage)
         }
     }
     
@@ -194,17 +202,35 @@ struct AIEventCreationView: View {
         currentInput = ""
         isTyping = true
         
-        // Simulate AI response delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            isTyping = false
-            
-            // AI parrots back the message
-            let aiResponse = ChatMessage(
-                text: "You said: \"\(trimmedInput)\" - I heard you loud and clear! 🤖",
-                isFromUser: false,
-                timestamp: Date()
-            )
-            messages.append(aiResponse)
+        // Get AI response
+        Task {
+            do {
+                let aiResponseText = try await openAIService.sendMessage(trimmedInput)
+                
+                await MainActor.run {
+                    isTyping = false
+                    let aiResponse = ChatMessage(
+                        text: aiResponseText,
+                        isFromUser: false,
+                        timestamp: Date()
+                    )
+                    messages.append(aiResponse)
+                }
+            } catch {
+                await MainActor.run {
+                    isTyping = false
+                    errorMessage = error.localizedDescription
+                    showErrorAlert = true
+                    
+                    // Add fallback message
+                    let fallbackResponse = ChatMessage(
+                        text: "Sorry, I'm having trouble connecting right now. Please try again later! 🤖",
+                        isFromUser: false,
+                        timestamp: Date()
+                    )
+                    messages.append(fallbackResponse)
+                }
+            }
         }
     }
 }

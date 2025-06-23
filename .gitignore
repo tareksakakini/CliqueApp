@@ -61,3 +61,5 @@ CliqueApp/Views/CircularCropOverlay_Sample.swift
 CliqueApp/Views/ImageCropView_Sample.swift
 
 CliqueApp/Views/ProfileView_Sample.swift
+
+CliqueApp/Config/OpenAI-Info.plist
