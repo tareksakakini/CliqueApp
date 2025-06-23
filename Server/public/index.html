@@ -514,17 +514,61 @@
       const acceptedPhones = currentEventData.acceptedPhoneNumbers || [];
       const rsvps = currentEventData.rsvps || {};
 
-      // Check if phone number exists in any of the lists
+      // Enhanced phone number matching function
+      function normalizePhoneNumber(phone) {
+        if (!phone) return '';
+        
+        // Remove all non-digits
+        const digitsOnly = phone.replace(/\D/g, '');
+        
+        // Handle US numbers specifically (assuming most numbers are US-based)
+        // If it's 11 digits and starts with 1, remove the 1 (US country code)
+        if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+          return digitsOnly.substring(1);
+        }
+        
+        // If it's 10 digits, assume it's a US number without country code
+        if (digitsOnly.length === 10) {
+          return digitsOnly;
+        }
+        
+        // For other lengths, return as-is (could be international)
+        return digitsOnly;
+      }
+      
+      function phoneNumbersMatch(phone1, phone2) {
+        const norm1 = normalizePhoneNumber(phone1);
+        const norm2 = normalizePhoneNumber(phone2);
+        
+        // Direct match after normalization
+        if (norm1 === norm2) return true;
+        
+        // If one number is longer, check if the shorter one is a suffix of the longer one
+        // This handles cases like "2176210670" vs "+12176210670"
+        if (norm1.length !== norm2.length) {
+          const longer = norm1.length > norm2.length ? norm1 : norm2;
+          const shorter = norm1.length > norm2.length ? norm2 : norm1;
+          
+          // Check if the shorter number matches the end of the longer number
+          if (longer.endsWith(shorter) && shorter.length >= 10) {
+            return true;
+          }
+        }
+        
+        return false;
+      }
+
+      // Check if phone number exists in any of the lists using enhanced matching
       const matchingInvited = invitedPhones.find(phone => 
-        phone.replace(/\D/g, '') === enteredPhone.replace(/\D/g, '')
+        phoneNumbersMatch(phone, enteredPhone)
       );
       const matchingAccepted = acceptedPhones.find(phone => 
-        phone.replace(/\D/g, '') === enteredPhone.replace(/\D/g, '')
+        phoneNumbersMatch(phone, enteredPhone)
       );
       
       // Check if phone number exists in RSVPs (could be declined)
       const matchingRSVP = Object.keys(rsvps).find(phone => 
-        phone.replace(/\D/g, '') === enteredPhone.replace(/\D/g, '')
+        phoneNumbersMatch(phone, enteredPhone)
       );
 
       const matchingPhone = matchingInvited || matchingAccepted || matchingRSVP;
