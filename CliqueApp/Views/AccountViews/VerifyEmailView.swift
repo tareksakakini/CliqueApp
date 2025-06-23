@@ -100,7 +100,7 @@ struct VerifyEmailView: View {
         }
         .navigationBarBackButtonHidden(true)
         .navigationDestination(isPresented: $navigateToMainView) {
-            MainView(user: user)
+            PhoneNumberLinkView(user: user)
         }
         .navigationDestination(isPresented: $showStartingView) {
             StartingView()

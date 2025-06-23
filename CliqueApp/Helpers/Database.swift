@@ -8,7 +8,7 @@ import FirebaseStorage
 class DatabaseManager {
     private let db = Firestore.firestore()
     
-    func addUserToFirestore(uid: String, email: String, fullname: String, username: String, profilePic: String, gender: String) async throws {
+    func addUserToFirestore(uid: String, email: String, fullname: String, username: String, profilePic: String, gender: String, phoneNumber: String = "") async throws {
         let userRef = db.collection("users").document(uid)
         
         let userData: [String: Any] = [
@@ -18,7 +18,8 @@ class DatabaseManager {
             "fullname": fullname,
             "username": username,
             "profilePic": profilePic,
-            "gender": gender
+            "gender": gender,
+            "phoneNumber": phoneNumber
         ]
         
         do {
@@ -500,6 +501,129 @@ class DatabaseManager {
             print("Error updating username: \(error.localizedDescription)")
             throw error
         }
+    }
+    
+    func updateUserPhoneNumber(uid: String, phoneNumber: String) async throws {
+        let userRef = db.collection("users").document(uid)
+        
+        do {
+            try await userRef.updateData(["phoneNumber": phoneNumber])
+            print("Phone number updated successfully!")
+        } catch {
+            print("Error updating phone number: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
+    // Enhanced phone number matching function
+    private func normalizePhoneNumber(_ phone: String) -> String {
+        if phone.isEmpty { return "" }
+        
+        // Remove all non-digits
+        let digitsOnly = phone.replacingOccurrences(of: "[^0-9]", with: "", options: .regularExpression)
+        
+        // Handle US numbers specifically (assuming most numbers are US-based)
+        // If it's 11 digits and starts with 1, remove the 1 (US country code)
+        if digitsOnly.count == 11 && digitsOnly.hasPrefix("1") {
+            return String(digitsOnly.dropFirst())
+        }
+        
+        // If it's 10 digits, assume it's a US number without country code
+        if digitsOnly.count == 10 {
+            return digitsOnly
+        }
+        
+        // For other lengths, return as-is (could be international)
+        return digitsOnly
+    }
+    
+    private func phoneNumbersMatch(_ phone1: String, _ phone2: String) -> Bool {
+        let norm1 = normalizePhoneNumber(phone1)
+        let norm2 = normalizePhoneNumber(phone2)
+        
+        // Direct match after normalization
+        if norm1 == norm2 { return true }
+        
+        // If one number is longer, check if the shorter one is a suffix of the longer one
+        // This handles cases like "2176210670" vs "+12176210670"
+        if norm1.count != norm2.count {
+            let longer = norm1.count > norm2.count ? norm1 : norm2
+            let shorter = norm1.count > norm2.count ? norm2 : norm1
+            
+            // Check if the shorter number matches the end of the longer number
+            if longer.hasSuffix(shorter) && shorter.count >= 10 {
+                return true
+            }
+        }
+        
+        return false
+    }
+    
+    func linkPhoneNumberToUser(uid: String, phoneNumber: String) async throws -> [EventModel] {
+        // First, update the user's phone number
+        try await updateUserPhoneNumber(uid: uid, phoneNumber: phoneNumber)
+        
+        // Get user information to use for updating events
+        let user = try await getUserFromFirestore(uid: uid)
+        
+        // Find all events where this phone number is invited
+        let allEvents = try await getAllEvents()
+        var updatedEvents: [EventModel] = []
+        
+        for event in allEvents {
+            var eventUpdated = false
+            var updatedEvent = event
+            
+            // Check invited phone numbers
+            if let matchingPhone = event.invitedPhoneNumbers.first(where: { phoneNumbersMatch($0, phoneNumber) }) {
+                // Remove from phone invitations and add to regular invitations
+                updatedEvent.invitedPhoneNumbers.removeAll { phoneNumbersMatch($0, phoneNumber) }
+                if !updatedEvent.attendeesInvited.contains(user.email) {
+                    updatedEvent.attendeesInvited.append(user.email)
+                }
+                eventUpdated = true
+                print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (invited)")
+            }
+            
+            // Check accepted phone numbers
+            if let matchingPhone = event.acceptedPhoneNumbers.first(where: { phoneNumbersMatch($0, phoneNumber) }) {
+                // Remove from phone acceptances and add to regular acceptances
+                updatedEvent.acceptedPhoneNumbers.removeAll { phoneNumbersMatch($0, phoneNumber) }
+                if !updatedEvent.attendeesAccepted.contains(user.email) {
+                    updatedEvent.attendeesAccepted.append(user.email)
+                }
+                eventUpdated = true
+                print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (accepted)")
+            }
+            
+            // Check declined phone numbers (stored in rsvps)
+            // We'll need to check the rsvps field in the database directly
+            
+            if eventUpdated {
+                // Update the event in Firestore
+                try await updateEventInFirestore(
+                    id: updatedEvent.id,
+                    title: updatedEvent.title,
+                    location: updatedEvent.location,
+                    description: updatedEvent.description,
+                    startDateTime: updatedEvent.startDateTime,
+                    endDateTime: updatedEvent.endDateTime,
+                    noEndTime: updatedEvent.noEndTime,
+                    attendeesAccepted: updatedEvent.attendeesAccepted,
+                    attendeesInvited: updatedEvent.attendeesInvited,
+                    attendeesDeclined: updatedEvent.attendeesDeclined,
+                    host: updatedEvent.host,
+                    invitedPhoneNumbers: updatedEvent.invitedPhoneNumbers,
+                    acceptedPhoneNumbers: updatedEvent.acceptedPhoneNumbers,
+                    declinedPhoneNumbers: updatedEvent.declinedPhoneNumbers,
+                    selectedImage: nil
+                )
+                updatedEvents.append(updatedEvent)
+            }
+        }
+        
+        print("Successfully linked phone number \(phoneNumber) to user \(user.email). Updated \(updatedEvents.count) events.")
+        return updatedEvents
     }
     
     func removeUserProfilePic(uid: String) async throws {

@@ -45,6 +45,7 @@ struct MySettingsView: View {
     @State private var showPhotosPicker = false
     @State private var tempSelectedImage: UIImage? = nil
     @State private var showImageCrop = false
+    @State private var showPhoneLinkSheet = false
     
     var body: some View {
         mainContent
@@ -411,6 +412,45 @@ struct MySettingsView: View {
                     .fill(Color.black.opacity(0.05))
                     .frame(height: 1)
                 
+                // Phone Number row
+                HStack(spacing: 16) {
+                    Circle()
+                        .fill(Color.black.opacity(0.05))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Image(systemName: "phone")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.black.opacity(0.7))
+                        )
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Phone Number")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.black.opacity(0.5))
+                            .textCase(.uppercase)
+                            .tracking(0.5)
+                        Text(user.phoneNumber.isEmpty ? "Link your phone number" : user.phoneNumber)
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(user.phoneNumber.isEmpty ? .blue : .primary)
+                    }
+                    Spacer()
+                    
+                    if user.phoneNumber.isEmpty {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.black.opacity(0.3))
+                    }
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if user.phoneNumber.isEmpty {
+                        showPhoneLinkSheet = true
+                    }
+                }
+                
+                Rectangle()
+                    .fill(Color.black.opacity(0.05))
+                    .frame(height: 1)
+                
                 // Gender row
                 HStack(spacing: 16) {
                     Circle()
@@ -765,6 +805,9 @@ struct MySettingsView: View {
                 }
             }
         }
+        .sheet(isPresented: $showPhoneLinkSheet) {
+            PhoneLinkingSheet(user: $user, isPresented: $showPhoneLinkSheet)
+        }
         .onChange(of: imageSelection) { oldValue, newValue in
             Task {
                 if let photoItem = newValue {
@@ -1088,6 +1131,191 @@ struct ChangePasswordView: View {
         .animation(.easeInOut(duration: 0.2), value: isChangingPassword)
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Password Change"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+    }
+}
+
+struct PhoneLinkingSheet: View {
+    @EnvironmentObject private var vm: ViewModel
+    @Binding var user: UserModel
+    @Binding var isPresented: Bool
+    @State private var phoneNumber: String = ""
+    @State private var isLinking: Bool = false
+    @State private var showResult: Bool = false
+    @State private var linkingResult: (success: Bool, linkedEventsCount: Int, errorMessage: String?) = (false, 0, nil)
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 16) {
+                    Image(systemName: "phone.connection")
+                        .font(.system(size: 60, weight: .light))
+                        .foregroundColor(Color(.accent))
+                        .padding(.top, 20)
+                    
+                    Text("Link Phone Number")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(.primary)
+                    
+                    Text("Connect your phone number to see invitations that were sent to you")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                }
+                
+                Spacer()
+                
+                // Content
+                VStack(spacing: 24) {
+                    if !showResult {
+                        phoneInputSection
+                    } else {
+                        resultSection
+                    }
+                }
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color(.systemGray6))
+                )
+                .padding(.horizontal, 20)
+                
+                Spacer()
+            }
+            .background(Color(.systemBackground))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        isPresented = false
+                    }
+                }
+            }
+        }
+    }
+    
+    private var phoneInputSection: some View {
+        VStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Phone Number")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                HStack {
+                    Image(systemName: "phone.fill")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(.secondary)
+                        .frame(width: 20)
+                    
+                    TextField("Enter your phone number", text: $phoneNumber)
+                        .font(.system(size: 16, weight: .medium))
+                        .keyboardType(.phonePad)
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color(.systemGray4), lineWidth: 1)
+                        )
+                )
+            }
+            
+            Text("We'll search for event invitations sent to this number and link them to your account.")
+                .font(.system(size: 12, weight: .regular))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+            
+            Button {
+                linkPhoneNumber()
+            } label: {
+                HStack {
+                    if isLinking {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .foregroundColor(.white)
+                    } else {
+                        Image(systemName: "link")
+                            .font(.system(size: 18, weight: .semibold))
+                    }
+                    
+                    Text(isLinking ? "Linking..." : "Link Phone Number")
+                        .font(.system(size: 18, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Color(.accent))
+                .cornerRadius(12)
+            }
+            .disabled(isLinking || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .opacity((isLinking || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
+        }
+    }
+    
+    private var resultSection: some View {
+        VStack(spacing: 20) {
+            Image(systemName: linkingResult.success ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                .font(.system(size: 48, weight: .medium))
+                .foregroundColor(linkingResult.success ? .green : .orange)
+            
+            VStack(spacing: 8) {
+                Text(linkingResult.success ? "Success!" : "Notice")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.primary)
+                
+                Text(resultMessage)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            
+            Button {
+                isPresented = false
+            } label: {
+                Text("Done")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color(.accent))
+                    .cornerRadius(12)
+            }
+        }
+    }
+    
+    private var resultMessage: String {
+        if linkingResult.success {
+            if linkingResult.linkedEventsCount > 0 {
+                return "We found \(linkingResult.linkedEventsCount) event invitation(s) for your phone number. You'll see them in your events now!"
+            } else {
+                return "Phone number saved! We didn't find any existing invitations, but you're all set for future ones."
+            }
+        } else {
+            return linkingResult.errorMessage ?? "An error occurred while linking your phone number."
+        }
+    }
+    
+    private func linkPhoneNumber() {
+        guard !phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        
+        isLinking = true
+        Task {
+            let result = await vm.linkPhoneNumberToUser(phoneNumber: phoneNumber)
+            DispatchQueue.main.async {
+                self.linkingResult = result
+                self.isLinking = false
+                self.showResult = true
+                if result.success {
+                    self.user.phoneNumber = phoneNumber
+                }
+            }
         }
     }
 }

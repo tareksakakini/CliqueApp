@@ -180,11 +180,11 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func signUpUserAndAddToFireStore(email: String, password: String, fullname: String, username: String, profilePic: String, gender: String) async -> UserModel? {
+    func signUpUserAndAddToFireStore(email: String, password: String, fullname: String, username: String, profilePic: String, gender: String, phoneNumber: String = "") async -> UserModel? {
         do {
             let signup_user = try await AuthManager.shared.signUp(email: email, password: password)
             let firestoreService = DatabaseManager()
-            try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: email, fullname: fullname, username: username, profilePic: "userDefault", gender: gender)
+            try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: email, fullname: fullname, username: username, profilePic: "userDefault", gender: gender, phoneNumber: phoneNumber)
             let user = try await firestoreService.getUserFromFirestore(uid: signup_user.uid)
             
             // Set up OneSignal for the new user
@@ -356,6 +356,30 @@ class ViewModel: ObservableObject {
             }
         } catch {
             print("Error loading image: \(error)")
+        }
+    }
+    
+    func linkPhoneNumberToUser(phoneNumber: String) async -> (success: Bool, linkedEventsCount: Int, errorMessage: String?) {
+        guard let user = signedInUser else {
+            return (false, 0, "No user is currently signed in")
+        }
+        
+        do {
+            let firestoreService = DatabaseManager()
+            let linkedEvents = try await firestoreService.linkPhoneNumberToUser(uid: user.uid, phoneNumber: phoneNumber)
+            
+            // Update the local user object
+            DispatchQueue.main.async {
+                self.signedInUser?.phoneNumber = phoneNumber
+            }
+            
+            // Refresh events to show updated information
+            await getAllEvents()
+            
+            return (true, linkedEvents.count, nil)
+        } catch {
+            print("Error linking phone number: \(error.localizedDescription)")
+            return (false, 0, "Failed to link phone number. Please try again.")
         }
     }
 

@@ -19,6 +19,7 @@ struct UserModel: Hashable, Identifiable {
     var subscriptionId: String = ""
     var gender: String = ""
     var isEmailVerified: Bool = false
+    var phoneNumber: String = ""
     
     func initFromFirestore(userData: [String: Any]) -> UserModel {
         var user = UserModel()
@@ -31,6 +32,7 @@ struct UserModel: Hashable, Identifiable {
         user.subscriptionId = userData["subscriptionId"] as? String ?? ""
         user.gender = userData["gender"] as? String ?? ""
         user.isEmailVerified = userData["isEmailVerified"] as? Bool ?? false
+        user.phoneNumber = userData["phoneNumber"] as? String ?? ""
         return user
     }
 }
