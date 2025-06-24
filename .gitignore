@@ -63,3 +63,8 @@ CliqueApp/Views/ImageCropView_Sample.swift
 CliqueApp/Views/ProfileView_Sample.swift
 
 CliqueApp/Config/OpenAI-Info.plist
+
+# Unsplash API key (local only)
+Unsplash-Info.plist
+
+CliqueApp/Services/Unsplash-Info.sample.plist

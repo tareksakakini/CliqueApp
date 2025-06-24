@@ -21,6 +21,7 @@ struct EventSuggestion: Identifiable {
     let description: String
     let startTime: Date
     let endTime: Date
+    let imageURL: String?
 }
 
 struct AIEventCreationView: View {
@@ -330,6 +331,11 @@ struct AIEventCreationView: View {
                 let endTime = trimmedLine.replacingOccurrences(of: "🕕 **End Time:**", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
                 currentEvent["endTime"] = endTime
             }
+            // Check for Unsplash search query
+            else if trimmedLine.contains("🔎") && trimmedLine.contains("Unsplash Search:") {
+                let searchQuery = trimmedLine.replacingOccurrences(of: "🔎 **Unsplash Search:**", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                currentEvent["imageURL"] = searchQuery
+            }
         }
         
         // Don't forget the last event
@@ -442,7 +448,8 @@ struct AIEventCreationView: View {
             address: address,
             description: description,
             startTime: startTime!,
-            endTime: endTime!
+            endTime: endTime!,
+            imageURL: eventData["imageURL"]
         )
         
         print("📅 Final suggestion times:")

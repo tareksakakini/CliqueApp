@@ -20,14 +20,16 @@ struct CreateEventView: View {
     let isNewEvent: Bool
     @State var selectedImage: UIImage? = nil
     let hideSuggestionsHeader: Bool
+    let unsplashImageURL: String?
     
-    init(user: UserModel, selectedTab: Binding<Int>, event: EventModel, isNewEvent: Bool, selectedImage: UIImage? = nil, hideSuggestionsHeader: Bool = false) {
+    init(user: UserModel, selectedTab: Binding<Int>, event: EventModel, isNewEvent: Bool, selectedImage: UIImage? = nil, hideSuggestionsHeader: Bool = false, unsplashImageURL: String? = nil) {
         self._user = State(initialValue: user)
         self._selectedTab = selectedTab
         self._event = State(initialValue: event)
         self.isNewEvent = isNewEvent
         self._selectedImage = State(initialValue: selectedImage)
         self.hideSuggestionsHeader = hideSuggestionsHeader
+        self.unsplashImageURL = unsplashImageURL
     }
     
     @State var oldEvent: EventModel = EventModel()
@@ -269,8 +271,35 @@ struct CreateEventView: View {
                 .foregroundColor(.primary)
             
             ZStack {
-                if selectedImage != nil {
+                if let selectedImage = selectedImage {
                     ImageSelectionField(whichView: "SelectedEventImage", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
+                } else if let urlString = unsplashImageURL, let url = URL(string: urlString) {
+                    AsyncImage(url: url) { phase in
+                        switch phase {
+                        case .empty:
+                            ProgressView()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .frame(height: 200)
+                                .clipped()
+                        case .failure:
+                            ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
+                        @unknown default:
+                            EmptyView()
+                        }
+                    }
+                    .frame(height: 200)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(Color(.systemGray6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color(.systemGray4), lineWidth: 1)
+                            )
+                    )
                 } else {
                     ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
                 }
@@ -627,7 +656,7 @@ struct CreateEventView: View {
 }
 
 #Preview {
-    CreateEventView(user: UserData.userData[0], selectedTab: .constant(2), event: EventModel(), isNewEvent: false)
+    CreateEventView(user: UserData.userData[0], selectedTab: .constant(2), event: EventModel(), isNewEvent: false, unsplashImageURL: nil)
         .environmentObject(ViewModel())
 }
 

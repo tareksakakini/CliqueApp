@@ -18,6 +18,7 @@ struct AISuggestionsView: View {
     @State private var currentSuggestionIndex: Int = 0
     @State private var event: EventModel = EventModel()
     @State private var selectedImage: UIImage? = nil
+    @State private var currentImageURL: String? = nil
     
     private var currentSuggestion: EventSuggestion {
         suggestions[currentSuggestionIndex]
@@ -36,8 +37,9 @@ struct AISuggestionsView: View {
                         selectedTab: $selectedTab,
                         event: createEventFromCurrentSuggestion(),
                         isNewEvent: true,
-                        selectedImage: selectedImage,
-                        hideSuggestionsHeader: true
+                        selectedImage: nil,
+                        hideSuggestionsHeader: true,
+                        unsplashImageURL: currentImageURL
                     )
                     .id(currentSuggestionIndex)
                 }
@@ -148,6 +150,17 @@ struct AISuggestionsView: View {
         print("Loading suggestion \(currentSuggestionIndex + 1): \(suggestion.title)")
         
         event = createEventFromCurrentSuggestion()
+        // Fetch Unsplash image if search query is available
+        if let searchQuery = suggestion.imageURL, !searchQuery.isEmpty {
+            Task {
+                let url = await UnsplashService.shared.fetchImageURL(for: searchQuery)
+                await MainActor.run {
+                    currentImageURL = url
+                }
+            }
+        } else {
+            currentImageURL = nil
+        }
     }
     
     private func createEventFromCurrentSuggestion() -> EventModel {
@@ -193,7 +206,8 @@ struct AISuggestionsView: View {
                 address: "123 Beach St, Santa Monica, CA",
                 description: "Fun beach volleyball game",
                 startTime: Date(),
-                endTime: Calendar.current.date(byAdding: .hour, value: 2, to: Date()) ?? Date()
+                endTime: Calendar.current.date(byAdding: .hour, value: 2, to: Date()) ?? Date(),
+                imageURL: nil
             )
         ]
     )

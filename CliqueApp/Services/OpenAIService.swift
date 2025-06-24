@@ -52,6 +52,7 @@ class OpenAIService: ObservableObject {
         📝 **Description:** [Brief description of the event/activity]
         🕐 **Start Time:** [Day, Month Date, Year at Hour:Minute AM/PM - e.g., "Saturday, March 15, 2025 at 2:00 PM"]
         🕕 **End Time:** [Day, Month Date, Year at Hour:Minute AM/PM - e.g., "Saturday, March 15, 2025 at 4:00 PM"]
+        🔎 **Unsplash Search:** [search terms for a photo that matches this event]
 
         **IMPORTANT:** 
         - Ask only ONE question per response during the information gathering phase
