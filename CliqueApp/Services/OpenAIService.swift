@@ -48,11 +48,17 @@ class OpenAIService: ObservableObject {
         For each suggestion, provide these exact details in this format:
 
         **[Event Title]**
-        📍 **Address:** [Specific street address]
+        📍 **Location:** [Venue/Business Name] - [Specific street address]
         📝 **Description:** [Brief description of the event/activity]
         🕐 **Start Time:** [Day, Month Date, Year at Hour:Minute AM/PM - e.g., "Saturday, March 15, 2025 at 2:00 PM"]
         🕕 **End Time:** [Day, Month Date, Year at Hour:Minute AM/PM - e.g., "Saturday, March 15, 2025 at 4:00 PM"]
         🔎 **Unsplash Search:** [search terms for a photo that matches this event]
+
+        **LOCATION FORMAT EXAMPLES:**
+        📍 **Location:** Starbucks Coffee - 123 Main St, Los Angeles, CA 90210
+        📍 **Location:** Central Park - 59th to 110th Street, Manhattan, NY 10022
+        📍 **Location:** The Roosevelt Hotel - 45 E 45th St, New York, NY 10017
+        📍 **Location:** Santa Monica Beach - 200 Santa Monica Pier, Santa Monica, CA 90401
 
         **IMPORTANT:** 
         - Ask only ONE question per response during the information gathering phase

@@ -311,10 +311,21 @@ struct AIEventCreationView: View {
                 let title = String(trimmedLine.dropFirst(2).dropLast(2))
                 currentEvent["title"] = title
             }
-            // Check for address
-            else if trimmedLine.contains("📍") && trimmedLine.contains("Address:") {
-                let address = trimmedLine.replacingOccurrences(of: "📍 **Address:**", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
-                currentEvent["address"] = address
+            // Check for location (venue name - address)
+            else if trimmedLine.contains("📍") && trimmedLine.contains("Location:") {
+                let location = trimmedLine.replacingOccurrences(of: "📍 **Location:**", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                
+                // Split location into venue name and address
+                if location.contains(" - ") {
+                    let parts = location.components(separatedBy: " - ")
+                    let venueName = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                    let address = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                    // Store in the format expected by the app: "Title||Address"
+                    currentEvent["address"] = "\(venueName)||\(address)"
+                } else {
+                    // Fallback if format doesn't match expected pattern
+                    currentEvent["address"] = location
+                }
             }
             // Check for description
             else if trimmedLine.contains("📝") && trimmedLine.contains("Description:") {
