@@ -33,6 +33,7 @@ struct AIEventCreationView: View {
     @State private var errorMessage: String = ""
     @State private var showSuggestions: Bool = false
     @State private var parsedSuggestions: [EventSuggestion] = []
+    @State private var messagesWithSuggestions: Set<UUID> = []
     
     let user: UserModel
     @Binding var selectedTab: Int
@@ -51,9 +52,13 @@ struct AIEventCreationView: View {
                             }
                             
                             ForEach(messages) { message in
-                                ChatBubbleView(message: message) {
-                                    showSuggestions = true
-                                }
+                                ChatBubbleView(
+                                    message: message,
+                                    onSuggestionsPressed: {
+                                        showSuggestions = true
+                                    },
+                                    messagesWithSuggestions: messagesWithSuggestions
+                                )
                                 .id(message.id)
                             }
                             
@@ -234,12 +239,6 @@ struct AIEventCreationView: View {
                 
                 await MainActor.run {
                     isTyping = false
-                    let aiResponse = ChatMessage(
-                        text: aiResponseText,
-                        isFromUser: false,
-                        timestamp: Date()
-                    )
-                    messages.append(aiResponse)
                     
                     // Check if the response contains suggestions
                     if aiResponseText.contains("📍") && aiResponseText.contains("🕐") {
@@ -248,6 +247,25 @@ struct AIEventCreationView: View {
                         for (index, suggestion) in parsedSuggestions.enumerated() {
                             print("  \(index + 1). \(suggestion.title) at \(suggestion.address)")
                         }
+                        
+                        // Replace the detailed response with a clean summary
+                        let cleanResponseText = "Perfect! I've created \(parsedSuggestions.count) personalized event suggestions based on your preferences. Each suggestion includes all the details you need - location, timing, and activities tailored just for you! 🎉"
+                        
+                        let aiResponse = ChatMessage(
+                            text: cleanResponseText,
+                            isFromUser: false,
+                            timestamp: Date()
+                        )
+                        messages.append(aiResponse)
+                        messagesWithSuggestions.insert(aiResponse.id)
+                    } else {
+                        // Normal response without suggestions
+                        let aiResponse = ChatMessage(
+                            text: aiResponseText,
+                            isFromUser: false,
+                            timestamp: Date()
+                        )
+                        messages.append(aiResponse)
                     }
                 }
             } catch {
@@ -369,10 +387,12 @@ struct AIEventCreationView: View {
 struct ChatBubbleView: View {
     let message: ChatMessage
     let onSuggestionsPressed: (() -> Void)?
+    let messagesWithSuggestions: Set<UUID>
     
-    init(message: ChatMessage, onSuggestionsPressed: (() -> Void)? = nil) {
+    init(message: ChatMessage, onSuggestionsPressed: (() -> Void)? = nil, messagesWithSuggestions: Set<UUID> = []) {
         self.message = message
         self.onSuggestionsPressed = onSuggestionsPressed
+        self.messagesWithSuggestions = messagesWithSuggestions
     }
     
     var body: some View {
@@ -384,8 +404,8 @@ struct ChatBubbleView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     aiBubble
                     
-                    // Show suggestions button if message contains structured data
-                    if !message.isFromUser && (message.text.contains("📍") && message.text.contains("🕐")) {
+                    // Show suggestions button if this message has suggestions
+                    if !message.isFromUser && messagesWithSuggestions.contains(message.id) {
                         suggestionsButton
                     }
                 }
