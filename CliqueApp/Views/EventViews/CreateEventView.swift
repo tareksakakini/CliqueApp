@@ -282,17 +282,16 @@ struct CreateEventView: View {
                         case .success(let image):
                             image
                                 .resizable()
-                                .aspectRatio(16/10, contentMode: .fill)
-                                .frame(height: 200)
-                                .clipped()
-                                .cornerRadius(16)
+                                .scaledToFill()
+                                .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                                .cornerRadius(10)
+                                .padding()
                         case .failure:
                             ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
                         @unknown default:
                             EmptyView()
                         }
                     }
-                    .frame(height: 200)
                 } else {
                     ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
                 }
