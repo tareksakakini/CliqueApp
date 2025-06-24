@@ -282,9 +282,10 @@ struct CreateEventView: View {
                         case .success(let image):
                             image
                                 .resizable()
-                                .scaledToFill()
+                                .aspectRatio(16/10, contentMode: .fill)
                                 .frame(height: 200)
                                 .clipped()
+                                .cornerRadius(16)
                         case .failure:
                             ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
                         @unknown default:
@@ -292,14 +293,6 @@ struct CreateEventView: View {
                         }
                     }
                     .frame(height: 200)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemGray6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color(.systemGray4), lineWidth: 1)
-                            )
-                    )
                 } else {
                     ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
                 }
