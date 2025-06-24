@@ -274,22 +274,24 @@ struct CreateEventView: View {
                 if let selectedImage = selectedImage {
                     ImageSelectionField(whichView: "SelectedEventImage", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
                 } else if let urlString = unsplashImageURL, let url = URL(string: urlString) {
-                    AsyncImage(url: url) { phase in
-                        switch phase {
-                        case .empty:
-                            ProgressView()
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        case .success(let image):
-                            image
-                                .resizable()
-                                .scaledToFill()
-                                .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
-                                .cornerRadius(10)
-                                .padding()
-                        case .failure:
-                            ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
-                        @unknown default:
-                            EmptyView()
+                    PhotosPicker(selection: $imageSelection, matching: .images) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                                    .cornerRadius(10)
+                                    .padding()
+                            case .failure:
+                                ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
+                            @unknown default:
+                                EmptyView()
+                            }
                         }
                     }
                 } else {
