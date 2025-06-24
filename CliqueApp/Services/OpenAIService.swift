@@ -10,6 +10,7 @@ import Foundation
 class OpenAIService: ObservableObject {
     private let apiKey: String
     private let baseURL = "https://api.openai.com/v1/chat/completions"
+    private var conversationHistory: [[String: String]] = []
     
     init() {
         // Load API key from plist file
@@ -22,6 +23,14 @@ class OpenAIService: ObservableObject {
             self.apiKey = "YOUR_OPENAI_API_KEY_HERE"
             print("Warning: OpenAI API key not found in plist file")
         }
+        
+        // Initialize conversation with system prompt
+        conversationHistory = [
+            [
+                "role": "system",
+                "content": "You are a helpful AI assistant that specializes in helping users plan events. You are integrated into a mobile app called CliqueApp where users can create events and invite friends. Your goal is to understand their event preferences by gathering this key information:\n\n1. **Event Style**: Indoor vs Outdoor, and Chill vs Active\n2. **Date Range**: What timeframe are they considering?\n3. **Time of Day**: What parts of the day work best?\n4. **Geographic Area**: What general area do they want the event to be in?\n\n**PROCESS:**\n- Ask about ONE preference category at a time, not multiple questions together\n- Start with Event Style first (indoor/outdoor + chill/active), as this shapes everything else\n- Only move to the next question after they've answered the current one\n- Keep each question simple and conversational\n- Once you have gathered information about at least 3 of the 4 categories above, transition to providing 2-3 specific event suggestions\n- When providing suggestions, include suggested timing, general location types, and brief descriptions\n- Ask them which suggestion appeals to them most, or if they'd like different options\n\n**IMPORTANT:** Ask only ONE question per response during the information gathering phase. Wait for their answer before asking about the next category. Be friendly and conversational, not robotic or rushed."
+            ]
+        ]
     }
     
     func sendMessage(_ message: String) async throws -> String {
@@ -29,26 +38,21 @@ class OpenAIService: ObservableObject {
             throw OpenAIError.missingAPIKey
         }
         
+        // Add user message to conversation history
+        conversationHistory.append([
+            "role": "user",
+            "content": message
+        ])
+        
         let url = URL(string: baseURL)!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let messages = [
-            [
-                "role": "system",
-                "content": "You are a helpful AI assistant that specializes in helping users plan events. You are integrated into a mobile app called CliqueApp where users can create events and invite friends. Your goal is to understand their event preferences by gathering this key information:\n\n1. **Date Range**: What timeframe are they considering? (this weekend, next week, specific dates, flexible timing)\n2. **Time of Day**: What parts of the day work best? (morning, afternoon, evening, all day)\n3. **Geographic Area**: What general area or region do they want the event to be in? (neighborhood, city area, distance they're willing to travel)\n4. **Event Style**: Help them decide between:\n   - **Indoor vs Outdoor**: Do they prefer indoor venues or outdoor activities?\n   - **Chill vs Active**: Are they looking for relaxed/social activities or more energetic/physical ones?\n\n**PROCESS:**\n- Start by asking natural, conversational questions to understand their preferences\n- Once you have gathered enough information about at least 3 of the 4 categories above, transition to providing specific event suggestions\n- When providing suggestions, offer 2-3 concrete event ideas that match their preferences\n- Include suggested timing, general location types, and brief descriptions for each suggestion\n- Ask them which suggestion appeals to them most, or if they'd like different options\n\nBe friendly and help them explore possibilities. Don't ask for specific event titles, exact addresses, or detailed descriptions during the information gathering phase."
-            ],
-            [
-                "role": "user",
-                "content": message
-            ]
-        ]
-        
         let requestBody: [String: Any] = [
             "model": "gpt-4",
-            "messages": messages,
+            "messages": conversationHistory,
             "max_tokens": 500,
             "temperature": 0.7
         ]
@@ -69,12 +73,29 @@ class OpenAIService: ObservableObject {
         
         guard let choices = json?["choices"] as? [[String: Any]],
               let firstChoice = choices.first,
-              let message = firstChoice["message"] as? [String: Any],
-              let content = message["content"] as? String else {
+              let aiMessage = firstChoice["message"] as? [String: Any],
+              let content = aiMessage["content"] as? String else {
             throw OpenAIError.invalidResponse
         }
         
-        return content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let aiResponse = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Add AI response to conversation history
+        conversationHistory.append([
+            "role": "assistant",
+            "content": aiResponse
+        ])
+        
+        return aiResponse
+    }
+    
+    func resetConversation() {
+        conversationHistory = [
+            [
+                "role": "system",
+                "content": "You are a helpful AI assistant that specializes in helping users plan events. You are integrated into a mobile app called CliqueApp where users can create events and invite friends. Your goal is to understand their event preferences by gathering this key information:\n\n1. **Event Style**: Indoor vs Outdoor, and Chill vs Active\n2. **Date Range**: What timeframe are they considering?\n3. **Time of Day**: What parts of the day work best?\n4. **Geographic Area**: What general area do they want the event to be in?\n\n**PROCESS:**\n- Ask about ONE preference category at a time, not multiple questions together\n- Start with Event Style first (indoor/outdoor + chill/active), as this shapes everything else\n- Only move to the next question after they've answered the current one\n- Keep each question simple and conversational\n- Once you have gathered information about at least 3 of the 4 categories above, transition to providing 2-3 specific event suggestions\n- When providing suggestions, include suggested timing, general location types, and brief descriptions\n- Ask them which suggestion appeals to them most, or if they'd like different options\n\n**IMPORTANT:** Ask only ONE question per response during the information gathering phase. Wait for their answer before asking about the next category. Be friendly and conversational, not robotic or rushed."
+            ]
+        ]
     }
 }
 
