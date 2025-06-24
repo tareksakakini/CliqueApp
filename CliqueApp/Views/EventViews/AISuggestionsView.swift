@@ -155,8 +155,10 @@ struct AISuggestionsView: View {
         let suggestion = suggestions[currentSuggestionIndex]
         
         print("Creating event from suggestion \(currentSuggestionIndex + 1): \(suggestion.title)")
+        print("  📅 Suggestion start time: \(suggestion.startTime)")
+        print("  📅 Suggestion end time: \(suggestion.endTime)")
         
-        return EventModel(
+        let eventModel = EventModel(
             id: UUID().uuidString,
             title: suggestion.title,
             location: suggestion.address,
@@ -173,6 +175,11 @@ struct AISuggestionsView: View {
             acceptedPhoneNumbers: [],
             declinedPhoneNumbers: []
         )
+        
+        print("  🎯 EventModel start time: \(eventModel.startDateTime)")
+        print("  🎯 EventModel end time: \(eventModel.endDateTime)")
+        
+        return eventModel
     }
 }
 

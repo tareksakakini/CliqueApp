@@ -131,15 +131,15 @@ struct AIEventCreationView: View {
     
     private var welcomeMessage: some View {
         VStack(spacing: 16) {
-            Text("🤖")
+            Text("🎯")
                 .font(.system(size: 60))
             
-            Text("Hello! I'm your AI event assistant.")
+            Text("Let's Plan Your Perfect Event!")
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(.primary)
                 .multilineTextAlignment(.center)
             
-            Text("Tell me about the event you'd like to create and I'll help you plan it!")
+            Text("I'll ask you a few quick questions about your preferences to create personalized event suggestions just for you.")
                 .font(.system(size: 16, weight: .regular))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -208,7 +208,7 @@ struct AIEventCreationView: View {
         // Add a small delay to make it feel more natural
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             let welcomeMessage = ChatMessage(
-                text: "Hello! I'm your AI event assistant. Tell me about the event you'd like to create and I'll help you plan it! 🎉",
+                text: "Hey! I'll help you plan the perfect event. Let's start simple - indoor or outdoor vibe? 🎯",
                 isFromUser: false,
                 timestamp: Date()
             )
@@ -348,39 +348,108 @@ struct AIEventCreationView: View {
               let description = eventData["description"],
               let startTimeString = eventData["startTime"],
               let endTimeString = eventData["endTime"] else {
+            print("❌ Missing required fields for suggestion")
             return nil
         }
         
-        // Parse dates (simplified - you might want to use a more sophisticated date parser)
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, MMMM d'th' 'at' h:mm a"
+        print("🔍 Parsing dates:")
+        print("  Start: '\(startTimeString)'")
+        print("  End: '\(endTimeString)'")
         
-        // Try alternative formats if first one fails
-        let alternativeFormatter = DateFormatter()
-        alternativeFormatter.dateFormat = "EEEE, MMMM d 'at' h:mm a"
+        // Try multiple date formats (with year first, then fallbacks)
+        let formatters = [
+            "EEEE, MMMM d, yyyy 'at' h:mm a",    // Saturday, March 15, 2025 at 2:00 PM (target format)
+            "EEEE, MMMM d'th', yyyy 'at' h:mm a", // Saturday, March 15th, 2025 at 2:00 PM
+            "MMMM d, yyyy 'at' h:mm a",          // March 15, 2025 at 2:00 PM
+            "MMMM d'th', yyyy 'at' h:mm a",      // March 15th, 2025 at 2:00 PM
+            "EEEE, MMMM d 'at' h:mm a",          // Saturday, March 15 at 2:00 PM (fallback)
+            "EEEE, MMMM d'th' 'at' h:mm a",      // Saturday, March 15th at 2:00 PM (fallback)
+            "MMMM d 'at' h:mm a",                // March 15 at 2:00 PM (fallback)
+            "MMMM d'th' 'at' h:mm a",            // March 15th at 2:00 PM (fallback)
+            "EEEE 'at' h:mm a",                  // Saturday at 2:00 PM
+            "h:mm a",                            // 2:00 PM
+            "EEEE, MMMM d, yyyy",                // Saturday, March 15, 2025 (date only)
+            "MMMM d, yyyy",                      // March 15, 2025 (date only)
+            "EEEE, MMMM d",                      // Saturday, March 15 (date only, fallback)
+            "MMMM d",                            // March 15 (date only, fallback)
+            "EEEE"                               // Saturday (day only)
+        ]
         
-        guard let startTime = formatter.date(from: startTimeString) ?? alternativeFormatter.date(from: startTimeString),
-              let endTime = formatter.date(from: endTimeString) ?? alternativeFormatter.date(from: endTimeString) else {
-            // If parsing fails, use default times
+        var startTime: Date?
+        var endTime: Date?
+        
+        // Try to parse start time
+        var startTimeFormat: String?
+        for format in formatters {
+            let formatter = DateFormatter()
+            formatter.dateFormat = format
+            if let parsed = formatter.date(from: startTimeString) {
+                startTime = parsed
+                startTimeFormat = format
+                print("✅ Start time parsed with format: \(format)")
+                break
+            }
+        }
+        
+        // Try to parse end time
+        var endTimeFormat: String?
+        for format in formatters {
+            let formatter = DateFormatter()
+            formatter.dateFormat = format
+            if let parsed = formatter.date(from: endTimeString) {
+                endTime = parsed
+                endTimeFormat = format
+                print("✅ End time parsed with format: \(format)")
+                break
+            }
+        }
+        
+        // Smart fallback for date-only formats
+        if let parsedStartTime = startTime, let format = startTimeFormat {
+            if (format.contains("EEEE, MMMM d") || format.contains("MMMM d")) && !format.contains("h:mm") {
+                // Date only - add default time based on time of day preferences
+                let calendar = Calendar.current
+                let defaultStartTime = calendar.date(bySettingHour: 14, minute: 0, second: 0, of: parsedStartTime) ?? parsedStartTime
+                startTime = defaultStartTime
+                print("📅 Added default 2:00 PM to date-only start time")
+            }
+        }
+        
+        if let parsedEndTime = endTime, let format = endTimeFormat {
+            if (format.contains("EEEE, MMMM d") || format.contains("MMMM d")) && !format.contains("h:mm") {
+                // Date only - add default end time (2 hours after start)
+                if let finalStartTime = startTime {
+                    let calendar = Calendar.current
+                    let defaultEndTime = calendar.date(byAdding: .hour, value: 2, to: finalStartTime) ?? parsedEndTime
+                    endTime = defaultEndTime
+                    print("📅 Added default end time (2 hours after start)")
+                }
+            }
+        }
+        
+        // If parsing fails, use smart defaults
+        if startTime == nil || endTime == nil {
+            print("⚠️ Date parsing failed, using defaults")
             let defaultStart = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
             let defaultEnd = Calendar.current.date(byAdding: .hour, value: 2, to: defaultStart) ?? Date()
             
-            return EventSuggestion(
-                title: title,
-                address: address,
-                description: description,
-                startTime: defaultStart,
-                endTime: defaultEnd
-            )
+            startTime = startTime ?? defaultStart
+            endTime = endTime ?? defaultEnd
         }
         
-        return EventSuggestion(
+        let suggestion = EventSuggestion(
             title: title,
             address: address,
             description: description,
-            startTime: startTime,
-            endTime: endTime
+            startTime: startTime!,
+            endTime: endTime!
         )
+        
+        print("📅 Final suggestion times:")
+        print("  Start: \(startTime!)")
+        print("  End: \(endTime!)")
+        
+        return suggestion
     }
 }
 
