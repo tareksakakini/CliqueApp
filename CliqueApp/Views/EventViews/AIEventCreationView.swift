@@ -14,6 +14,15 @@ struct ChatMessage: Identifiable {
     let timestamp: Date
 }
 
+struct EventSuggestion: Identifiable {
+    let id = UUID()
+    let title: String
+    let address: String
+    let description: String
+    let startTime: Date
+    let endTime: Date
+}
+
 struct AIEventCreationView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var openAIService = OpenAIService()
@@ -22,6 +31,11 @@ struct AIEventCreationView: View {
     @State private var isTyping: Bool = false
     @State private var showErrorAlert: Bool = false
     @State private var errorMessage: String = ""
+    @State private var showSuggestions: Bool = false
+    @State private var parsedSuggestions: [EventSuggestion] = []
+    
+    let user: UserModel
+    @Binding var selectedTab: Int
     
     var body: some View {
         NavigationView {
@@ -37,8 +51,10 @@ struct AIEventCreationView: View {
                             }
                             
                             ForEach(messages) { message in
-                                ChatBubbleView(message: message)
-                                    .id(message.id)
+                                ChatBubbleView(message: message) {
+                                    showSuggestions = true
+                                }
+                                .id(message.id)
                             }
                             
                             // Typing indicator
@@ -96,6 +112,15 @@ struct AIEventCreationView: View {
             Button("OK") { }
         } message: {
             Text(errorMessage)
+        }
+        .fullScreenCover(isPresented: $showSuggestions) {
+            if !parsedSuggestions.isEmpty {
+                AISuggestionsView(
+                    user: user,
+                    selectedTab: $selectedTab,
+                    suggestions: parsedSuggestions
+                )
+            }
         }
     }
     
@@ -215,6 +240,15 @@ struct AIEventCreationView: View {
                         timestamp: Date()
                     )
                     messages.append(aiResponse)
+                    
+                    // Check if the response contains suggestions
+                    if aiResponseText.contains("📍") && aiResponseText.contains("🕐") {
+                        parsedSuggestions = parseEventSuggestions(from: aiResponseText)
+                        print("Parsed \(parsedSuggestions.count) suggestions:")
+                        for (index, suggestion) in parsedSuggestions.enumerated() {
+                            print("  \(index + 1). \(suggestion.title) at \(suggestion.address)")
+                        }
+                    }
                 }
             } catch {
                 await MainActor.run {
@@ -233,10 +267,113 @@ struct AIEventCreationView: View {
             }
         }
     }
+    
+    private func parseEventSuggestions(from text: String) -> [EventSuggestion] {
+        var suggestions: [EventSuggestion] = []
+        
+        // Split by lines and process each potential event
+        let lines = text.components(separatedBy: .newlines)
+        var currentEvent: [String: String] = [:]
+        
+        for line in lines {
+            let trimmedLine = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            // Check for event title (starts with ** and ends with **)
+            if trimmedLine.hasPrefix("**") && trimmedLine.hasSuffix("**") && trimmedLine.count > 4 {
+                // Save previous event if exists
+                if !currentEvent.isEmpty {
+                    if let suggestion = createEventSuggestion(from: currentEvent) {
+                        suggestions.append(suggestion)
+                    }
+                    currentEvent = [:]
+                }
+                
+                // Extract title
+                let title = String(trimmedLine.dropFirst(2).dropLast(2))
+                currentEvent["title"] = title
+            }
+            // Check for address
+            else if trimmedLine.contains("📍") && trimmedLine.contains("Address:") {
+                let address = trimmedLine.replacingOccurrences(of: "📍 **Address:**", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                currentEvent["address"] = address
+            }
+            // Check for description
+            else if trimmedLine.contains("📝") && trimmedLine.contains("Description:") {
+                let description = trimmedLine.replacingOccurrences(of: "📝 **Description:**", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                currentEvent["description"] = description
+            }
+            // Check for start time
+            else if trimmedLine.contains("🕐") && trimmedLine.contains("Start Time:") {
+                let startTime = trimmedLine.replacingOccurrences(of: "🕐 **Start Time:**", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                currentEvent["startTime"] = startTime
+            }
+            // Check for end time
+            else if trimmedLine.contains("🕕") && trimmedLine.contains("End Time:") {
+                let endTime = trimmedLine.replacingOccurrences(of: "🕕 **End Time:**", with: "").trimmingCharacters(in: .whitespacesAndNewlines)
+                currentEvent["endTime"] = endTime
+            }
+        }
+        
+        // Don't forget the last event
+        if !currentEvent.isEmpty {
+            if let suggestion = createEventSuggestion(from: currentEvent) {
+                suggestions.append(suggestion)
+            }
+        }
+        
+        return suggestions
+    }
+    
+    private func createEventSuggestion(from eventData: [String: String]) -> EventSuggestion? {
+        guard let title = eventData["title"],
+              let address = eventData["address"],
+              let description = eventData["description"],
+              let startTimeString = eventData["startTime"],
+              let endTimeString = eventData["endTime"] else {
+            return nil
+        }
+        
+        // Parse dates (simplified - you might want to use a more sophisticated date parser)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMMM d'th' 'at' h:mm a"
+        
+        // Try alternative formats if first one fails
+        let alternativeFormatter = DateFormatter()
+        alternativeFormatter.dateFormat = "EEEE, MMMM d 'at' h:mm a"
+        
+        guard let startTime = formatter.date(from: startTimeString) ?? alternativeFormatter.date(from: startTimeString),
+              let endTime = formatter.date(from: endTimeString) ?? alternativeFormatter.date(from: endTimeString) else {
+            // If parsing fails, use default times
+            let defaultStart = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+            let defaultEnd = Calendar.current.date(byAdding: .hour, value: 2, to: defaultStart) ?? Date()
+            
+            return EventSuggestion(
+                title: title,
+                address: address,
+                description: description,
+                startTime: defaultStart,
+                endTime: defaultEnd
+            )
+        }
+        
+        return EventSuggestion(
+            title: title,
+            address: address,
+            description: description,
+            startTime: startTime,
+            endTime: endTime
+        )
+    }
 }
 
 struct ChatBubbleView: View {
     let message: ChatMessage
+    let onSuggestionsPressed: (() -> Void)?
+    
+    init(message: ChatMessage, onSuggestionsPressed: (() -> Void)? = nil) {
+        self.message = message
+        self.onSuggestionsPressed = onSuggestionsPressed
+    }
     
     var body: some View {
         HStack {
@@ -244,7 +381,14 @@ struct ChatBubbleView: View {
                 Spacer()
                 userBubble
             } else {
-                aiBubble
+                VStack(alignment: .leading, spacing: 8) {
+                    aiBubble
+                    
+                    // Show suggestions button if message contains structured data
+                    if !message.isFromUser && (message.text.contains("📍") && message.text.contains("🕐")) {
+                        suggestionsButton
+                    }
+                }
                 Spacer()
             }
         }
@@ -269,8 +413,56 @@ struct ChatBubbleView: View {
             .cornerRadius(18)
             .font(.system(size: 16))
     }
+    
+    private var suggestionsButton: some View {
+        Button {
+            onSuggestionsPressed?()
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("View Suggestions")
+                    .font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color.orange,
+                        Color.red
+                    ]),
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+            .cornerRadius(20)
+            .shadow(color: Color.orange.opacity(0.3), radius: 4, x: 0, y: 2)
+        }
+    }
 }
 
 #Preview {
-    AIEventCreationView()
+    struct PreviewWrapper: View {
+        @State var selectedTab = 0
+        
+        var body: some View {
+            let mockUser = {
+                var user = UserModel()
+                user.uid = "preview-user"
+                user.fullname = "John Doe"
+                user.email = "john.doe@example.com"
+                user.phoneNumber = "+1234567890"
+                return user
+            }()
+            
+            AIEventCreationView(
+                user: mockUser,
+                selectedTab: $selectedTab
+            )
+        }
+    }
+    
+    return PreviewWrapper()
 } 

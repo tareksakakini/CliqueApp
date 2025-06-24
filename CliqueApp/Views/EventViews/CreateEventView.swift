@@ -19,6 +19,16 @@ struct CreateEventView: View {
     @State var event: EventModel
     let isNewEvent: Bool
     @State var selectedImage: UIImage? = nil
+    let hideSuggestionsHeader: Bool
+    
+    init(user: UserModel, selectedTab: Binding<Int>, event: EventModel, isNewEvent: Bool, selectedImage: UIImage? = nil, hideSuggestionsHeader: Bool = false) {
+        self._user = State(initialValue: user)
+        self._selectedTab = selectedTab
+        self._event = State(initialValue: event)
+        self.isNewEvent = isNewEvent
+        self._selectedImage = State(initialValue: selectedImage)
+        self.hideSuggestionsHeader = hideSuggestionsHeader
+    }
     
     @State var oldEvent: EventModel = EventModel()
     @State var newPhoneNumbers: [String] = []
@@ -42,7 +52,9 @@ struct CreateEventView: View {
                 backgroundGradient
                 
                 VStack(spacing: 0) {
-                    headerSection
+                    if !hideSuggestionsHeader {
+                        headerSection
+                    }
                     
                     ScrollView {
                         VStack(spacing: 24) {
@@ -52,6 +64,7 @@ struct CreateEventView: View {
                     }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 40)
+                        .padding(.top, hideSuggestionsHeader ? 20 : 0)
                     }
                 }
             }
@@ -67,7 +80,7 @@ struct CreateEventView: View {
                 Button("Dismiss", role: .cancel) { }
             }
             .fullScreenCover(isPresented: $showCreateWithAI) {
-                AIEventCreationView()
+                AIEventCreationView(user: user, selectedTab: $selectedTab)
             }
             .sheet(isPresented: $showMessageComposer) {
                 if MFMessageComposeViewController.canSendText() {
