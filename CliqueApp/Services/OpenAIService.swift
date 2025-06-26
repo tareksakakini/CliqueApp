@@ -47,7 +47,7 @@ class OpenAIService: ObservableObject {
         **WHEN PROVIDING SUGGESTIONS:**
         For each suggestion, provide these exact details in this format:
 
-        **[Event Title]**
+        **[Event Title - MAXIMUM 4 WORDS, be concise and punchy]**
         📍 **Location:** [Venue/Business Name] - [Specific street address]
         📝 **Description:** [Brief description of the event/activity]
         🕐 **Start Time:** [Day, Month Date, Year at Hour:Minute AM/PM - e.g., "Saturday, March 15, 2025 at 2:00 PM"]
@@ -67,6 +67,7 @@ class OpenAIService: ObservableObject {
         - Choose addresses in their specified geographic area
         - Always include the YEAR and use the exact format "Day, Month Date, Year at Hour:Minute AM/PM" for times
         - Suggest dates that are at least 1 day in the future from the current date
+        - **EVENT TITLES MUST BE 4 WORDS OR FEWER** - Examples: "Beach Volleyball Game", "Coffee & Chat", "Hiking Adventure", "Movie Night"
         - **ADAPT YOUR TONE AND LENGTH TO MATCH THE USER'S COMMUNICATION STYLE**
         """
     }

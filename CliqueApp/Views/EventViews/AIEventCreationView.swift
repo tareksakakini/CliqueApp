@@ -283,6 +283,30 @@ struct AIEventCreationView: View {
         }
     }
     
+    private func cleanEventTitle(_ title: String) -> String {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Remove common list numbering patterns:
+        // "1. Title", "2. Title", "1) Title", "2) Title", etc.
+        let patterns = [
+            "^\\d+\\.\\s*",  // Matches "1. ", "2. ", etc.
+            "^\\d+\\)\\s*",  // Matches "1) ", "2) ", etc.
+            "^\\d+\\s*-\\s*", // Matches "1 - ", "2 - ", etc.
+            "^[a-zA-Z]\\.\\s*", // Matches "a. ", "b. ", "A. ", "B. ", etc.
+            "^[a-zA-Z]\\)\\s*"  // Matches "a) ", "b) ", "A) ", "B) ", etc.
+        ]
+        
+        var cleanedTitle = trimmed
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                let range = NSRange(location: 0, length: cleanedTitle.utf16.count)
+                cleanedTitle = regex.stringByReplacingMatches(in: cleanedTitle, options: [], range: range, withTemplate: "")
+            }
+        }
+        
+        return cleanedTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
     private func parseEventSuggestions(from text: String) -> [EventSuggestion] {
         var suggestions: [EventSuggestion] = []
         
@@ -303,9 +327,10 @@ struct AIEventCreationView: View {
                     currentEvent = [:]
                 }
                 
-                // Extract title
-                let title = String(trimmedLine.dropFirst(2).dropLast(2))
-                currentEvent["title"] = title
+                // Extract title and clean up any list numbering
+                let rawTitle = String(trimmedLine.dropFirst(2).dropLast(2))
+                let cleanTitle = cleanEventTitle(rawTitle)
+                currentEvent["title"] = cleanTitle
             }
             // Check for location (venue name - address)
             else if trimmedLine.contains("📍") && trimmedLine.contains("Location:") {

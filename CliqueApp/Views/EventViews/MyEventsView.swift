@@ -375,6 +375,8 @@ struct ModernEventPillView: View {
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
                     .shadow(radius: 2)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 
                 HStack {
                     Image(systemName: "location.fill")
