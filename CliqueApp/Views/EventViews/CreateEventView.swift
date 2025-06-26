@@ -370,9 +370,9 @@ struct CreateEventView: View {
                     
                     Spacer()
                     
-                    Text("\(event.description.count)/300")
+                    Text("\(event.description.count)/1000")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(event.description.count > 300 ? .red : .secondary)
+                        .foregroundColor(event.description.count > 1000 ? .red : .secondary)
                 }
                 
                 TextEditor(text: $event.description)
@@ -387,7 +387,7 @@ struct CreateEventView: View {
                             .fill(Color(.systemGray6))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(event.description.count > 300 ? Color.red : Color(.systemGray4), lineWidth: 1)
+                                    .stroke(event.description.count > 1000 ? Color.red : Color(.systemGray4), lineWidth: 1)
                             )
                     )
                     .overlay(
@@ -411,8 +411,8 @@ struct CreateEventView: View {
                         }
                     )
                     .onChange(of: event.description) { _, newValue in
-                        if newValue.count > 300 {
-                            event.description = String(newValue.prefix(300))
+                        if newValue.count > 1000 {
+                            event.description = String(newValue.prefix(1000))
                         }
                     }
             }
