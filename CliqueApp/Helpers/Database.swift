@@ -720,30 +720,54 @@ class DatabaseManager {
     }
     
     func uploadImage(image: UIImage, storageLocation: String, referenceLocation: DocumentReference, fieldName: String) async {
-        guard let imageData = image.jpegData(compressionQuality: 0.4) else { return }
+        guard let imageData = image.jpegData(compressionQuality: 0.4) else { 
+            print("Failed to convert image to JPEG data")
+            return 
+        }
+        
         let storageRef = Storage.storage().reference()
         let fileRef = storageRef.child(storageLocation)
         
-        fileRef.putData(imageData, metadata: nil) { _, error in
-            if let error = error {
-                print("Upload failed: \(error.localizedDescription)")
-                return
+        do {
+            // Upload image to Firebase Storage using async/await
+            let _ = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<StorageMetadata?, Error>) in
+                fileRef.putData(imageData, metadata: nil) { metadata, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: metadata)
+                    }
+                }
             }
             
-            fileRef.downloadURL { url, error in
-                guard let downloadURL = url else { return }
-                self.saveImageURLtoFirestore(url: downloadURL.absoluteString, referenceLocation: referenceLocation, fieldName: fieldName)
+            // Get download URL using async/await
+            let downloadURL = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
+                fileRef.downloadURL { url, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else if let url = url {
+                        continuation.resume(returning: url)
+                    } else {
+                        continuation.resume(throwing: NSError(domain: "DownloadError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to get download URL"]))
+                    }
+                }
             }
-        }
-    }
-    
-    func saveImageURLtoFirestore(url: String, referenceLocation: DocumentReference, fieldName: String) {
-        referenceLocation.setData([fieldName: url], merge: true) { error in
-            if let error = error {
-                print("Error updating Firestore: \(error.localizedDescription)")
-            } else {
-                print("Picture updated successfully!")
+            
+            // Save image URL to Firestore using async/await
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                referenceLocation.setData([fieldName: downloadURL.absoluteString], merge: true) { error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: ())
+                    }
+                }
             }
+            
+            print("Image uploaded and URL saved successfully to \(fieldName)")
+            
+        } catch {
+            print("Error uploading image: \(error.localizedDescription)")
         }
     }
     

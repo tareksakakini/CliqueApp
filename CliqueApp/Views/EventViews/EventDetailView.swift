@@ -820,15 +820,29 @@ struct EventDetailView: View {
         guard !currentEvent.eventPic.isEmpty,
               let url = URL(string: currentEvent.eventPic) else { return }
         
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let image = UIImage(data: data) {
-                await MainActor.run {
-                    eventImage = image
+        // Retry mechanism for newly uploaded images
+        var retryCount = 0
+        let maxRetries = 3
+        
+        while retryCount < maxRetries {
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                if let image = UIImage(data: data) {
+                    await MainActor.run {
+                        eventImage = image
+                    }
+                    return // Success, exit the retry loop
+                }
+            } catch {
+                retryCount += 1
+                if retryCount < maxRetries {
+                    print("Error loading image (attempt \(retryCount)/\(maxRetries)): \(error)")
+                    // Wait before retrying
+                    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                } else {
+                    print("Failed to load image after \(maxRetries) attempts: \(error)")
                 }
             }
-        } catch {
-            print("Error loading image: \(error)")
         }
     }
 }

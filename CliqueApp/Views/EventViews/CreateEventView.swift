@@ -110,6 +110,12 @@ struct CreateEventView: View {
                                 }
                                 
                                 await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                                
+                                // Small delay to ensure image upload completes
+                                if imageToUse != nil {
+                                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                                }
+                                
                                 await vm.getAllEvents()
                                 event = EventModel()
                                 inviteesUserModels = []
@@ -653,6 +659,12 @@ struct CreateEventView: View {
                         }
                         
                         await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                        
+                        // Small delay to ensure image upload completes
+                        if imageToUse != nil {
+                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                        }
+                        
                         await vm.getAllEvents()
                         event = EventModel()
                         inviteesUserModels = []
