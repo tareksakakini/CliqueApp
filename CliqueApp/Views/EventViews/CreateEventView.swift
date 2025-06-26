@@ -44,6 +44,7 @@ struct CreateEventView: View {
     @State var showAlert: Bool = false
     @State var alertMessage: String = ""
     @State var showCreateWithAI: Bool = false
+    @State var isPreparingAI: Bool = false
     
     @State var showMessageComposer = false
     @State var messageEventID: String = ""
@@ -205,12 +206,23 @@ struct CreateEventView: View {
             // Create with AI Button (only for new events)
             if isNewEvent {
                 Button {
-                    showCreateWithAI = true
+                    isPreparingAI = true
+                    // Add a small delay to simulate preparation, then show the AI chat
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        isPreparingAI = false
+                        showCreateWithAI = true
+                    }
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 16, weight: .semibold))
-                        Text("Create with AI")
+                        if isPreparingAI {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .foregroundColor(.white)
+                        } else {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        Text(isPreparingAI ? "Preparing AI..." : "Create with AI")
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .foregroundColor(.white)
@@ -229,6 +241,7 @@ struct CreateEventView: View {
                     .cornerRadius(25)
                     .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
                 }
+                .disabled(isPreparingAI)
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
             }

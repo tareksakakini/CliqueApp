@@ -27,7 +27,13 @@ struct EventSuggestion: Identifiable {
 struct AIEventCreationView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var openAIService = OpenAIService()
-    @State private var messages: [ChatMessage] = []
+    @State private var messages: [ChatMessage] = [
+        ChatMessage(
+            text: "Hey! I'll help you plan the perfect event. Let's start simple - indoor or outdoor vibe? 🎯",
+            isFromUser: false,
+            timestamp: Date()
+        )
+    ]
     @State private var currentInput: String = ""
     @State private var isTyping: Bool = false
     @State private var showErrorAlert: Bool = false
@@ -46,12 +52,6 @@ struct AIEventCreationView: View {
                 ScrollViewReader { proxy in
                     ScrollView {
                         LazyVStack(spacing: 12) {
-                            // Welcome message
-                            if messages.isEmpty {
-                                welcomeMessage
-                                    .id("welcome")
-                            }
-                            
                             ForEach(messages) { message in
                                 ChatBubbleView(
                                     message: message,
@@ -112,7 +112,7 @@ struct AIEventCreationView: View {
             }
         }
         .onAppear {
-            addWelcomeMessage()
+            // No need to add welcome message here since it's already in the initial state
         }
         .alert("Error", isPresented: $showErrorAlert) {
             Button("OK") { }
@@ -128,25 +128,6 @@ struct AIEventCreationView: View {
                 )
             }
         }
-    }
-    
-    private var welcomeMessage: some View {
-        VStack(spacing: 16) {
-            Text("🎯")
-                .font(.system(size: 60))
-            
-            Text("Let's Plan Your Perfect Event!")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.primary)
-                .multilineTextAlignment(.center)
-            
-            Text("I'll ask you a few quick questions about your preferences to create personalized event suggestions just for you.")
-                .font(.system(size: 16, weight: .regular))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(.vertical, 40)
-        .padding(.horizontal, 20)
     }
     
     private var typingIndicator: some View {
@@ -206,15 +187,8 @@ struct AIEventCreationView: View {
     }
     
     private func addWelcomeMessage() {
-        // Add a small delay to make it feel more natural
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            let welcomeMessage = ChatMessage(
-                text: "Hey! I'll help you plan the perfect event. Let's start simple - indoor or outdoor vibe? 🎯",
-                isFromUser: false,
-                timestamp: Date()
-            )
-            messages.append(welcomeMessage)
-        }
+        // This function is no longer needed since the welcome message is in the initial state
+        // Keeping it for potential future use
     }
     
     private func sendMessage() {
