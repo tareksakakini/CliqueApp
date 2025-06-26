@@ -102,7 +102,14 @@ struct CreateEventView: View {
                         body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)",
                         onFinish: {
                             Task {
-                                await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                                // Handle Unsplash image if no user-selected image
+                                var imageToUse = selectedImage
+                                if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
+                                    // Download and crop the Unsplash image
+                                    imageToUse = await downloadAndCropUnsplashImage(from: url)
+                                }
+                                
+                                await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
                                 await vm.getAllEvents()
                                 event = EventModel()
                                 inviteesUserModels = []
@@ -638,7 +645,14 @@ struct CreateEventView: View {
                         print("MessageEventID: \(messageEventID)")
                         DispatchQueue.main.async {showMessageComposer = true}
                     } else {
-                        await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                        // Handle Unsplash image if no user-selected image
+                        var imageToUse = selectedImage
+                        if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
+                            // Download and crop the Unsplash image
+                            imageToUse = await downloadAndCropUnsplashImage(from: url)
+                        }
+                        
+                        await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
                         await vm.getAllEvents()
                         event = EventModel()
                         inviteesUserModels = []
@@ -673,6 +687,55 @@ struct CreateEventView: View {
             let contact = ContactInfo(name: phoneNumber, phoneNumber: phoneNumber)
             invitedContacts.append(contact)
         }
+    }
+    
+    private func downloadAndCropUnsplashImage(from url: URL) async -> UIImage? {
+        do {
+            print("🖼️ Downloading Unsplash image from: \(url)")
+            let (data, _) = try await URLSession.shared.data(from: url)
+            
+            guard let downloadedImage = UIImage(data: data) else {
+                print("❌ Failed to create UIImage from downloaded data")
+                return nil
+            }
+            
+            print("✅ Downloaded image size: \(downloadedImage.size)")
+            
+            // Crop the image to the same aspect ratio as user-selected images (16:10)
+            let targetAspectRatio: CGFloat = 16.0 / 10.0
+            let croppedImage = cropImageToAspectRatio(downloadedImage, aspectRatio: targetAspectRatio)
+            
+            print("✅ Cropped image to aspect ratio 16:10")
+            return croppedImage
+            
+        } catch {
+            print("❌ Error downloading Unsplash image: \(error)")
+            return nil
+        }
+    }
+    
+    private func cropImageToAspectRatio(_ image: UIImage, aspectRatio: CGFloat) -> UIImage {
+        let imageAspectRatio = image.size.width / image.size.height
+        
+        var cropRect: CGRect
+        
+        if imageAspectRatio > aspectRatio {
+            // Image is wider than target - crop horizontally
+            let newWidth = image.size.height * aspectRatio
+            let xOffset = (image.size.width - newWidth) / 2
+            cropRect = CGRect(x: xOffset, y: 0, width: newWidth, height: image.size.height)
+        } else {
+            // Image is taller than target - crop vertically
+            let newHeight = image.size.width / aspectRatio
+            let yOffset = (image.size.height - newHeight) / 2
+            cropRect = CGRect(x: 0, y: yOffset, width: image.size.width, height: newHeight)
+        }
+        
+        guard let cgImage = image.cgImage?.cropping(to: cropRect) else {
+            return image
+        }
+        
+        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
     }
 }
 
