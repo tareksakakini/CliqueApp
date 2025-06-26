@@ -50,6 +50,7 @@ struct CreateEventView: View {
     
     @State var showMessageComposer = false
     @State var messageEventID: String = ""
+    @State var isCreatingEvent = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -71,6 +72,46 @@ struct CreateEventView: View {
                         .padding(.bottom, 40)
                         .padding(.top, hideSuggestionsHeader ? 20 : 0)
                     }
+                }
+                .disabled(isCreatingEvent)
+                .blur(radius: isCreatingEvent ? 2 : 0)
+                
+                // Loading overlay
+                if isCreatingEvent {
+                    ZStack {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: 20) {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                                .tint(Color(.accent))
+                            
+                            VStack(spacing: 8) {
+                                Text("Creating Your Event")
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                
+                                if selectedImage != nil || unsplashImageURL != nil {
+                                    Text("Uploading image and saving details...")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                } else {
+                                    Text("Saving event details...")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                        .padding(32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
+                        )
+                        .padding(.horizontal, 40)
+                    }
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 }
             }
             }
@@ -102,6 +143,11 @@ struct CreateEventView: View {
                         body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)",
                         onFinish: {
                             Task {
+                                // Start loading state
+                                await MainActor.run {
+                                    isCreatingEvent = true
+                                }
+                                
                                 // Handle Unsplash image if no user-selected image
                                 var imageToUse = selectedImage
                                 if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
@@ -117,18 +163,24 @@ struct CreateEventView: View {
                                 }
                                 
                                 await vm.getAllEvents()
-                                event = EventModel()
-                                inviteesUserModels = []
-                                invitedContacts = []
-                                imageSelection = nil
-                                selectedImage = nil
-                                tempSelectedImage = nil
-                                newPhoneNumbers = []
-                                oldEvent = EventModel()
-                                if isNewEvent {
-                                    selectedTab = 0
-                                    // Call the callback if provided (for AI suggestions)
-                                    onEventCreated?()
+                                
+                                // Reset form and stop loading
+                                await MainActor.run {
+                                    event = EventModel()
+                                    inviteesUserModels = []
+                                    invitedContacts = []
+                                    imageSelection = nil
+                                    selectedImage = nil
+                                    tempSelectedImage = nil
+                                    newPhoneNumbers = []
+                                    oldEvent = EventModel()
+                                    isCreatingEvent = false
+                                    
+                                    if isNewEvent {
+                                        selectedTab = 0
+                                        // Call the callback if provided (for AI suggestions)
+                                        onEventCreated?()
+                                    }
                                 }
                             }
                         }
@@ -596,25 +648,38 @@ struct CreateEventView: View {
                             )
                     )
             }
+            .disabled(isCreatingEvent)
+            .opacity(isCreatingEvent ? 0.6 : 1.0)
             
             Button {
                 handleCreateEvent()
             } label: {
-                Text(isNewEvent ? "Create Event" : "Update Event")
-                    .font(.system(size: 16, weight: .semibold))
+                HStack(spacing: 8) {
+                    if isCreatingEvent {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .foregroundColor(.white)
+                    }
+                    Text(isCreatingEvent ? "Creating..." : (isNewEvent ? "Create Event" : "Update Event"))
+                        .font(.system(size: 16, weight: .semibold))
+                }
                 .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            isCreatingEvent ? Color(.systemGray) : Color(.accent), 
+                            isCreatingEvent ? Color(.systemGray).opacity(0.8) : Color(.accent).opacity(0.8)
+                        ]),
+                        startPoint: .leading,
+                        endPoint: .trailing
                     )
-                    .cornerRadius(16)
-                    .shadow(color: Color(.accent).opacity(0.3), radius: 12, x: 0, y: 6)
+                )
+                .cornerRadius(16)
+                .shadow(color: (isCreatingEvent ? Color(.systemGray) : Color(.accent)).opacity(0.3), radius: 12, x: 0, y: 6)
             }
+            .disabled(isCreatingEvent)
         }
     }
     
@@ -635,6 +700,11 @@ struct CreateEventView: View {
                 showAlert = true
             } else {
                 Task {
+                    // Start loading state
+                    await MainActor.run {
+                        isCreatingEvent = true
+                    }
+                    
                     let temp_uuid = isNewEvent ? UUID().uuidString : event.id
                     messageEventID = temp_uuid
                     
@@ -649,7 +719,10 @@ struct CreateEventView: View {
                     
                     if newPhoneNumbers.count > 0 {
                         print("MessageEventID: \(messageEventID)")
-                        DispatchQueue.main.async {showMessageComposer = true}
+                        await MainActor.run {
+                            isCreatingEvent = false
+                            showMessageComposer = true
+                        }
                     } else {
                         // Handle Unsplash image if no user-selected image
                         var imageToUse = selectedImage
@@ -666,18 +739,24 @@ struct CreateEventView: View {
                         }
                         
                         await vm.getAllEvents()
-                        event = EventModel()
-                        inviteesUserModels = []
-                        invitedContacts = []
-                        imageSelection = nil
-                        selectedImage = nil
-                        tempSelectedImage = nil
-                        newPhoneNumbers = []
-                        oldEvent = EventModel()
-                        if isNewEvent {
-                            selectedTab = 0
-                            // Call the callback if provided (for AI suggestions)
-                            onEventCreated?()
+                        
+                        // Reset form and stop loading
+                        await MainActor.run {
+                            event = EventModel()
+                            inviteesUserModels = []
+                            invitedContacts = []
+                            imageSelection = nil
+                            selectedImage = nil
+                            tempSelectedImage = nil
+                            newPhoneNumbers = []
+                            oldEvent = EventModel()
+                            isCreatingEvent = false
+                            
+                            if isNewEvent {
+                                selectedTab = 0
+                                // Call the callback if provided (for AI suggestions)
+                                onEventCreated?()
+                            }
                         }
                     }
                 }
