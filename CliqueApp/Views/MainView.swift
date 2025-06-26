@@ -41,14 +41,14 @@ struct MainView: View {
                 MyFriendsView(user: user)
                     .tabItem {
                         Image(systemName: "person.2.fill")
-                        Text("My Friends")
+                        Text("Friends")
                     }
                     .tag(3)
                 
                 MySettingsView(user: user)
                     .tabItem {
                         Image(systemName: "gearshape.fill")
-                        Text("My Settings")
+                        Text("Settings")
                     }
                     .tag(4)
                 
