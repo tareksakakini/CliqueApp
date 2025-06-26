@@ -164,8 +164,15 @@ struct AIEventCreationView: View {
                 .background(Color(.systemGray6))
                 .cornerRadius(20)
                 .lineLimit(1...5)
+                .onSubmit {
+                    if !currentInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        sendMessage()
+                    }
+                }
             
             Button {
+                // Dismiss keyboard before sending
+                UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                 sendMessage()
             } label: {
                 Image(systemName: "arrow.up.circle.fill")
@@ -191,6 +198,14 @@ struct AIEventCreationView: View {
         // Keeping it for potential future use
     }
     
+    private func clearInputField() {
+        currentInput = ""
+        // Double-ensure clearing with a slight delay to handle any race conditions
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.currentInput = ""
+        }
+    }
+    
     private func sendMessage() {
         let trimmedInput = currentInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedInput.isEmpty else { return }
@@ -203,8 +218,9 @@ struct AIEventCreationView: View {
         )
         messages.append(userMessage)
         
-        // Clear input and show typing indicator
-        currentInput = ""
+        // Clear input immediately and ensure it stays cleared
+        clearInputField()
+        
         isTyping = true
         
         // Get AI response
@@ -214,6 +230,8 @@ struct AIEventCreationView: View {
                 
                 await MainActor.run {
                     isTyping = false
+                    // Ensure input stays cleared
+                    currentInput = ""
                     
                     // Check if the response contains suggestions
                     if aiResponseText.contains("📍") && aiResponseText.contains("🕐") {
@@ -246,6 +264,8 @@ struct AIEventCreationView: View {
             } catch {
                 await MainActor.run {
                     isTyping = false
+                    // Ensure input stays cleared even on error
+                    currentInput = ""
                     errorMessage = error.localizedDescription
                     showErrorAlert = true
                     
