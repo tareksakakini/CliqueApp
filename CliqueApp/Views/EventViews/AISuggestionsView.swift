@@ -14,6 +14,7 @@ struct AISuggestionsView: View {
     let user: UserModel
     @Binding var selectedTab: Int
     let suggestions: [EventSuggestion]
+    let onEventCreated: (() -> Void)?
     
     @State private var currentSuggestionIndex: Int = 0
     @State private var event: EventModel = EventModel()
@@ -39,7 +40,12 @@ struct AISuggestionsView: View {
                         isNewEvent: true,
                         selectedImage: nil,
                         hideSuggestionsHeader: true,
-                        unsplashImageURL: currentImageURL
+                        unsplashImageURL: currentImageURL,
+                        onEventCreated: {
+                            // When event is created, dismiss the entire AI flow and go to My Events
+                            dismiss()
+                            onEventCreated?()
+                        }
                     )
                     .id(currentSuggestionIndex)
                 }
@@ -209,7 +215,8 @@ struct AISuggestionsView: View {
                 endTime: Calendar.current.date(byAdding: .hour, value: 2, to: Date()) ?? Date(),
                 imageURL: nil
             )
-        ]
+        ],
+        onEventCreated: nil
     )
     .environmentObject(ViewModel())
 } 

@@ -21,8 +21,9 @@ struct CreateEventView: View {
     @State var selectedImage: UIImage? = nil
     let hideSuggestionsHeader: Bool
     let unsplashImageURL: String?
+    let onEventCreated: (() -> Void)?
     
-    init(user: UserModel, selectedTab: Binding<Int>, event: EventModel, isNewEvent: Bool, selectedImage: UIImage? = nil, hideSuggestionsHeader: Bool = false, unsplashImageURL: String? = nil) {
+    init(user: UserModel, selectedTab: Binding<Int>, event: EventModel, isNewEvent: Bool, selectedImage: UIImage? = nil, hideSuggestionsHeader: Bool = false, unsplashImageURL: String? = nil, onEventCreated: (() -> Void)? = nil) {
         self._user = State(initialValue: user)
         self._selectedTab = selectedTab
         self._event = State(initialValue: event)
@@ -30,6 +31,7 @@ struct CreateEventView: View {
         self._selectedImage = State(initialValue: selectedImage)
         self.hideSuggestionsHeader = hideSuggestionsHeader
         self.unsplashImageURL = unsplashImageURL
+        self.onEventCreated = onEventCreated
     }
     
     @State var oldEvent: EventModel = EventModel()
@@ -83,7 +85,15 @@ struct CreateEventView: View {
                 Button("Dismiss", role: .cancel) { }
             }
             .fullScreenCover(isPresented: $showCreateWithAI) {
-                AIEventCreationView(user: user, selectedTab: $selectedTab)
+                AIEventCreationView(
+                    user: user, 
+                    selectedTab: $selectedTab,
+                    onEventCreated: {
+                        // When event is created from AI, dismiss the AI flow and go to My Events
+                        showCreateWithAI = false
+                        selectedTab = 0
+                    }
+                )
             }
             .sheet(isPresented: $showMessageComposer) {
                 if MFMessageComposeViewController.canSendText() {
@@ -104,6 +114,8 @@ struct CreateEventView: View {
                                 oldEvent = EventModel()
                                 if isNewEvent {
                                     selectedTab = 0
+                                    // Call the callback if provided (for AI suggestions)
+                                    onEventCreated?()
                                 }
                             }
                         }
@@ -638,6 +650,8 @@ struct CreateEventView: View {
                         oldEvent = EventModel()
                         if isNewEvent {
                             selectedTab = 0
+                            // Call the callback if provided (for AI suggestions)
+                            onEventCreated?()
                         }
                     }
                 }

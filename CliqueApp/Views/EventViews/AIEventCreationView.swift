@@ -44,6 +44,7 @@ struct AIEventCreationView: View {
     
     let user: UserModel
     @Binding var selectedTab: Int
+    let onEventCreated: (() -> Void)?
     
     var body: some View {
         NavigationView {
@@ -124,7 +125,8 @@ struct AIEventCreationView: View {
                 AISuggestionsView(
                     user: user,
                     selectedTab: $selectedTab,
-                    suggestions: parsedSuggestions
+                    suggestions: parsedSuggestions,
+                    onEventCreated: onEventCreated
                 )
             }
         }
@@ -560,7 +562,8 @@ struct ChatBubbleView: View {
             
             AIEventCreationView(
                 user: mockUser,
-                selectedTab: $selectedTab
+                selectedTab: $selectedTab,
+                onEventCreated: nil
             )
         }
     }
