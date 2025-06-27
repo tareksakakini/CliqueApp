@@ -50,7 +50,8 @@ struct CreateEventView: View {
     
     @State var showMessageComposer = false
     @State var messageEventID: String = ""
-    @State var isCreatingEvent = false
+    @State var viewIdentityID: String = ""
+    @State var isCreatingEvent: Bool = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -72,46 +73,6 @@ struct CreateEventView: View {
                         .padding(.bottom, 40)
                         .padding(.top, hideSuggestionsHeader ? 20 : 0)
                     }
-                }
-                .disabled(isCreatingEvent)
-                .blur(radius: isCreatingEvent ? 2 : 0)
-                
-                // Loading overlay
-                if isCreatingEvent {
-                    ZStack {
-                        Color.black.opacity(0.3)
-                            .ignoresSafeArea()
-                        
-                        VStack(spacing: 20) {
-                            ProgressView()
-                                .scaleEffect(1.5)
-                                .tint(Color(.accent))
-                            
-                            VStack(spacing: 8) {
-                                Text("Creating Your Event")
-                                    .font(.system(size: 20, weight: .semibold))
-                                    .foregroundColor(.primary)
-                                
-                                if selectedImage != nil || unsplashImageURL != nil {
-                                    Text("Uploading image and saving details...")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                } else {
-                                    Text("Saving event details...")
-                                        .font(.system(size: 16, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                        }
-                        .padding(32)
-                        .background(
-                            RoundedRectangle(cornerRadius: 20)
-                                .fill(Color(.systemBackground))
-                                .shadow(color: .black.opacity(0.1), radius: 20, x: 0, y: 10)
-                        )
-                        .padding(.horizontal, 40)
-                    }
-                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 }
             }
             }
@@ -143,44 +104,52 @@ struct CreateEventView: View {
                         body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)",
                         onFinish: {
                             Task {
-                                // Start loading state
-                                await MainActor.run {
-                                    isCreatingEvent = true
-                                }
+                                isCreatingEvent = true
                                 
-                                // Handle Unsplash image if no user-selected image
-                                var imageToUse = selectedImage
-                                if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
-                                    // Download and crop the Unsplash image
-                                    imageToUse = await downloadAndCropUnsplashImage(from: url)
-                                }
-                                
-                                await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                                
-                                // Small delay to ensure image upload completes
-                                if imageToUse != nil {
-                                    try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                                }
-                                
-                                await vm.getAllEvents()
-                                
-                                // Reset form and stop loading
-                                await MainActor.run {
-                                    event = EventModel()
-                                    inviteesUserModels = []
-                                    invitedContacts = []
-                                    imageSelection = nil
-                                    selectedImage = nil
-                                    tempSelectedImage = nil
-                                    newPhoneNumbers = []
-                                    oldEvent = EventModel()
+                                do {
+                                    // Handle Unsplash image if no user-selected image
+                                    var imageToUse = selectedImage
+                                    if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
+                                        // Download and crop the Unsplash image
+                                        imageToUse = await downloadAndCropUnsplashImage(from: url)
+                                    }
+                                    
+                                    await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                                    await vm.getAllEvents()
+                                    
                                     isCreatingEvent = false
                                     
                                     if isNewEvent {
                                         selectedTab = 0
                                         // Call the callback if provided (for AI suggestions)
                                         onEventCreated?()
+                                        
+                                        // Small delay to allow tab switch, then reset the form and view identity
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            event = EventModel()
+                                            inviteesUserModels = []
+                                            invitedContacts = []
+                                            imageSelection = nil
+                                            selectedImage = nil
+                                            tempSelectedImage = nil
+                                            newPhoneNumbers = []
+                                            oldEvent = EventModel()
+                                            viewIdentityID = UUID().uuidString
+                                        }
+                                    } else {
+                                        event = EventModel()
+                                        inviteesUserModels = []
+                                        invitedContacts = []
+                                        imageSelection = nil
+                                        selectedImage = nil
+                                        tempSelectedImage = nil
+                                        newPhoneNumbers = []
+                                        oldEvent = EventModel()
                                     }
+                                } catch {
+                                    isCreatingEvent = false
+                                    alertMessage = "Failed to create event. Please try again."
+                                    showAlert = true
                                 }
                             }
                         }
@@ -232,7 +201,7 @@ struct CreateEventView: View {
                 }
                 }
             }
-            .id(messageEventID)
+            .id(viewIdentityID)
         }
     
     private var backgroundGradient: some View {
@@ -648,8 +617,6 @@ struct CreateEventView: View {
                             )
                     )
             }
-            .disabled(isCreatingEvent)
-            .opacity(isCreatingEvent ? 0.6 : 1.0)
             
             Button {
                 handleCreateEvent()
@@ -658,7 +625,7 @@ struct CreateEventView: View {
                     if isCreatingEvent {
                         ProgressView()
                             .scaleEffect(0.8)
-                            .foregroundColor(.white)
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     }
                     Text(isCreatingEvent ? "Creating..." : (isNewEvent ? "Create Event" : "Update Event"))
                         .font(.system(size: 16, weight: .semibold))
@@ -668,16 +635,13 @@ struct CreateEventView: View {
                 .padding(.vertical, 16)
                 .background(
                     LinearGradient(
-                        gradient: Gradient(colors: [
-                            isCreatingEvent ? Color(.systemGray) : Color(.accent), 
-                            isCreatingEvent ? Color(.systemGray).opacity(0.8) : Color(.accent).opacity(0.8)
-                        ]),
+                        gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
                         startPoint: .leading,
                         endPoint: .trailing
                     )
                 )
                 .cornerRadius(16)
-                .shadow(color: (isCreatingEvent ? Color(.systemGray) : Color(.accent)).opacity(0.3), radius: 12, x: 0, y: 6)
+                .shadow(color: Color(.accent).opacity(0.3), radius: 12, x: 0, y: 6)
             }
             .disabled(isCreatingEvent)
         }
@@ -700,64 +664,70 @@ struct CreateEventView: View {
                 showAlert = true
             } else {
                 Task {
-                    // Start loading state
-                    await MainActor.run {
-                        isCreatingEvent = true
-                    }
+                    isCreatingEvent = true
                     
-                    let temp_uuid = isNewEvent ? UUID().uuidString : event.id
-                    messageEventID = temp_uuid
-                    
-                    event.attendeesInvited = inviteesUserModels.map({$0.email})
-                    event.invitedPhoneNumbers = invitedContacts.map({$0.phoneNumber})
-                    newPhoneNumbers = []
-                    for phoneNumber in event.invitedPhoneNumbers {
-                        if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
-                            newPhoneNumbers.append(phoneNumber)
+                    do {
+                        let temp_uuid = isNewEvent ? UUID().uuidString : event.id
+                        messageEventID = temp_uuid
+                        
+                        event.attendeesInvited = inviteesUserModels.map({$0.email})
+                        event.invitedPhoneNumbers = invitedContacts.map({$0.phoneNumber})
+                        newPhoneNumbers = []
+                        for phoneNumber in event.invitedPhoneNumbers {
+                            if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
+                                newPhoneNumbers.append(phoneNumber)
+                            }
                         }
-                    }
-                    
-                    if newPhoneNumbers.count > 0 {
-                        print("MessageEventID: \(messageEventID)")
-                        await MainActor.run {
+                        
+                        if newPhoneNumbers.count > 0 {
+                            print("MessageEventID: \(messageEventID)")
                             isCreatingEvent = false
-                            showMessageComposer = true
-                        }
-                    } else {
-                        // Handle Unsplash image if no user-selected image
-                        var imageToUse = selectedImage
-                        if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
-                            // Download and crop the Unsplash image
-                            imageToUse = await downloadAndCropUnsplashImage(from: url)
-                        }
-                        
-                        await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                        
-                        // Small delay to ensure image upload completes
-                        if imageToUse != nil {
-                            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
-                        }
-                        
-                        await vm.getAllEvents()
-                        
-                        // Reset form and stop loading
-                        await MainActor.run {
-                            event = EventModel()
-                            inviteesUserModels = []
-                            invitedContacts = []
-                            imageSelection = nil
-                            selectedImage = nil
-                            tempSelectedImage = nil
-                            newPhoneNumbers = []
-                            oldEvent = EventModel()
+                            DispatchQueue.main.async {showMessageComposer = true}
+                        } else {
+                            // Handle Unsplash image if no user-selected image
+                            var imageToUse = selectedImage
+                            if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
+                                // Download and crop the Unsplash image
+                                imageToUse = await downloadAndCropUnsplashImage(from: url)
+                            }
+                            
+                            await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                            await vm.getAllEvents()
+                            
                             isCreatingEvent = false
                             
                             if isNewEvent {
                                 selectedTab = 0
                                 // Call the callback if provided (for AI suggestions)
                                 onEventCreated?()
+                                
+                                // Small delay to allow tab switch, then reset the form and view identity
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    event = EventModel()
+                                    inviteesUserModels = []
+                                    invitedContacts = []
+                                    imageSelection = nil
+                                    selectedImage = nil
+                                    tempSelectedImage = nil
+                                    newPhoneNumbers = []
+                                    oldEvent = EventModel()
+                                    viewIdentityID = UUID().uuidString
+                                }
+                            } else {
+                                event = EventModel()
+                                inviteesUserModels = []
+                                invitedContacts = []
+                                imageSelection = nil
+                                selectedImage = nil
+                                tempSelectedImage = nil
+                                newPhoneNumbers = []
+                                oldEvent = EventModel()
                             }
                         }
+                    } catch {
+                        isCreatingEvent = false
+                        alertMessage = "Failed to create event. Please try again."
+                        showAlert = true
                     }
                 }
             }
