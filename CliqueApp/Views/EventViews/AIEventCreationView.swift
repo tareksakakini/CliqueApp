@@ -29,7 +29,7 @@ struct AIEventCreationView: View {
     @StateObject private var openAIService = OpenAIService()
     @State private var messages: [ChatMessage] = [
         ChatMessage(
-            text: "Hey! I'll help you plan the perfect event. Let's start simple - indoor or outdoor vibe? 🎯",
+            text: "Hey! I'm here to help you plan an event for you and your friends. Let me know what you have in mind and we'll take it from there.",
             isFromUser: false,
             timestamp: Date()
         )
