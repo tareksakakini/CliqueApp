@@ -42,6 +42,12 @@ class OpenAIService: ObservableObject {
         - No location is specified and they want general ideas
         
         Always try Ticketmaster search first when appropriate, then supplement with your own suggestions if needed.
+                
+        **How to present Ticketmaster events:**
+        - Copy the events EXACTLY as returned from the search_ticketmaster_events function
+        - Do NOT modify the formatting, dates, times, or any details  
+        - The search function already formats them perfectly for our app
+        - Simply present them as-is in your response
         
         During the course of the conversation, you should guage whether you feel like you have gathered enough information or not. If you have gathered enough information, you should move on to providing suggested plans. If not, you should think what is a good follow up question to gather the information you need. In other words, depending on the chat history, the kind of event they are going for, the information needed for such an event, and the information they already supplied, you can tell what else you need to know. If you feel like the user intentionally wants to keep it open, you should let them and not push for an answer or push for too detailed of info.
         
@@ -177,7 +183,7 @@ class OpenAIService: ObservableObject {
                     
                     let functionResult = await executeFunction(name: functionName, arguments: argumentsString)
                     
-                    print("🔧 [OpenAI] Function result: \(functionResult.prefix(200))...")
+                    print("🔧 [OpenAI] Function result: \(functionResult)")
                     
                     // Add function result to conversation history
                     conversationHistory.append([
@@ -198,7 +204,7 @@ class OpenAIService: ObservableObject {
             
             let aiResponse = content.trimmingCharacters(in: .whitespacesAndNewlines)
             
-            print("💬 [OpenAI] AI response (direct): \(aiResponse.prefix(200))...")
+            print("💬 [OpenAI] AI response (direct): \(aiResponse)")
             
             // Add AI response to conversation history
             conversationHistory.append([
@@ -247,7 +253,7 @@ class OpenAIService: ObservableObject {
         
         let aiResponse = content.trimmingCharacters(in: .whitespacesAndNewlines)
         
-        print("💬 [OpenAI] AI response (after function calls): \(aiResponse.prefix(200))...")
+        print("💬 [OpenAI] AI response (after function calls): \(aiResponse)")
         
         // Add AI response to conversation history
         conversationHistory.append([
@@ -351,15 +357,16 @@ class OpenAIService: ObservableObject {
                 return "No events found matching the criteria."
             }
             
-            // Format events for the AI
-            var result = "Found \(events.count) events:\n\n"
-            
-            for (index, event) in events.enumerated() {
-                result += "**Event \(index + 1): \(event.name)**\n"
+            // Format events for the AI to match app's expected format
+            var result = ""
+            for event in events {
+                // 1. Concise event title (max 4 words)
+                let eventTitle = createConciseTitle(from: event.name)
+                result += "**\(eventTitle)**\n"
                 
-                // Add venue information
+                // 2. Location: Venue Name - Address
                 if let venue = event.embedded?.venues?.first {
-                    result += "📍 Location: \(venue.name)"
+                    result += "📍 **Location:** \(venue.name ?? "Unknown Venue")"
                     if let address = venue.address?.line1 {
                         result += " - \(address)"
                     }
@@ -367,59 +374,59 @@ class OpenAIService: ObservableObject {
                         result += ", \(city), \(state)"
                     }
                     result += "\n"
+                } else {
+                    result += "📍 **Location:** Unknown\n"
                 }
                 
-                // Add date/time information
-                if let start = event.dates?.start {
-                    if let localDate = start.localDate, let localTime = start.localTime {
-                        result += "🕐 Date & Time: \(localDate) at \(localTime)\n"
-                    } else if let localDate = start.localDate {
-                        result += "🕐 Date: \(localDate)\n"
+                // 3. Description
+                var description = event.info ?? ""
+                if description.isEmpty, let classification = event.classifications?.first {
+                    if let segment = classification.segment?.name, let genre = classification.genre?.name {
+                        description = "\(segment) event featuring \(genre)"
+                    } else if let segment = classification.segment?.name {
+                        description = "\(segment) event"
                     }
                 }
-                
-                // Add price information
+                // Add price info to description
                 if let priceRanges = event.priceRanges, !priceRanges.isEmpty {
                     let minPrice = priceRanges.compactMap { $0.min }.min()
                     let maxPrice = priceRanges.compactMap { $0.max }.max()
                     let currency = priceRanges.first?.currency ?? "USD"
-                    
                     if let min = minPrice, let max = maxPrice {
-                        result += "💰 Price Range: \(currency) \(min) - \(max)\n"
+                        description += ". Tickets: \(currency)\(Int(min)) - \(currency)\(Int(max))"
                     } else if let min = minPrice {
-                        result += "💰 Starting Price: \(currency) \(min)\n"
+                        description += ". Tickets from \(currency)\(Int(min))"
                     }
                 }
-                
-                // Add ticket URL
+                // Add ticket URL to description
                 if let ticketURL = event.url {
-                    result += "🎫 Tickets: \(ticketURL)\n"
+                    description += ". Buy tickets: \(ticketURL)"
+                }
+                result += "📝 **Description:** \(description)\n"
+                
+                // 4. Start/End Time
+                if let start = event.dates?.start {
+                    if let localDate = start.localDate, let localTime = start.localTime {
+                        let formattedStart = formatEventDateTime(date: localDate, time: localTime)
+                        result += "🕐 **Start Time:** \(formattedStart)\n"
+                        let formattedEnd = estimateEndTime(from: formattedStart)
+                        result += "🕕 **End Time:** \(formattedEnd)\n"
+                    } else if let localDate = start.localDate {
+                        let formattedDate = formatEventDate(date: localDate)
+                        result += "🕐 **Start Time:** \(formattedDate) at 8:00 PM\n"
+                        result += "🕕 **End Time:** \(formattedDate) at 11:00 PM\n"
+                    } else {
+                        result += "🕐 **Start Time:** Unknown\n🕕 **End Time:** Unknown\n"
+                    }
+                } else {
+                    result += "🕐 **Start Time:** Unknown\n🕕 **End Time:** Unknown\n"
                 }
                 
-                // Add event description if available
-                if let description = event.info {
-                    result += "📝 Description: \(description)\n"
-                }
-                
-                // Add genre/category
-                if let classification = event.classifications?.first {
-                    var genres: [String] = []
-                    if let segment = classification.segment?.name {
-                        genres.append(segment)
-                    }
-                    if let genre = classification.genre?.name {
-                        genres.append(genre)
-                    }
-                    if !genres.isEmpty {
-                        result += "🎭 Category: \(genres.joined(separator: " - "))\n"
-                    }
-                }
-                
-                result += "\n"
+                // 5. Unsplash Search
+                let unsplashTerms = generateUnsplashTerms(for: event)
+                result += "🔎 **Unsplash Search:** \(unsplashTerms)\n\n"
             }
-            
-            print("📄 [OpenAI] Formatted Ticketmaster response (\(result.count) chars): \(result.prefix(300))...")
-            
+            print("📄 [OpenAI] Formatted Ticketmaster response (\(result.count) chars): \(result)")
             return result
             
         } catch {
@@ -435,6 +442,104 @@ class OpenAIService: ObservableObject {
                 "content": createSystemPrompt()
             ]
         ]
+    }
+    
+    // MARK: - Helper Functions for Event Formatting
+    
+    private func createConciseTitle(from title: String) -> String {
+        // Remove common words and create concise title (max 4 words)
+        let words = title.components(separatedBy: .whitespacesAndNewlines)
+            .map { $0.trimmingCharacters(in: .punctuationCharacters) }
+            .filter { !$0.isEmpty }
+        let fillerWords = Set(["the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "tour", "live", "concert", "show", "presents", "featuring"])
+        let importantWords = words.filter { !fillerWords.contains($0.lowercased()) }
+        let finalWords = importantWords.isEmpty ? Array(words.prefix(4)) : Array(importantWords.prefix(4))
+        return finalWords.joined(separator: " ")
+    }
+    
+    private func formatEventDateTime(date: String, time: String) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm:ss"
+        let outputFormatter = DateFormatter()
+        outputFormatter.dateFormat = "EEEE, MMMM d, yyyy 'at' h:mm a"
+        if let eventDate = dateFormatter.date(from: date), let eventTime = timeFormatter.date(from: time) {
+            let calendar = Calendar.current
+            let dateComponents = calendar.dateComponents([.year, .month, .day], from: eventDate)
+            let timeComponents = calendar.dateComponents([.hour, .minute], from: eventTime)
+            var combinedComponents = DateComponents()
+            combinedComponents.year = dateComponents.year
+            combinedComponents.month = dateComponents.month
+            combinedComponents.day = dateComponents.day
+            combinedComponents.hour = timeComponents.hour
+            combinedComponents.minute = timeComponents.minute
+            if let combinedDate = calendar.date(from: combinedComponents) {
+                return outputFormatter.string(from: combinedDate)
+            }
+        }
+        return "\(date) at \(time)"
+    }
+    
+    private func formatEventDate(date: String) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let outputFormatter = DateFormatter()
+        outputFormatter.dateFormat = "EEEE, MMMM d, yyyy"
+        if let eventDate = dateFormatter.date(from: date) {
+            return outputFormatter.string(from: eventDate)
+        }
+        return date
+    }
+    
+    private func estimateEndTime(from startTime: String) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "EEEE, MMMM d, yyyy 'at' h:mm a"
+        if let startDate = dateFormatter.date(from: startTime) {
+            let endDate = Calendar.current.date(byAdding: .hour, value: 3, to: startDate) ?? startDate
+            return dateFormatter.string(from: endDate)
+        }
+        if startTime.contains("at") {
+            let parts = startTime.components(separatedBy: "at")
+            if parts.count > 1 {
+                return "\(parts[0].trimmingCharacters(in: .whitespaces))at 11:00 PM"
+            }
+        }
+        return startTime
+    }
+    
+    private func generateUnsplashTerms(for event: TicketmasterEvent) -> String {
+        var terms: [String] = []
+        if let classification = event.classifications?.first {
+            if let segment = classification.segment?.name {
+                terms.append(segment.lowercased())
+            }
+            if let genre = classification.genre?.name {
+                terms.append(genre.lowercased())
+            }
+        }
+        if terms.contains("music") {
+            terms.append("concert"); terms.append("stage")
+        } else if terms.contains("sports") {
+            terms.append("stadium"); terms.append("game")
+        } else if terms.contains("arts") || terms.contains("theatre") {
+            terms.append("theater"); terms.append("performance")
+        } else {
+            terms.append("event"); terms.append("entertainment")
+        }
+        if let venue = event.embedded?.venues?.first {
+            if venue.name.lowercased().contains("stadium") {
+                terms.append("stadium")
+            } else if venue.name.lowercased().contains("theater") || venue.name.lowercased().contains("theatre") {
+                terms.append("theater")
+            } else if venue.name.lowercased().contains("arena") {
+                terms.append("arena")
+            } else {
+                terms.append("venue")
+            }
+        }
+        let uniqueTerms = Array(Set(terms)).prefix(4)
+        return uniqueTerms.joined(separator: " ")
     }
 }
 
