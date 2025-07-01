@@ -19,6 +19,20 @@ struct CreateEventView: View {
     @State var event: EventModel
     let isNewEvent: Bool
     @State var selectedImage: UIImage? = nil
+    let hideSuggestionsHeader: Bool
+    let unsplashImageURL: String?
+    let onEventCreated: (() -> Void)?
+    
+    init(user: UserModel, selectedTab: Binding<Int>, event: EventModel, isNewEvent: Bool, selectedImage: UIImage? = nil, hideSuggestionsHeader: Bool = false, unsplashImageURL: String? = nil, onEventCreated: (() -> Void)? = nil) {
+        self._user = State(initialValue: user)
+        self._selectedTab = selectedTab
+        self._event = State(initialValue: event)
+        self.isNewEvent = isNewEvent
+        self._selectedImage = State(initialValue: selectedImage)
+        self.hideSuggestionsHeader = hideSuggestionsHeader
+        self.unsplashImageURL = unsplashImageURL
+        self.onEventCreated = onEventCreated
+    }
     
     @State var oldEvent: EventModel = EventModel()
     @State var newPhoneNumbers: [String] = []
@@ -31,9 +45,13 @@ struct CreateEventView: View {
     @State var showAddInviteeSheet: Bool = false
     @State var showAlert: Bool = false
     @State var alertMessage: String = ""
+    @State var showCreateWithAI: Bool = false
+    @State var isPreparingAI: Bool = false
     
     @State var showMessageComposer = false
     @State var messageEventID: String = ""
+    @State var viewIdentityID: String = ""
+    @State var isCreatingEvent: Bool = false
 
     var body: some View {
         GeometryReader { geometry in
@@ -41,7 +59,9 @@ struct CreateEventView: View {
                 backgroundGradient
                 
                 VStack(spacing: 0) {
-                    headerSection
+                    if !hideSuggestionsHeader {
+                        headerSection
+                    }
                     
                     ScrollView {
                         VStack(spacing: 24) {
@@ -51,6 +71,7 @@ struct CreateEventView: View {
                     }
                         .padding(.horizontal, 20)
                         .padding(.bottom, 40)
+                        .padding(.top, hideSuggestionsHeader ? 20 : 0)
                     }
                 }
             }
@@ -65,6 +86,17 @@ struct CreateEventView: View {
             .alert(alertMessage, isPresented: $showAlert) {
                 Button("Dismiss", role: .cancel) { }
             }
+            .fullScreenCover(isPresented: $showCreateWithAI) {
+                AIEventCreationView(
+                    user: user, 
+                    selectedTab: $selectedTab,
+                    onEventCreated: {
+                        // When event is created from AI, dismiss the AI flow and go to My Events
+                        showCreateWithAI = false
+                        selectedTab = 0
+                    }
+                )
+            }
             .sheet(isPresented: $showMessageComposer) {
                 if MFMessageComposeViewController.canSendText() {
                     MessageComposer(
@@ -72,18 +104,52 @@ struct CreateEventView: View {
                         body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)",
                         onFinish: {
                             Task {
-                                await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                                await vm.getAllEvents()
-                                event = EventModel()
-                                inviteesUserModels = []
-                                invitedContacts = []
-                                imageSelection = nil
-                                selectedImage = nil
-                                tempSelectedImage = nil
-                                newPhoneNumbers = []
-                                oldEvent = EventModel()
-                                if isNewEvent {
-                                    selectedTab = 0
+                                isCreatingEvent = true
+                                
+                                do {
+                                    // Handle Unsplash image if no user-selected image
+                                    var imageToUse = selectedImage
+                                    if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
+                                        // Download and crop the Unsplash image
+                                        imageToUse = await downloadAndCropUnsplashImage(from: url)
+                                    }
+                                    
+                                    await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                                    await vm.getAllEvents()
+                                    
+                                    isCreatingEvent = false
+                                    
+                                    if isNewEvent {
+                                        selectedTab = 0
+                                        // Call the callback if provided (for AI suggestions)
+                                        onEventCreated?()
+                                        
+                                        // Small delay to allow tab switch, then reset the form and view identity
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            event = EventModel()
+                                            inviteesUserModels = []
+                                            invitedContacts = []
+                                            imageSelection = nil
+                                            selectedImage = nil
+                                            tempSelectedImage = nil
+                                            newPhoneNumbers = []
+                                            oldEvent = EventModel()
+                                            viewIdentityID = UUID().uuidString
+                                        }
+                                    } else {
+                                        event = EventModel()
+                                        inviteesUserModels = []
+                                        invitedContacts = []
+                                        imageSelection = nil
+                                        selectedImage = nil
+                                        tempSelectedImage = nil
+                                        newPhoneNumbers = []
+                                        oldEvent = EventModel()
+                                    }
+                                } catch {
+                                    isCreatingEvent = false
+                                    alertMessage = "Failed to create event. Please try again."
+                                    showAlert = true
                                 }
                             }
                         }
@@ -135,7 +201,7 @@ struct CreateEventView: View {
                 }
                 }
             }
-            .id(messageEventID)
+            .id(viewIdentityID)
         }
     
     private var backgroundGradient: some View {
@@ -182,6 +248,49 @@ struct CreateEventView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
+            
+            // Create with AI Button (only for new events)
+            if isNewEvent {
+                Button {
+                    isPreparingAI = true
+                    // Add a small delay to simulate preparation, then show the AI chat
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        isPreparingAI = false
+                        showCreateWithAI = true
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        if isPreparingAI {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .foregroundColor(.white)
+                        } else {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        Text(isPreparingAI ? "Preparing AI..." : "Create with AI")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.purple,
+                                Color.blue
+                            ]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(25)
+                    .shadow(color: Color.purple.opacity(0.3), radius: 8, x: 0, y: 4)
+                }
+                .disabled(isPreparingAI)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+            }
         }
         .padding(.top, 20)
         .padding(.bottom, 32)
@@ -221,8 +330,29 @@ struct CreateEventView: View {
                 .foregroundColor(.primary)
             
             ZStack {
-                if selectedImage != nil {
+                if let selectedImage = selectedImage {
                     ImageSelectionField(whichView: "SelectedEventImage", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
+                } else if let urlString = unsplashImageURL, let url = URL(string: urlString) {
+                    PhotosPicker(selection: $imageSelection, matching: .images) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .empty:
+                                ProgressView()
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity, minHeight: 140, maxHeight: 140)
+                                    .cornerRadius(10)
+                                    .padding()
+                            case .failure:
+                                ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
+                    }
                 } else {
                     ImageSelectionField(whichView: "EventImagePlaceholder", imageSelection: $imageSelection, selectedImage: $selectedImage, enableCropMode: true)
                 }
@@ -267,9 +397,9 @@ struct CreateEventView: View {
                     
                     Spacer()
                     
-                    Text("\(event.description.count)/300")
+                    Text("\(event.description.count)/1000")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(event.description.count > 300 ? .red : .secondary)
+                        .foregroundColor(event.description.count > 1000 ? .red : .secondary)
                 }
                 
                 TextEditor(text: $event.description)
@@ -284,7 +414,7 @@ struct CreateEventView: View {
                             .fill(Color(.systemGray6))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(event.description.count > 300 ? Color.red : Color(.systemGray4), lineWidth: 1)
+                                    .stroke(event.description.count > 1000 ? Color.red : Color(.systemGray4), lineWidth: 1)
                             )
                     )
                     .overlay(
@@ -308,8 +438,8 @@ struct CreateEventView: View {
                         }
                     )
                     .onChange(of: event.description) { _, newValue in
-                        if newValue.count > 300 {
-                            event.description = String(newValue.prefix(300))
+                        if newValue.count > 1000 {
+                            event.description = String(newValue.prefix(1000))
                         }
                     }
             }
@@ -491,21 +621,29 @@ struct CreateEventView: View {
             Button {
                 handleCreateEvent()
             } label: {
-                Text(isNewEvent ? "Create Event" : "Update Event")
-                    .font(.system(size: 16, weight: .semibold))
+                HStack(spacing: 8) {
+                    if isCreatingEvent {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    }
+                    Text(isCreatingEvent ? "Creating..." : (isNewEvent ? "Create Event" : "Update Event"))
+                        .font(.system(size: 16, weight: .semibold))
+                }
                 .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(
-                        LinearGradient(
-                            gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(
+                    LinearGradient(
+                        gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
+                        startPoint: .leading,
+                        endPoint: .trailing
                     )
-                    .cornerRadius(16)
-                    .shadow(color: Color(.accent).opacity(0.3), radius: 12, x: 0, y: 6)
+                )
+                .cornerRadius(16)
+                .shadow(color: Color(.accent).opacity(0.3), radius: 12, x: 0, y: 6)
             }
+            .disabled(isCreatingEvent)
         }
     }
     
@@ -526,35 +664,70 @@ struct CreateEventView: View {
                 showAlert = true
             } else {
                 Task {
-                    let temp_uuid = isNewEvent ? UUID().uuidString : event.id
-                    messageEventID = temp_uuid
+                    isCreatingEvent = true
                     
-                    event.attendeesInvited = inviteesUserModels.map({$0.email})
-                    event.invitedPhoneNumbers = invitedContacts.map({$0.phoneNumber})
-                    newPhoneNumbers = []
-                    for phoneNumber in event.invitedPhoneNumbers {
-                        if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
-                            newPhoneNumbers.append(phoneNumber)
-                        }
-                    }
-                    
-                    if newPhoneNumbers.count > 0 {
-                        print("MessageEventID: \(messageEventID)")
-                        DispatchQueue.main.async {showMessageComposer = true}
-                    } else {
-                        await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: selectedImage, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                        await vm.getAllEvents()
-                        event = EventModel()
-                        inviteesUserModels = []
-                        invitedContacts = []
-                        imageSelection = nil
-                        selectedImage = nil
-                        tempSelectedImage = nil
+                    do {
+                        let temp_uuid = isNewEvent ? UUID().uuidString : event.id
+                        messageEventID = temp_uuid
+                        
+                        event.attendeesInvited = inviteesUserModels.map({$0.email})
+                        event.invitedPhoneNumbers = invitedContacts.map({$0.phoneNumber})
                         newPhoneNumbers = []
-                        oldEvent = EventModel()
-                        if isNewEvent {
-                            selectedTab = 0
+                        for phoneNumber in event.invitedPhoneNumbers {
+                            if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
+                                newPhoneNumbers.append(phoneNumber)
+                            }
                         }
+                        
+                        if newPhoneNumbers.count > 0 {
+                            print("MessageEventID: \(messageEventID)")
+                            isCreatingEvent = false
+                            DispatchQueue.main.async {showMessageComposer = true}
+                        } else {
+                            // Handle Unsplash image if no user-selected image
+                            var imageToUse = selectedImage
+                            if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
+                                // Download and crop the Unsplash image
+                                imageToUse = await downloadAndCropUnsplashImage(from: url)
+                            }
+                            
+                            await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                            await vm.getAllEvents()
+                            
+                            isCreatingEvent = false
+                            
+                            if isNewEvent {
+                                selectedTab = 0
+                                // Call the callback if provided (for AI suggestions)
+                                onEventCreated?()
+                                
+                                // Small delay to allow tab switch, then reset the form and view identity
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                    event = EventModel()
+                                    inviteesUserModels = []
+                                    invitedContacts = []
+                                    imageSelection = nil
+                                    selectedImage = nil
+                                    tempSelectedImage = nil
+                                    newPhoneNumbers = []
+                                    oldEvent = EventModel()
+                                    viewIdentityID = UUID().uuidString
+                                }
+                            } else {
+                                event = EventModel()
+                                inviteesUserModels = []
+                                invitedContacts = []
+                                imageSelection = nil
+                                selectedImage = nil
+                                tempSelectedImage = nil
+                                newPhoneNumbers = []
+                                oldEvent = EventModel()
+                            }
+                        }
+                    } catch {
+                        isCreatingEvent = false
+                        alertMessage = "Failed to create event. Please try again."
+                        showAlert = true
                     }
                 }
             }
@@ -576,10 +749,59 @@ struct CreateEventView: View {
             invitedContacts.append(contact)
         }
     }
+    
+    private func downloadAndCropUnsplashImage(from url: URL) async -> UIImage? {
+        do {
+            print("🖼️ Downloading Unsplash image from: \(url)")
+            let (data, _) = try await URLSession.shared.data(from: url)
+            
+            guard let downloadedImage = UIImage(data: data) else {
+                print("❌ Failed to create UIImage from downloaded data")
+                return nil
+            }
+            
+            print("✅ Downloaded image size: \(downloadedImage.size)")
+            
+            // Crop the image to the same aspect ratio as user-selected images (16:10)
+            let targetAspectRatio: CGFloat = 16.0 / 10.0
+            let croppedImage = cropImageToAspectRatio(downloadedImage, aspectRatio: targetAspectRatio)
+            
+            print("✅ Cropped image to aspect ratio 16:10")
+            return croppedImage
+            
+        } catch {
+            print("❌ Error downloading Unsplash image: \(error)")
+            return nil
+        }
+    }
+    
+    private func cropImageToAspectRatio(_ image: UIImage, aspectRatio: CGFloat) -> UIImage {
+        let imageAspectRatio = image.size.width / image.size.height
+        
+        var cropRect: CGRect
+        
+        if imageAspectRatio > aspectRatio {
+            // Image is wider than target - crop horizontally
+            let newWidth = image.size.height * aspectRatio
+            let xOffset = (image.size.width - newWidth) / 2
+            cropRect = CGRect(x: xOffset, y: 0, width: newWidth, height: image.size.height)
+        } else {
+            // Image is taller than target - crop vertically
+            let newHeight = image.size.width / aspectRatio
+            let yOffset = (image.size.height - newHeight) / 2
+            cropRect = CGRect(x: 0, y: yOffset, width: image.size.width, height: newHeight)
+        }
+        
+        guard let cgImage = image.cgImage?.cropping(to: cropRect) else {
+            return image
+        }
+        
+        return UIImage(cgImage: cgImage, scale: image.scale, orientation: image.imageOrientation)
+    }
 }
 
 #Preview {
-    CreateEventView(user: UserData.userData[0], selectedTab: .constant(2), event: EventModel(), isNewEvent: false)
+    CreateEventView(user: UserData.userData[0], selectedTab: .constant(2), event: EventModel(), isNewEvent: false, unsplashImageURL: nil)
         .environmentObject(ViewModel())
 }
 

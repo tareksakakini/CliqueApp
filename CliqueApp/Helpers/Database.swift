@@ -724,27 +724,42 @@ class DatabaseManager {
         let storageRef = Storage.storage().reference()
         let fileRef = storageRef.child(storageLocation)
         
-        fileRef.putData(imageData, metadata: nil) { _, error in
-            if let error = error {
-                print("Upload failed: \(error.localizedDescription)")
-                return
+        do {
+            // Upload the image using async/await pattern
+            let _ = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<StorageMetadata?, Error>) in
+                fileRef.putData(imageData, metadata: nil) { metadata, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: metadata)
+                    }
+                }
             }
             
-            fileRef.downloadURL { url, error in
-                guard let downloadURL = url else { return }
-                self.saveImageURLtoFirestore(url: downloadURL.absoluteString, referenceLocation: referenceLocation, fieldName: fieldName)
+            // Get the download URL
+            let downloadURL = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<URL, Error>) in
+                fileRef.downloadURL { url, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else if let url = url {
+                        continuation.resume(returning: url)
+                    } else {
+                        continuation.resume(throwing: NSError(domain: "DownloadError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Failed to get download URL"]))
+                    }
+                }
             }
+            
+            // Save the URL to Firestore
+            try await saveImageURLtoFirestore(url: downloadURL.absoluteString, referenceLocation: referenceLocation, fieldName: fieldName)
+            
+        } catch {
+            print("Upload failed: \(error.localizedDescription)")
         }
     }
     
-    func saveImageURLtoFirestore(url: String, referenceLocation: DocumentReference, fieldName: String) {
-        referenceLocation.setData([fieldName: url], merge: true) { error in
-            if let error = error {
-                print("Error updating Firestore: \(error.localizedDescription)")
-            } else {
-                print("Picture updated successfully!")
-            }
-        }
+    func saveImageURLtoFirestore(url: String, referenceLocation: DocumentReference, fieldName: String) async throws {
+        try await referenceLocation.setData([fieldName: url], merge: true)
+        print("Picture updated successfully!")
     }
     
     func isUsernameTaken(username: String) async throws -> Bool {

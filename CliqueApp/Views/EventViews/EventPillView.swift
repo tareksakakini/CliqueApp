@@ -83,6 +83,9 @@ extension EventPillView {
             .foregroundColor(Color(.accent))
             .font(.title3)
             .bold()
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .fixedSize(horizontal: false, vertical: true)
     }
     
     private var EventLocation: some View {
@@ -110,7 +113,7 @@ extension EventPillView {
                 EventTitle
                 EventLocation
             }
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .leading)
             VStack(alignment: .trailing) {
                 EventDate
                 EventTime
