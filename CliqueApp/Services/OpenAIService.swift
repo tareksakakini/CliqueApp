@@ -10,7 +10,8 @@ import Foundation
 class OpenAIService: ObservableObject {
     private let apiKey: String
     private let baseURL = "https://api.openai.com/v1/chat/completions"
-    private var conversationHistory: [[String: String]] = []
+    private var conversationHistory: [[String: Any]] = []
+    private let ticketmasterService = TicketmasterService()
     
     private func createSystemPrompt() -> String {
         let currentDate = Date()
@@ -24,6 +25,23 @@ class OpenAIService: ObservableObject {
         **CURRENT DATE & TIME:** \(currentDateTime)
 
         Your goal is to understand their event preferences by gathering relevant information. Examples of relevant information is possible dates they're aiming for, times of the day that they are aiming for, location they are aiming for with varying levels of ambiguity, and possibly type of activities they are interested in for this event. Users can vary along a spectrum from knowing exactly what they want to having very little preference and keeping it very open for you to dictate the details.
+        
+        **IMPORTANT**: You now have access to real-time event data from Ticketmaster! 
+
+        **When to search Ticketmaster:**
+        - User mentions specific artists, bands, or performers
+        - User wants concerts, shows, sports games, theater, or any ticketed entertainment
+        - User mentions a specific city or location
+        - User wants to see "what's happening" or "events near me"
+        - User asks for real events or actual shows
+        
+        **When to create general suggestions:**
+        - User wants casual activities (coffee meetups, park visits, etc.)
+        - User wants private gatherings or house parties
+        - User mentions activities that typically don't require tickets
+        - No location is specified and they want general ideas
+        
+        Always try Ticketmaster search first when appropriate, then supplement with your own suggestions if needed.
         
         During the course of the conversation, you should guage whether you feel like you have gathered enough information or not. If you have gathered enough information, you should move on to providing suggested plans. If not, you should think what is a good follow up question to gather the information you need. In other words, depending on the chat history, the kind of event they are going for, the information needed for such an event, and the information they already supplied, you can tell what else you need to know. If you feel like the user intentionally wants to keep it open, you should let them and not push for an answer or push for too detailed of info.
         
@@ -42,7 +60,10 @@ class OpenAIService: ObservableObject {
         - Once you have gathered what feels like enough information, transition to providing 5 to 10 specific event suggestions
 
         **WHEN PROVIDING SUGGESTIONS:**
-        For each suggestion, provide these exact details in this format. Do not include brackets in your output:
+        
+        **For Real Ticketmaster Events:** When you find real events from Ticketmaster, present them exactly as they are returned from the function call, with all the real details including venue names, addresses, dates, times, and ticket links.
+        
+        **For General Event Ideas:** When creating your own event suggestions (not from Ticketmaster), provide these exact details in this format. Do not include brackets in your output:
 
         **[Event Title - MAXIMUM 4 WORDS, be concise and punchy]**
         📍 **Location:** [Venue/Business Name] - [Specific street address]
@@ -94,6 +115,8 @@ class OpenAIService: ObservableObject {
             throw OpenAIError.missingAPIKey
         }
         
+        print("🤖 [OpenAI] User message: \(message)")
+        
         // Add user message to conversation history
         conversationHistory.append([
             "role": "user",
@@ -109,7 +132,95 @@ class OpenAIService: ObservableObject {
         let requestBody: [String: Any] = [
             "model": "gpt-4",
             "messages": conversationHistory,
-            "max_tokens": 500,
+            "max_tokens": 1000,
+            "temperature": 0.7,
+            "tools": getToolDefinitions()
+        ]
+        
+        print("🤖 [OpenAI] Sending request with \(conversationHistory.count) messages and \(getToolDefinitions().count) tools")
+        
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OpenAIError.invalidResponse
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            throw OpenAIError.apiError(httpResponse.statusCode)
+        }
+        
+        let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        
+        guard let choices = json?["choices"] as? [[String: Any]],
+              let firstChoice = choices.first,
+              let aiMessage = firstChoice["message"] as? [String: Any] else {
+            throw OpenAIError.invalidResponse
+        }
+        
+        // Check if AI wants to call a function
+        if let toolCalls = aiMessage["tool_calls"] as? [[String: Any]], !toolCalls.isEmpty {
+            print("🔧 [OpenAI] AI wants to call \(toolCalls.count) function(s)")
+            
+            // Add AI's tool call message to history
+            conversationHistory.append(aiMessage)
+            
+            // Execute the function calls
+            for toolCall in toolCalls {
+                let toolCallId = toolCall["id"] as? String ?? ""
+                if let function = toolCall["function"] as? [String: Any],
+                   let functionName = function["name"] as? String,
+                   let argumentsString = function["arguments"] as? String {
+                    
+                    print("🔧 [OpenAI] Calling function: \(functionName) with args: \(argumentsString)")
+                    
+                    let functionResult = await executeFunction(name: functionName, arguments: argumentsString)
+                    
+                    print("🔧 [OpenAI] Function result: \(functionResult.prefix(200))...")
+                    
+                    // Add function result to conversation history
+                    conversationHistory.append([
+                        "role": "tool",
+                        "tool_call_id": toolCallId,
+                        "content": functionResult
+                    ])
+                }
+            }
+            
+            // Make another API call to get the final response
+            return try await sendFollowUpMessage()
+        } else {
+            // Regular text response
+            guard let content = aiMessage["content"] as? String else {
+                throw OpenAIError.invalidResponse
+            }
+            
+            let aiResponse = content.trimmingCharacters(in: .whitespacesAndNewlines)
+            
+            print("💬 [OpenAI] AI response (direct): \(aiResponse.prefix(200))...")
+            
+            // Add AI response to conversation history
+            conversationHistory.append([
+                "role": "assistant",
+                "content": aiResponse
+            ])
+            
+            return aiResponse
+        }
+    }
+    
+    private func sendFollowUpMessage() async throws -> String {
+        let url = URL(string: baseURL)!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let requestBody: [String: Any] = [
+            "model": "gpt-4",
+            "messages": conversationHistory,
+            "max_tokens": 1000,
             "temperature": 0.7
         ]
         
@@ -136,6 +247,8 @@ class OpenAIService: ObservableObject {
         
         let aiResponse = content.trimmingCharacters(in: .whitespacesAndNewlines)
         
+        print("💬 [OpenAI] AI response (after function calls): \(aiResponse.prefix(200))...")
+        
         // Add AI response to conversation history
         conversationHistory.append([
             "role": "assistant",
@@ -143,6 +256,176 @@ class OpenAIService: ObservableObject {
         ])
         
         return aiResponse
+    }
+    
+    private func getToolDefinitions() -> [[String: Any]] {
+        return [
+            [
+                "type": "function",
+                "function": [
+                    "name": "search_ticketmaster_events",
+                    "description": "Search for real events from Ticketmaster based on user preferences like location, keyword, date range, and event type",
+                    "parameters": [
+                        "type": "object",
+                        "properties": [
+                            "keyword": [
+                                "type": "string",
+                                "description": "Keywords to search for (artist name, event name, etc.)"
+                            ],
+                            "city": [
+                                "type": "string", 
+                                "description": "City name to search in"
+                            ],
+                            "stateCode": [
+                                "type": "string",
+                                "description": "State code (e.g., 'CA', 'NY', 'TX')"
+                            ],
+                            "countryCode": [
+                                "type": "string",
+                                "description": "Country code (default 'US')"
+                            ],
+                            "startDateTime": [
+                                "type": "string",
+                                "description": "Start date in format YYYY-MM-DDTHH:MM:SSZ"
+                            ],
+                            "endDateTime": [
+                                "type": "string", 
+                                "description": "End date in format YYYY-MM-DDTHH:MM:SSZ"
+                            ],
+                            "classificationName": [
+                                "type": "string",
+                                "description": "Event category (music, sports, arts, family, etc.)"
+                            ],
+                            "size": [
+                                "type": "integer",
+                                "description": "Number of events to return (default 10, max 20)"
+                            ]
+                        ],
+                        "required": []
+                    ]
+                ]
+            ]
+        ]
+    }
+    
+    private func executeFunction(name: String, arguments: String) async -> String {
+        switch name {
+        case "search_ticketmaster_events":
+            return await searchTicketmasterEvents(arguments: arguments)
+        default:
+            return "Unknown function: \(name)"
+        }
+    }
+    
+    private func searchTicketmasterEvents(arguments: String) async -> String {
+        do {
+            guard let argumentsData = arguments.data(using: .utf8),
+                  let params = try JSONSerialization.jsonObject(with: argumentsData) as? [String: Any] else {
+                return "Error: Could not parse function arguments"
+            }
+            
+            let keyword = params["keyword"] as? String
+            let city = params["city"] as? String
+            let stateCode = params["stateCode"] as? String
+            let countryCode = params["countryCode"] as? String ?? "US"
+            let startDateTime = params["startDateTime"] as? String
+            let endDateTime = params["endDateTime"] as? String
+            let classificationName = params["classificationName"] as? String
+            let size = params["size"] as? Int ?? 10
+            
+            let response = try await ticketmasterService.searchEvents(
+                keyword: keyword,
+                city: city,
+                stateCode: stateCode,
+                countryCode: countryCode,
+                latitude: nil,
+                longitude: nil,
+                radius: "25",
+                startDateTime: startDateTime,
+                endDateTime: endDateTime,
+                classificationName: classificationName,
+                size: size
+            )
+            
+            guard let events = response.embedded?.events, !events.isEmpty else {
+                return "No events found matching the criteria."
+            }
+            
+            // Format events for the AI
+            var result = "Found \(events.count) events:\n\n"
+            
+            for (index, event) in events.enumerated() {
+                result += "**Event \(index + 1): \(event.name)**\n"
+                
+                // Add venue information
+                if let venue = event.embedded?.venues?.first {
+                    result += "📍 Location: \(venue.name)"
+                    if let address = venue.address?.line1 {
+                        result += " - \(address)"
+                    }
+                    if let city = venue.city?.name, let state = venue.state?.name {
+                        result += ", \(city), \(state)"
+                    }
+                    result += "\n"
+                }
+                
+                // Add date/time information
+                if let start = event.dates?.start {
+                    if let localDate = start.localDate, let localTime = start.localTime {
+                        result += "🕐 Date & Time: \(localDate) at \(localTime)\n"
+                    } else if let localDate = start.localDate {
+                        result += "🕐 Date: \(localDate)\n"
+                    }
+                }
+                
+                // Add price information
+                if let priceRanges = event.priceRanges, !priceRanges.isEmpty {
+                    let minPrice = priceRanges.compactMap { $0.min }.min()
+                    let maxPrice = priceRanges.compactMap { $0.max }.max()
+                    let currency = priceRanges.first?.currency ?? "USD"
+                    
+                    if let min = minPrice, let max = maxPrice {
+                        result += "💰 Price Range: \(currency) \(min) - \(max)\n"
+                    } else if let min = minPrice {
+                        result += "💰 Starting Price: \(currency) \(min)\n"
+                    }
+                }
+                
+                // Add ticket URL
+                if let ticketURL = event.url {
+                    result += "🎫 Tickets: \(ticketURL)\n"
+                }
+                
+                // Add event description if available
+                if let description = event.info {
+                    result += "📝 Description: \(description)\n"
+                }
+                
+                // Add genre/category
+                if let classification = event.classifications?.first {
+                    var genres: [String] = []
+                    if let segment = classification.segment?.name {
+                        genres.append(segment)
+                    }
+                    if let genre = classification.genre?.name {
+                        genres.append(genre)
+                    }
+                    if !genres.isEmpty {
+                        result += "🎭 Category: \(genres.joined(separator: " - "))\n"
+                    }
+                }
+                
+                result += "\n"
+            }
+            
+            print("📄 [OpenAI] Formatted Ticketmaster response (\(result.count) chars): \(result.prefix(300))...")
+            
+            return result
+            
+        } catch {
+            print("❌ [OpenAI] Ticketmaster search error: \(error.localizedDescription)")
+            return "Error searching events: \(error.localizedDescription)"
+        }
     }
     
     func resetConversation() {
