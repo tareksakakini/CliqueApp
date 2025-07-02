@@ -66,8 +66,15 @@ struct AIEventCreationView: View {
                             
                             // Typing indicator
                             if isTyping {
-                                typingIndicator
-                                    .id("typing")
+                                HStack {
+                                    TypingIndicatorView()
+                                        .padding(.horizontal, 16)
+                                        .padding(.vertical, 12)
+                                        .background(Color(.systemGray5))
+                                        .cornerRadius(18)
+                                    Spacer()
+                                }
+                                .id("typing")
                             }
                         }
                         .padding(.horizontal, 16)
@@ -129,31 +136,6 @@ struct AIEventCreationView: View {
                     onEventCreated: onEventCreated
                 )
             }
-        }
-    }
-    
-    private var typingIndicator: some View {
-        HStack {
-            HStack(spacing: 4) {
-                ForEach(0..<3) { index in
-                    Circle()
-                        .fill(Color.gray)
-                        .frame(width: 8, height: 8)
-                        .scaleEffect(isTyping ? 1.0 : 0.5)
-                        .animation(
-                            Animation.easeInOut(duration: 0.6)
-                                .repeatForever()
-                                .delay(Double(index) * 0.2),
-                            value: isTyping
-                        )
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color(.systemGray5))
-            .cornerRadius(18)
-            
-            Spacer()
         }
     }
     
