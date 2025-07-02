@@ -12,16 +12,17 @@ struct TypingIndicatorView: View {
                     .scaleEffect(animate ? 1 : 0.5)
                     .opacity(animate ? 1 : 0.3)
                     .animation(
-                        Animation
-                            .easeInOut(duration: 0.6)
-                            .repeatForever()
-                            .delay(Double(index) * 0.2),
+                        .easeInOut(duration: 0.6)
+                        .repeatForever()
+                        .delay(Double(index) * 0.2),
                         value: animate
                     )
             }
         }
         .onAppear {
-            animate = true
+            withAnimation {
+                animate = true
+            }
         }
     }
 }

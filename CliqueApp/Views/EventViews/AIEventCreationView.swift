@@ -238,7 +238,7 @@ struct AIEventCreationView: View {
                     } else {
                         // Normal response without suggestions
                         let aiResponse = ChatMessage(
-                            text: aiResponseText,
+                            text: extractAssistantMessage(from: aiResponseText),
                             isFromUser: false,
                             timestamp: Date()
                         )
@@ -471,6 +471,23 @@ struct AIEventCreationView: View {
         print("  End: \(endTime!)")
         
         return suggestion
+    }
+    
+    // Helper to extract only the assistant's response, removing <thinking> and <response> tags
+    private func extractAssistantMessage(from text: String) -> String {
+        // Try to extract content inside <response>...</response>
+        if let responseRange = text.range(of: "<response>([\\s\\S]*?)</response>", options: .regularExpression) {
+            let responseContent = String(text[responseRange])
+            // Remove the <response> and </response> tags
+            return responseContent
+                .replacingOccurrences(of: "<response>", with: "")
+                .replacingOccurrences(of: "</response>", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        // If no <response> tags, return the text as-is with any <thinking> tags removed
+        return text
+            .replacingOccurrences(of: "<thinking>[\\s\\S]*?</thinking>", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
