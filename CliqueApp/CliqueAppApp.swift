@@ -22,6 +22,7 @@ struct CliqueAppApp: App {
             StartingView()
                 .environmentObject(vm)
                 .accentColor(.green)
+                .preferredColorScheme(FeatureFlags.forceLightMode ? .light : nil)
         }
     }
 }

@@ -250,7 +250,7 @@ struct CreateEventView: View {
                 .padding(.horizontal, 16)
             
             // Create with AI Button (only for new events)
-            if isNewEvent {
+            if isNewEvent && FeatureFlags.enableAIEventCreation {
                 Button {
                     isPreparingAI = true
                     // Add a small delay to simulate preparation, then show the AI chat

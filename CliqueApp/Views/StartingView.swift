@@ -63,7 +63,6 @@ extension StartingView {
                     .frame(width: 200, height: 80)
                     .foregroundColor(.white)
                     .scaleEffect(logoScale)
-                    .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: logoScale)
                 
                 // Spinning wheel below logo
                 ProgressView()
@@ -73,7 +72,9 @@ extension StartingView {
             }
         }
         .onAppear {
-            logoScale = 1.05
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                logoScale = 1.2
+            }
         }
     }
     
