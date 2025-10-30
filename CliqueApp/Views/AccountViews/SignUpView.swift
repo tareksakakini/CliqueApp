@@ -27,6 +27,7 @@ struct SignUpView: View {
     @FocusState private var usernameFieldIsFocused: Bool
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @State private var isCreatingAccount = false
     
     let genderOptions = ["Male", "Female", "Other"]
     
@@ -224,46 +225,54 @@ struct SignUpView: View {
     
     private var createAccountButton: some View {
         Button {
+            isCreatingAccount = true
             Task {
                 // Full name validation
                 if fullname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     alertMessage = "Full name cannot be empty."
                     showAlert = true
+                    isCreatingAccount = false
                     return
                 }
                 // Username validation
                 if username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     alertMessage = "Username cannot be empty."
                     showAlert = true
+                    isCreatingAccount = false
                     return
                 }
                 // Email format validation
                 if !isValidEmail(email) {
                     alertMessage = "Please enter a valid email address."
                     showAlert = true
+                    isCreatingAccount = false
                     return
                 }
                 // Password length validation
                 if password.count < 6 {
                     alertMessage = "Password must be at least 6 characters."
                     showAlert = true
+                    isCreatingAccount = false
                     return
                 }
                 // Username availability check
                 if isUsernameTaken == true {
                     alertMessage = "Username is already taken. Please choose a different username."
                     showAlert = true
+                    isCreatingAccount = false
                     return
                 }
                 // Age and policy agreement validation
                 if !isAgeChecked {
                     alertMessage = "You must confirm that you are 16 years or older."
                     showAlert = true
+                    isCreatingAccount = false
                     return
                 }
                 if !isAgreePolicy {
                     alertMessage = "You must agree to the Privacy Policy."
                     showAlert = true
+                    isCreatingAccount = false
                     return
                 }
                 
@@ -283,13 +292,20 @@ struct SignUpView: View {
                     // Check for email already in use (Firebase error message)
                     alertMessage = "Sign up failed. This email may already be in use. Please use a different email or try signing in."
                     showAlert = true
+                    isCreatingAccount = false
                 }
             }
         } label: {
             HStack {
-                Image(systemName: "person.badge.plus")
-                    .font(.system(size: 18, weight: .semibold))
-                Text("Create Account")
+                if isCreatingAccount {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .foregroundColor(.white)
+                } else {
+                    Image(systemName: "person.badge.plus")
+                        .font(.system(size: 18, weight: .semibold))
+                }
+                Text(isCreatingAccount ? "Creating Account..." : "Create Account")
                     .font(.system(size: 18, weight: .semibold))
             }
             .foregroundColor(.white)
@@ -305,12 +321,13 @@ struct SignUpView: View {
             .cornerRadius(16)
             .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
         }
-        .disabled(!isAgeChecked || !isAgreePolicy || isUsernameTaken == true || isCheckingUsername)
-        .opacity((!isAgeChecked || !isAgreePolicy || isUsernameTaken == true || isCheckingUsername) ? 0.6 : 1.0)
+        .disabled(!isAgeChecked || !isAgreePolicy || isUsernameTaken == true || isCheckingUsername || isCreatingAccount)
+        .opacity((!isAgeChecked || !isAgreePolicy || isUsernameTaken == true || isCheckingUsername || isCreatingAccount) ? 0.6 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isAgeChecked)
         .animation(.easeInOut(duration: 0.2), value: isAgreePolicy)
         .animation(.easeInOut(duration: 0.2), value: isUsernameTaken)
         .animation(.easeInOut(duration: 0.2), value: isCheckingUsername)
+        .animation(.easeInOut(duration: 0.2), value: isCreatingAccount)
         .alert(isPresented: $showAlert) {
             Alert(title: Text("Sign Up Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
         }
