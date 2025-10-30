@@ -46,6 +46,7 @@ struct MySettingsView: View {
     @State private var tempSelectedImage: UIImage? = nil
     @State private var showImageCrop = false
     @State private var showPhoneLinkSheet = false
+    @State private var isSigningOut = false
     
     var body: some View {
         mainContent
@@ -606,22 +607,31 @@ struct MySettingsView: View {
                 showSignOutConfirmation = true
             }) {
                 HStack(spacing: 12) {
-                    Image(systemName: "arrow.right.square")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.black.opacity(0.7))
-                    Text("Sign Out")
+                    if isSigningOut {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .tint(.black.opacity(0.7))
+                    } else {
+                        Image(systemName: "arrow.right.square")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.black.opacity(0.7))
+                    }
+                    Text(isSigningOut ? "Signing Out..." : "Sign Out")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.primary)
                     Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black.opacity(0.3))
+                    if !isSigningOut {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.black.opacity(0.3))
+                    }
                 }
                 .padding(20)
                 .background(Color.white)
                 .cornerRadius(16)
                 .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
             }
+            .disabled(isSigningOut)
             
             // Delete Account Button
             Button(action: {
@@ -665,17 +675,19 @@ struct MySettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Sign Out", role: .destructive) {
-            Task {
-                do {
-                    // Clear OneSignal association before signing out
-                    await clearOneSignalForUser()
-                    
-                    try AuthManager.shared.signOut()
-                    goToLoginScreen = true
-                } catch {
-                    print("Sign out failed")
+                isSigningOut = true
+                Task {
+                    do {
+                        // Clear OneSignal association before signing out
+                        await clearOneSignalForUser()
+                        
+                        try AuthManager.shared.signOut()
+                        goToLoginScreen = true
+                    } catch {
+                        print("Sign out failed")
+                        isSigningOut = false
+                    }
                 }
-            }
             }
             Button("Cancel", role: .cancel) { }
         } message: {
