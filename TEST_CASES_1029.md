@@ -1,23 +1,25 @@
 # CliqueApp Manual Test Cases
 
-**Test Date:** _______________  
-**Tester:** _______________  
-**App Version:** _______________  
-**Device/iOS Version:** _______________
+**Test Date:** 10/29/2025  
+**Tester:** Tarek  
+**App Version:** Dunno  
+**Device/iOS Version:** Dunno
 
 ---
 
 ## Test Accounts Setup
-- **User A Email:** _______________
-- **User A Phone:** _______________
-- **User B Email:** _______________
-- **User B Phone:** _______________
+- **User A Email:** tarek.sakakini@gmail.com
+- **User A Phone:** 2176210670
+- **User B Email:** tek.tech.inc@gmail.com
+- **User B Phone:** NA
 
 ---
 
 ## 1. AUTHENTICATION & ACCOUNT MANAGEMENT
 
 ### 1.1 Sign Up Flow
+
+-- FULLY DONE --
 
 #### Test 1.1.1: New User Registration (User A)
 - [ ] **Steps:**
@@ -26,40 +28,42 @@
   3. Enter valid email, password, full name, username, gender
   4. Tap "Create Account"
 - [ ] **Expected:** Account created successfully, redirected to email verification screen
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Actual:** Account created successfully, redirected to email verification screen
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.1.2: Duplicate Email Registration
 - [ ] **Steps:**
   1. On Device B, attempt to sign up with User A's email
 - [ ] **Expected:** Error message indicating email is already in use
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Actual:** Error message indicating email is already in use
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.1.3: Invalid Email Format
 - [ ] **Steps:**
   1. Attempt to sign up with invalid email format (e.g., "test@")
 - [ ] **Expected:** Validation error before submission
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Actual:** Validation error before submission
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.1.4: Weak Password
 - [ ] **Steps:**
   1. Attempt to sign up with password less than 6 characters
 - [ ] **Expected:** Error message about password strength
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Actual:** Error message about password strength
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.1.5: New User Registration (User B)
 - [ ] **Steps:**
   1. On Device B, sign up with unique User B credentials
 - [ ] **Expected:** Account created successfully
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Actual:** Account created successfully
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 1.2 Email Verification
+
+-- FULLY DONE --
 
 #### Test 1.2.1: Email Verification Flow (User A)
 - [ ] **Steps:**
@@ -68,60 +72,64 @@
   3. Click verification link
   4. Return to app and tap "I've verified my email"
 - [ ] **Expected:** Successfully verified, can access main app
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Actual:** Successfully verified, can access main app
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.2.2: Resend Verification Email
 - [ ] **Steps:**
   1. On Device B (User B), before verifying, tap "Resend Verification Email"
   2. Check email inbox
 - [ ] **Expected:** New verification email received
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Actual:** New verification email received
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.2.3: Verify User B Email
 - [ ] **Steps:**
   1. Complete email verification for User B
 - [ ] **Expected:** User B can access main app
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Actual:** User B can access main app
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 1.3 Login Flow
+
+-- FULLY DONE --
 
 #### Test 1.3.1: Successful Login
 - [ ] **Steps:**
   1. Logout from User A's account
   2. Login with User A's credentials
 - [ ] **Expected:** Successful login, redirected to main view
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Actual:** Successful login, redirected to main view
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.3.2: Invalid Password
 - [ ] **Steps:**
   1. Attempt login with correct email but wrong password
 - [ ] **Expected:** Error message "Invalid credentials"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.3.3: Non-existent Email
 - [ ] **Steps:**
   1. Attempt login with non-existent email
 - [ ] **Expected:** Error message
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.3.4: Empty Fields
 - [ ] **Steps:**
   1. Attempt login with empty email or password
 - [ ] **Expected:** Validation error
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 1.4 Password Reset
+
+-- FULLY DONE --
 
 #### Test 1.4.1: Password Reset Request
 - [ ] **Steps:**
@@ -130,7 +138,7 @@
   3. Submit password reset request
 - [ ] **Expected:** Success message, reset email sent
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.4.2: Reset Email Received
 - [ ] **Steps:**
@@ -138,7 +146,7 @@
   2. Verify password reset email received
 - [ ] **Expected:** Email contains reset link
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 1.4.3: Reset Password and Login
 - [ ] **Steps:**
@@ -147,11 +155,13 @@
   3. Login with new password
 - [ ] **Expected:** Password updated, login successful
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass 
 
 ---
 
 ### 1.5 Phone Number Linking
+
+-- This whole feature needs rethinking. There is no verification for the phone number which is a security risk. Switching to sign up by phone number fixes a lot of this. --
 
 #### Test 1.5.1: Link Phone Number (User A)
 - [ ] **Steps:**
@@ -174,7 +184,9 @@
 
 ---
 
-### 1.6 Profile Management
+### 1.6 Profile Picture Management
+
+-- Functional, but user experience poor, and still some issues with pictures not matching selection --
 
 #### Test 1.6.1: Upload Profile Picture (User A)
 - [ ] **Steps:**
@@ -203,14 +215,6 @@
 - [ ] **Actual:** _______________
 - [ ] **Pass/Fail:** _______________
 
-#### Test 1.6.4: View Privacy Policy
-- [ ] **Steps:**
-  1. From Settings, tap "Privacy Policy"
-  2. Review the PDF document
-- [ ] **Expected:** Privacy policy PDF loads and displays correctly
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
-
 ---
 
 ## 2. FRIEND MANAGEMENT
@@ -225,36 +229,28 @@
   4. Search for User B by username
 - [ ] **Expected:** User B appears in search results
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
-
-#### Test 2.1.2: Search by Email
-- [ ] **Steps:**
-  1. Clear search
-  2. Search for User B using their email
-- [ ] **Expected:** User B appears in search results
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Not implement
 
 #### Test 2.1.3: Search by Full Name
 - [ ] **Steps:**
   1. Search for User B using their full name
 - [ ] **Expected:** User B appears in search results
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.1.4: Partial Search Match
 - [ ] **Steps:**
   1. Search with partial username (first few characters)
 - [ ] **Expected:** User B appears in results if match exists
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.1.5: No Results Search
 - [ ] **Steps:**
   1. Search for non-existent user "zzznonexistent123"
 - [ ] **Expected:** No results shown
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.1.6: Clear Search
 - [ ] **Steps:**
@@ -262,7 +258,7 @@
   2. Tap X button to clear
 - [ ] **Expected:** Search cleared, results reset
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -275,7 +271,7 @@
   3. In FriendDetailsView, tap "Add Friend" or equivalent button
 - [ ] **Expected:** Friend request sent, button changes to "Request Sent" or similar
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.2.2: View Pending Request Status (User A)
 - [ ] **Steps:**
@@ -283,7 +279,7 @@
   2. Search for User B again
 - [ ] **Expected:** User B shows "Request Sent" status
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.2.3: Receive Friend Request Notification (User B)
 - [ ] **Steps:**
@@ -292,7 +288,7 @@
   3. Check for friend request indicator
 - [ ] **Expected:** Push notification received (if enabled), friend request visible in app
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.2.4: View Friend Request Details (User B)
 - [ ] **Steps:**
@@ -300,14 +296,14 @@
   2. Tap on User A's request
 - [ ] **Expected:** User A's profile details shown
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.2.5: Accept Friend Request (User B accepts User A)
 - [ ] **Steps:**
   1. As User B, tap "Accept" on User A's friend request
 - [ ] **Expected:** Request accepted, User A added to friends list
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.2.6: Verify Friendship (User A)
 - [ ] **Steps:**
@@ -315,7 +311,7 @@
   2. Check if User B appears in friends list
 - [ ] **Expected:** User B is now in User A's friends list
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.2.7: Mutual Friendship Status
 - [ ] **Steps:**
@@ -323,7 +319,7 @@
   2. Verify friend status indicator
 - [ ] **Expected:** Shows "Friends" status, not "Add Friend"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -335,21 +331,21 @@
   2. As User B, send friend request to User A (if you previously removed friendship)
 - [ ] **Expected:** Request sent
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.3.2: Decline Friend Request
 - [ ] **Steps:**
   1. As receiving user, tap "Decline" on friend request
 - [ ] **Expected:** Request declined and removed
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.3.3: Verify Decline Reflected
 - [ ] **Steps:**
   1. As requesting user, search for the other user
 - [ ] **Expected:** Shows "Add Friend" again (can re-request)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -360,14 +356,14 @@
   1. As User A, navigate to Friends tab
 - [ ] **Expected:** User B appears in friends list with profile picture and details
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.4.2: View Friend Profile
 - [ ] **Steps:**
   1. Tap on User B in friends list
 - [ ] **Expected:** User B's profile details displayed
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.4.3: Remove Friend
 - [ ] **Steps:**
@@ -375,7 +371,7 @@
   2. Confirm removal
 - [ ] **Expected:** Friend removed from list
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 2.4.4: Re-add Removed Friend
 - [ ] **Steps:**
@@ -384,13 +380,15 @@
   3. Have them accept
 - [ ] **Expected:** Successfully re-added as friends
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ## 3. EVENT CREATION
 
 ### 3.1 Basic Event Creation
+
+-- The way the host is indicated on the outside card needs adjustment --
 
 #### Test 3.1.1: Create Event with Minimum Required Fields (User A)
 - [ ] **Steps:**
@@ -400,9 +398,9 @@
   4. Set start date/time: Tomorrow at 2:00 PM
   5. Check "No end time"
   6. Tap "Create Event" (without adding invitees)
-- [ ] **Expected:** Error or prompt to add invitees
+- [ ] **Expected:** Successful creation of event
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.1.2: Create Event with All Fields (User A invites User B)
 - [ ] **Steps:**
