@@ -389,6 +389,7 @@
 ### 3.1 Basic Event Creation
 
 -- The way the host is indicated on the outside card needs adjustment --
+-- Auto capitalize for event title --
 
 #### Test 3.1.1: Create Event with Minimum Required Fields (User A)
 - [ ] **Steps:**
@@ -417,7 +418,7 @@
   11. Tap "Create Event"
 - [ ] **Expected:** Event created successfully, redirected to "My Events" tab
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.1.3: View Created Event (User A)
 - [ ] **Steps:**
@@ -425,7 +426,7 @@
   2. Tap on it to view details
 - [ ] **Expected:** All event details displayed correctly (title, location, description, time, image, attendees)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -438,7 +439,7 @@
   3. Tap "Create Event"
 - [ ] **Expected:** Error: "Event title must be at least 3 characters long"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.2.2: Missing Location
 - [ ] **Steps:**
@@ -446,7 +447,7 @@
   2. Tap "Create Event"
 - [ ] **Expected:** Error: "Please select a location for your event"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.2.3: Past Start Time
 - [ ] **Steps:**
@@ -454,7 +455,7 @@
   2. Tap "Create Event"
 - [ ] **Expected:** Error: "Event start time cannot be in the past"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.2.4: End Time Before Start Time
 - [ ] **Steps:**
@@ -463,7 +464,7 @@
   3. Tap "Create Event"
 - [ ] **Expected:** Error: "Event end time must be after the start time"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.2.5: Description Character Limit
 - [ ] **Steps:**
@@ -471,7 +472,7 @@
   2. Continue past 1000 characters
 - [ ] **Expected:** Character counter turns red, typing stops at 1000 characters
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -483,21 +484,21 @@
   2. Wait for suggestions
 - [ ] **Expected:** List of nearby Starbucks locations appears
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.3.2: Select Location from Suggestions
 - [ ] **Steps:**
   1. Tap on one of the location suggestions
 - [ ] **Expected:** Location field populated with selected location (title and address)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.3.3: Clear Selected Location
 - [ ] **Steps:**
   1. After selecting location, tap X button
 - [ ] **Expected:** Location cleared, can search again
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.3.4: Location with Full Address
 - [ ] **Steps:**
@@ -506,7 +507,7 @@
   3. View in event details after creation
 - [ ] **Expected:** Full address stored and displayed correctly
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 

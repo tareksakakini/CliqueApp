@@ -24,6 +24,7 @@ struct EventDetailView: View {
     @State private var showLeaveConfirmation = false
     @State private var isAcceptingInvite = false
     @State private var isAcceptingDeclinedInvite = false
+    @State private var isDeletingEvent = false
     
     init(event: EventModel, user: UserModel, inviteView: Bool) {
         self.event = event
@@ -742,9 +743,15 @@ struct EventDetailView: View {
                 showDeleteConfirmation = true
             }) {
                 HStack(spacing: 8) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 16, weight: .semibold))
-                    Text("Delete Event")
+                    if isDeletingEvent {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .tint(.red)
+                    } else {
+                        Image(systemName: "trash")
+                            .font(.system(size: 16, weight: .semibold))
+                    }
+                    Text(isDeletingEvent ? "Deleting Event..." : "Delete Event")
                         .font(.system(size: 16, weight: .semibold))
                 }
                 .foregroundColor(.red)
@@ -757,6 +764,7 @@ struct EventDetailView: View {
                 )
                 .cornerRadius(16)
             }
+            .disabled(isDeletingEvent)
         }
         .padding(.horizontal, 20)
         .padding(.top, 32)
@@ -766,6 +774,7 @@ struct EventDetailView: View {
             titleVisibility: .visible
         ) {
             Button("Delete Event", role: .destructive) {
+                isDeletingEvent = true
                 Task {
                     await deleteEvent()
                 }
@@ -805,6 +814,9 @@ struct EventDetailView: View {
             }
         } catch {
             print("Error deleting event: \(error)")
+            await MainActor.run {
+                isDeletingEvent = false
+            }
         }
     }
     
