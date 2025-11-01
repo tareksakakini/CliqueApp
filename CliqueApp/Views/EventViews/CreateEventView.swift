@@ -325,9 +325,30 @@ struct CreateEventView: View {
     
     private var eventImageSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Event Photo")
-                .font(.system(size: 18, weight: .semibold))
-                .foregroundColor(.primary)
+            HStack {
+                Text("Event Photo")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                // Clear image button (only show when image is selected or Unsplash URL exists)
+                if selectedImage != nil || unsplashImageURL != nil {
+                    Button(action: {
+                        selectedImage = nil
+                        imageSelection = nil
+                        tempSelectedImage = nil
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 14, weight: .medium))
+                            Text("Remove")
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .foregroundColor(Color(.accent))
+                    }
+                }
+            }
             
             ZStack {
                 if let selectedImage = selectedImage {
