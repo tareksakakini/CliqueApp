@@ -617,6 +617,8 @@ struct CreateEventView: View {
         HStack(spacing: 16) {
             Button {
                 if isNewEvent {
+                    // Reset all form fields before switching tabs
+                    resetForm()
                     // When creating a new event from the tab, go back to My Events tab
                     selectedTab = 0
                 } else {
@@ -769,6 +771,18 @@ struct CreateEventView: View {
             let contact = ContactInfo(name: phoneNumber, phoneNumber: phoneNumber)
             invitedContacts.append(contact)
         }
+    }
+    
+    private func resetForm() {
+        event = EventModel()
+        inviteesUserModels = []
+        invitedContacts = []
+        imageSelection = nil
+        selectedImage = nil
+        tempSelectedImage = nil
+        newPhoneNumbers = []
+        oldEvent = EventModel()
+        viewIdentityID = UUID().uuidString
     }
     
     private func downloadAndCropUnsplashImage(from url: URL) async -> UIImage? {
