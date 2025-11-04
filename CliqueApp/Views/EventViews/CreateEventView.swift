@@ -10,6 +10,38 @@ import PhotosUI
 import MessageUI
 import ContactsUI
 
+enum InviteStatus: String, CaseIterable {
+    case invited
+    case accepted
+    case declined
+    
+    var displayName: String {
+        rawValue.capitalized
+    }
+    
+    var iconName: String {
+        switch self {
+        case .invited:
+            return "envelope"
+        case .accepted:
+            return "checkmark.circle"
+        case .declined:
+            return "xmark.circle"
+        }
+    }
+    
+    var badgeColor: Color {
+        switch self {
+        case .invited:
+            return Color(.systemBlue)
+        case .accepted:
+            return Color(.systemGreen)
+        case .declined:
+            return Color(.systemRed)
+        }
+    }
+}
+
 struct CreateEventView: View {
     @EnvironmentObject private var vm: ViewModel
     @Environment(\.dismiss) var dismiss
@@ -38,6 +70,8 @@ struct CreateEventView: View {
     @State var newPhoneNumbers: [String] = []
     @State var inviteesUserModels: [UserModel] = []
     @State var invitedContacts: [ContactInfo] = []
+    @State private var inviteeStatuses: [String: InviteStatus] = [:]
+    @State private var contactStatuses: [String: InviteStatus] = [:]
     @State var imageSelection: PhotosPickerItem? = nil
     @State var tempSelectedImage: UIImage? = nil
     @State var showImageCrop = false
@@ -129,6 +163,8 @@ struct CreateEventView: View {
                                             event = EventModel()
                                             inviteesUserModels = []
                                             invitedContacts = []
+                                            inviteeStatuses = [:]
+                                            contactStatuses = [:]
                                             imageSelection = nil
                                             selectedImage = nil
                                             tempSelectedImage = nil
@@ -140,6 +176,8 @@ struct CreateEventView: View {
                                         event = EventModel()
                                         inviteesUserModels = []
                                         invitedContacts = []
+                                        inviteeStatuses = [:]
+                                        contactStatuses = [:]
                                         imageSelection = nil
                                         selectedImage = nil
                                         tempSelectedImage = nil
@@ -201,6 +239,12 @@ struct CreateEventView: View {
                 }
                 }
             }
+        .onChange(of: inviteesUserModels) { oldValue, newValue in
+            syncInviteeStatuses(oldValue: oldValue, newValue: newValue)
+        }
+        .onChange(of: invitedContacts) { oldValue, newValue in
+            syncContactStatuses(oldValue: oldValue, newValue: newValue)
+        }
             .id(viewIdentityID)
         }
     
@@ -583,13 +627,15 @@ struct CreateEventView: View {
                     let totalItems = inviteesUserModels.count + invitedContacts.count
                     
                     ForEach(Array(inviteesUserModels.enumerated()), id: \.element) { index, invitee in
-                        let inviteeUser = vm.getUser(username: invitee.email)
                         ModernInviteePillView(
                             viewingUser: user,
-                            displayedUser: inviteeUser,
-                            personType: "invited",
+                            displayedUser: vm.getUser(username: invitee.email) ?? invitee,
                             invitees: $inviteesUserModels,
-                            isLastItem: index == totalItems - 1
+                            status: inviteeStatuses[invitee.email] ?? .invited,
+                            onStatusChange: { newStatus in
+                                inviteeStatuses[invitee.email] = newStatus
+                            },
+                            isLastItem: index == inviteesUserModels.count - 1 && invitedContacts.isEmpty
                         )
                     }
                     
@@ -597,6 +643,10 @@ struct CreateEventView: View {
                         ModernContactPillView(
                             contact: contact,
                             invitedContacts: $invitedContacts,
+                            status: contactStatuses[contact.phoneNumber] ?? .invited,
+                            onStatusChange: { newStatus in
+                                contactStatuses[contact.phoneNumber] = newStatus
+                            },
                             isLastItem: (inviteesUserModels.count + index) == totalItems - 1
                         )
                     }
@@ -693,8 +743,62 @@ struct CreateEventView: View {
                         let temp_uuid = isNewEvent ? UUID().uuidString : event.id
                         messageEventID = temp_uuid
                         
-                        event.attendeesInvited = inviteesUserModels.map({$0.email})
-                        event.invitedPhoneNumbers = invitedContacts.map({$0.phoneNumber})
+                        var invitedEmails: [String] = []
+                        var acceptedEmails: [String] = []
+                        var declinedEmails: [String] = []
+                        
+                        for user in inviteesUserModels {
+                            let email = user.email
+                            guard !email.isEmpty else { continue }
+                            let status = inviteeStatuses[email] ?? .invited
+                            switch status {
+                            case .invited:
+                                if !invitedEmails.contains(email) {
+                                    invitedEmails.append(email)
+                                }
+                            case .accepted:
+                                if !acceptedEmails.contains(email) {
+                                    acceptedEmails.append(email)
+                                }
+                            case .declined:
+                                if !declinedEmails.contains(email) {
+                                    declinedEmails.append(email)
+                                }
+                            }
+                        }
+                        
+                        event.attendeesInvited = invitedEmails
+                        event.attendeesAccepted = acceptedEmails
+                        event.attendeesDeclined = declinedEmails
+                        
+                        var pendingNumbers: [String] = []
+                        var acceptedNumbers: [String] = []
+                        var declinedNumbers: [String] = []
+                        
+                        for contact in invitedContacts {
+                            let number = contact.phoneNumber
+                            guard !number.isEmpty else { continue }
+                            let status = contactStatuses[number] ?? .invited
+                            switch status {
+                            case .invited:
+                                if !pendingNumbers.contains(number) {
+                                    pendingNumbers.append(number)
+                                }
+                            case .accepted:
+                                if !acceptedNumbers.contains(number) {
+                                    acceptedNumbers.append(number)
+                                }
+                            case .declined:
+                                if !declinedNumbers.contains(number) {
+                                    declinedNumbers.append(number)
+                                }
+                            }
+                        }
+                        
+                        event.invitedPhoneNumbers = pendingNumbers
+                        event.acceptedPhoneNumbers = acceptedNumbers
+                        event.declinedPhoneNumbers = declinedNumbers
+                        
                         newPhoneNumbers = []
                         for phoneNumber in event.invitedPhoneNumbers {
                             if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
@@ -729,6 +833,8 @@ struct CreateEventView: View {
                                     event = EventModel()
                                     inviteesUserModels = []
                                     invitedContacts = []
+                                    inviteeStatuses = [:]
+                                    contactStatuses = [:]
                                     imageSelection = nil
                                     selectedImage = nil
                                     tempSelectedImage = nil
@@ -740,6 +846,8 @@ struct CreateEventView: View {
                                 event = EventModel()
                                 inviteesUserModels = []
                                 invitedContacts = []
+                                inviteeStatuses = [:]
+                                contactStatuses = [:]
                                 imageSelection = nil
                                 selectedImage = nil
                                 tempSelectedImage = nil
@@ -757,19 +865,89 @@ struct CreateEventView: View {
     }
     
     private func loadExistingInvitees() {
-        // Load existing user invitees
         inviteesUserModels = []
-        for inviteeEmail in event.attendeesInvited {
-            if let user = vm.getUser(username: inviteeEmail) {
-                inviteesUserModels.append(user)
+        invitedContacts = []
+        inviteeStatuses = [:]
+        contactStatuses = [:]
+        
+        var addedEmails: Set<String> = []
+        let emailGroups: [(emails: [String], status: InviteStatus)] = [
+            (event.attendeesAccepted, .accepted),
+            (event.attendeesInvited, .invited),
+            (event.attendeesDeclined, .declined)
+        ]
+        
+        for group in emailGroups {
+            for email in group.emails where !email.isEmpty {
+                inviteeStatuses[email] = group.status
+                guard !addedEmails.contains(email) else { continue }
+                
+                if let user = vm.getUser(username: email) {
+                    inviteesUserModels.append(user)
+                } else {
+                    inviteesUserModels.append(makePlaceholderUser(email: email))
+                }
+                addedEmails.insert(email)
             }
         }
         
-        // Load existing phone contact invitees
-        invitedContacts = []
-        for phoneNumber in event.invitedPhoneNumbers {
-            let contact = ContactInfo(name: phoneNumber, phoneNumber: phoneNumber)
-            invitedContacts.append(contact)
+        var addedNumbers: Set<String> = []
+        let phoneGroups: [(numbers: [String], status: InviteStatus)] = [
+            (event.acceptedPhoneNumbers, .accepted),
+            (event.invitedPhoneNumbers, .invited),
+            (event.declinedPhoneNumbers, .declined)
+        ]
+        
+        for group in phoneGroups {
+            for number in group.numbers where !number.isEmpty {
+                contactStatuses[number] = group.status
+                guard !addedNumbers.contains(number) else { continue }
+                
+                let contact = ContactInfo(name: number, phoneNumber: number)
+                invitedContacts.append(contact)
+                addedNumbers.insert(number)
+            }
+        }
+    }
+
+    private func makePlaceholderUser(email: String) -> UserModel {
+        var placeholder = UserModel()
+        placeholder.email = email
+        placeholder.fullname = email
+        placeholder.uid = email
+        placeholder.username = email.split(separator: "@").first.map(String.init) ?? email
+        return placeholder
+    }
+    
+    private func syncInviteeStatuses(oldValue: [UserModel], newValue: [UserModel]) {
+        let oldEmails = Set(oldValue.map { $0.email }.filter { !$0.isEmpty })
+        let newEmails = Set(newValue.map { $0.email }.filter { !$0.isEmpty })
+        
+        let added = newEmails.subtracting(oldEmails)
+        let removed = oldEmails.subtracting(newEmails)
+        
+        for email in added where inviteeStatuses[email] == nil {
+            inviteeStatuses[email] = .invited
+        }
+        
+        for email in removed {
+            inviteeStatuses.removeValue(forKey: email)
+        }
+    }
+    
+    private func syncContactStatuses(oldValue: [ContactInfo], newValue: [ContactInfo]) {
+        let oldNumbers = Set(oldValue.map { $0.phoneNumber }.filter { !$0.isEmpty })
+        let newNumbers = Set(newValue.map { $0.phoneNumber }.filter { !$0.isEmpty })
+        
+        let added = newNumbers.subtracting(oldNumbers)
+        let removed = oldNumbers.subtracting(newNumbers)
+        
+        for number in added where contactStatuses[number] == nil {
+            contactStatuses[number] = .invited
+        }
+        
+        for number in removed {
+            contactStatuses.removeValue(forKey: number)
         }
     }
     
@@ -777,6 +955,8 @@ struct CreateEventView: View {
         event = EventModel()
         inviteesUserModels = []
         invitedContacts = []
+        inviteeStatuses = [:]
+        contactStatuses = [:]
         imageSelection = nil
         selectedImage = nil
         tempSelectedImage = nil
@@ -999,8 +1179,9 @@ struct ModernInviteePillView: View {
     
     let viewingUser: UserModel?
     let displayedUser: UserModel?
-    let personType: String
     @Binding var invitees: [UserModel]
+    let status: InviteStatus
+    let onStatusChange: (InviteStatus) -> Void
     let isLastItem: Bool
     
     var body: some View {
@@ -1011,9 +1192,10 @@ struct ModernInviteePillView: View {
             
             Spacer()
             
+            statusMenu
             removeButton
         }
-                    .padding(.horizontal, 20)
+        .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .background(Color.clear)
         .overlay(
@@ -1023,7 +1205,7 @@ struct ModernInviteePillView: View {
                         .fill(Color.black.opacity(0.12))
                         .frame(height: 1)
                         .padding(.leading, 66)
-            }
+                }
             },
             alignment: .bottom
         )
@@ -1047,6 +1229,43 @@ struct ModernInviteePillView: View {
         }
     }
     
+    private var statusMenu: some View {
+        Menu {
+            ForEach(InviteStatus.allCases, id: \.self) { option in
+                Button {
+                    onStatusChange(option)
+                } label: {
+                    HStack {
+                        Image(systemName: option.iconName)
+                        Text(option.displayName)
+                        if option == status {
+                            Spacer()
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(status.badgeColor)
+                    .frame(width: 10, height: 10)
+                Text(status.displayName)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(status.badgeColor.opacity(0.12))
+            )
+        }
+    }
+    
     private var removeButton: some View {
         Button {
             guard let user = displayedUser else { return }
@@ -1062,6 +1281,8 @@ struct ModernInviteePillView: View {
 struct ModernContactPillView: View {
     let contact: ContactInfo
     @Binding var invitedContacts: [ContactInfo]
+    let status: InviteStatus
+    let onStatusChange: (InviteStatus) -> Void
     let isLastItem: Bool
     
     var body: some View {
@@ -1086,10 +1307,12 @@ struct ModernContactPillView: View {
                         .font(.system(size: 14, weight: .regular))
                         .foregroundColor(.secondary)
                         .lineLimit(1)
-            }
+                }
             }
             
             Spacer()
+            
+            statusMenu
             
             Button {
                 invitedContacts.removeAll { $0.phoneNumber == contact.phoneNumber }
@@ -1114,7 +1337,41 @@ struct ModernContactPillView: View {
             alignment: .bottom
         )
     }
+    
+    private var statusMenu: some View {
+        Menu {
+            ForEach(InviteStatus.allCases, id: \.self) { option in
+                Button {
+                    onStatusChange(option)
+                } label: {
+                    HStack {
+                        Image(systemName: option.iconName)
+                        Text(option.displayName)
+                        if option == status {
+                            Spacer()
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(status.badgeColor)
+                    .frame(width: 10, height: 10)
+                Text(status.displayName)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.primary)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(status.badgeColor.opacity(0.12))
+            )
+        }
+    }
 }
-
-
-
