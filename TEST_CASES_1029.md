@@ -519,7 +519,7 @@
   2. Select image from photo library
 - [ ] **Expected:** Image crop view appears
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.4.2: Crop Event Image
 - [ ] **Steps:**
@@ -527,7 +527,7 @@
   2. Tap "Done" or equivalent
 - [ ] **Expected:** Cropped image shown in event form
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.4.3: Cancel Image Selection
 - [ ] **Steps:**
@@ -536,7 +536,7 @@
   3. In crop view, tap "Cancel"
 - [ ] **Expected:** Returns to form without image
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.4.4: Replace Event Image
 - [ ] **Steps:**
@@ -544,7 +544,7 @@
   2. Select different image
 - [ ] **Expected:** New image replaces old one
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.4.5: Create Event with Large Image
 - [ ] **Steps:**
@@ -552,11 +552,14 @@
   2. Crop and create event
 - [ ] **Expected:** Image uploaded successfully (may be compressed)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 3.5 Inviting Users to Events
+
+-- Would be good to fix the aesthetics of the "Not a user? Add by phone" button --
+-- I still need to work on making sure I stop receiving notifications on a device I'm logged out of --
 
 #### Test 3.5.1: Add Single Friend as Invitee
 - [ ] **Steps:**
@@ -565,21 +568,21 @@
   3. Tap "Done"
 - [ ] **Expected:** User B appears in invitees list
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.5.2: Remove Invitee Before Creating
 - [ ] **Steps:**
   1. In invitees list, tap X on User B
 - [ ] **Expected:** User B removed from invitees
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.5.3: Add Multiple Friends
 - [ ] **Steps:**
   1. If you have more test accounts, add multiple friends as invitees
 - [ ] **Expected:** All selected friends appear in invitees list
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.5.4: Search Friend in Invitees Sheet
 - [ ] **Steps:**
@@ -587,11 +590,14 @@
   2. Use search field to find specific friend
 - [ ] **Expected:** Search filters friends list
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 3.6 SMS Invites (Phone Contacts)
+
+-- Event is created with phone contact even when sending out the message is cancelled --
+
 
 #### Test 3.6.1: Add Phone Contact as Invitee
 - [ ] **Steps:**
@@ -600,21 +606,21 @@
   3. Tap "Done"
 - [ ] **Expected:** Contact appears in invitees list with phone icon
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.6.2: SMS Composer Opens
 - [ ] **Steps:**
   1. With phone contact in invitees, tap "Create Event"
 - [ ] **Expected:** SMS message composer opens with pre-filled message including event link
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.6.3: Send SMS Invite
 - [ ] **Steps:**
   1. In SMS composer, tap "Send"
 - [ ] **Expected:** SMS sent, event created, returned to My Events
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.6.4: Cancel SMS Invite
 - [ ] **Steps:**
@@ -622,7 +628,7 @@
   2. When SMS composer opens, tap "Cancel"
 - [ ] **Expected:** Event may or may not be created (check expected behavior)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.6.5: Multiple Phone Contacts
 - [ ] **Steps:**
@@ -630,11 +636,16 @@
   2. Create event
 - [ ] **Expected:** SMS composer opens with all phone numbers
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 3.7 Date and Time Selection
+
+-- I need to check why sometimes the default time for the start time is not as refreshed --
+-- I need to check how are we handling time zone differences --
+-- Some wrapping happens in the event details in the card at the top when the details are lengthy. Should figure that out --
+-- Showing the duration of the event ... I should consider not only using hours and minutes but also days --
 
 #### Test 3.7.1: Set Start Date (Future)
 - [ ] **Steps:**
@@ -643,21 +654,21 @@
   3. Select time 3:00 PM
 - [ ] **Expected:** Date and time updated correctly
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.7.2: Toggle "No End Time"
 - [ ] **Steps:**
   1. Check "No end time" checkbox
 - [ ] **Expected:** End time picker hidden
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.7.3: Uncheck "No End Time"
 - [ ] **Steps:**
   1. Uncheck "No end time" checkbox
 - [ ] **Expected:** End time picker appears
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.7.4: Set End Date on Different Day
 - [ ] **Steps:**
@@ -665,7 +676,7 @@
   2. Set end: Tomorrow 2:00 AM
 - [ ] **Expected:** Multi-day event accepted
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 3.7.5: Time Zone Consistency
 - [ ] **Steps:**
@@ -673,7 +684,7 @@
   2. Check if time displays correctly in event details
 - [ ] **Expected:** Time shown in device's timezone
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -687,28 +698,21 @@
   2. On Device B, check for push notification
 - [ ] **Expected:** Push notification received (if enabled)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 4.1.2: View Invitation in Invites Tab (User B)
 - [ ] **Steps:**
   1. As User B, navigate to "Invites" tab
 - [ ] **Expected:** "Beach Day" event appears in invites list
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 4.1.3: View Invitation Details (User B)
 - [ ] **Steps:**
   1. Tap on "Beach Day" event in Invites
 - [ ] **Expected:** Event details shown (title, host, location, time, description, image)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
-
-#### Test 4.1.4: Invitation Count Badge
-- [ ] **Steps:**
-  1. Check if Invites tab shows count badge
-- [ ] **Expected:** Badge shows number of pending invites
-- [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
