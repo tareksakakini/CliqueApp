@@ -16,24 +16,31 @@ enum InviteStatus: String, CaseIterable {
     case declined
     
     var displayName: String {
-        rawValue.capitalized
+        switch self {
+        case .invited:
+            return "Pending"
+        case .accepted:
+            return "Accepted"
+        case .declined:
+            return "Declined"
+        }
     }
     
     var iconName: String {
         switch self {
         case .invited:
-            return "envelope"
+            return "clock.circle"
         case .accepted:
-            return "checkmark.circle"
+            return "checkmark.circle.fill"
         case .declined:
-            return "xmark.circle"
+            return "xmark.circle.fill"
         }
     }
     
     var badgeColor: Color {
         switch self {
         case .invited:
-            return Color(.systemBlue)
+            return .orange
         case .accepted:
             return Color(.systemGreen)
         case .declined:
@@ -635,6 +642,7 @@ struct CreateEventView: View {
                             onStatusChange: { newStatus in
                                 inviteeStatuses[invitee.email] = newStatus
                             },
+                            showStatusControls: !isNewEvent,
                             isLastItem: index == inviteesUserModels.count - 1 && invitedContacts.isEmpty
                         )
                     }
@@ -647,6 +655,7 @@ struct CreateEventView: View {
                             onStatusChange: { newStatus in
                                 contactStatuses[contact.phoneNumber] = newStatus
                             },
+                            showStatusControls: !isNewEvent,
                             isLastItem: (inviteesUserModels.count + index) == totalItems - 1
                         )
                     }
@@ -1182,6 +1191,7 @@ struct ModernInviteePillView: View {
     @Binding var invitees: [UserModel]
     let status: InviteStatus
     let onStatusChange: (InviteStatus) -> Void
+    let showStatusControls: Bool
     let isLastItem: Bool
     
     var body: some View {
@@ -1192,7 +1202,9 @@ struct ModernInviteePillView: View {
             
             Spacer()
             
-            statusMenu
+            if showStatusControls {
+                statusMenu
+            }
             removeButton
         }
         .padding(.horizontal, 20)
@@ -1237,6 +1249,7 @@ struct ModernInviteePillView: View {
                 } label: {
                     HStack {
                         Image(systemName: option.iconName)
+                            .foregroundColor(option.badgeColor)
                         Text(option.displayName)
                         if option == status {
                             Spacer()
@@ -1246,23 +1259,10 @@ struct ModernInviteePillView: View {
                 }
             }
         } label: {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(status.badgeColor)
-                    .frame(width: 10, height: 10)
-                Text(status.displayName)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.secondary)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                Capsule()
-                    .fill(status.badgeColor.opacity(0.12))
-            )
+            Image(systemName: status.iconName)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(status.badgeColor)
+                .padding(4)
         }
     }
     
@@ -1283,6 +1283,7 @@ struct ModernContactPillView: View {
     @Binding var invitedContacts: [ContactInfo]
     let status: InviteStatus
     let onStatusChange: (InviteStatus) -> Void
+    let showStatusControls: Bool
     let isLastItem: Bool
     
     var body: some View {
@@ -1312,7 +1313,9 @@ struct ModernContactPillView: View {
             
             Spacer()
             
-            statusMenu
+            if showStatusControls {
+                statusMenu
+            }
             
             Button {
                 invitedContacts.removeAll { $0.phoneNumber == contact.phoneNumber }
@@ -1346,6 +1349,7 @@ struct ModernContactPillView: View {
                 } label: {
                     HStack {
                         Image(systemName: option.iconName)
+                            .foregroundColor(option.badgeColor)
                         Text(option.displayName)
                         if option == status {
                             Spacer()
@@ -1355,23 +1359,10 @@ struct ModernContactPillView: View {
                 }
             }
         } label: {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(status.badgeColor)
-                    .frame(width: 10, height: 10)
-                Text(status.displayName)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundColor(.secondary)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                Capsule()
-                    .fill(status.badgeColor.opacity(0.12))
-            )
+            Image(systemName: status.iconName)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(status.badgeColor)
+                .padding(4)
         }
     }
 }
