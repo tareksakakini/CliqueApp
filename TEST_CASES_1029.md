@@ -692,6 +692,10 @@
 
 ### 4.1 Receiving Invitations
 
+-- When updating the event details, the button shows progress and says "Creating ...", it should instead say "Updating ..." --
+-- After finishing the update, the screen shows an update details screen with empty fields. It should just go back to events and refresh. --
+-- Image update still doesn't sync smoothly --
+
 #### Test 4.1.1: Receive Event Invitation Notification (User B)
 - [ ] **Steps:**
   1. After User A creates event with User B invited
@@ -723,14 +727,14 @@
   1. As User B, in event details, tap "Accept" or "Going"
 - [ ] **Expected:** Status updated to "Accepted", event moves to "My Events" tab
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 4.2.2: Verify Event in My Events (User B)
 - [ ] **Steps:**
   1. Navigate to "My Events" tab
 - [ ] **Expected:** "Beach Day" event appears with "Going" status
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 4.2.3: Accepted Status Visible to Host (User A)
 - [ ] **Steps:**
@@ -738,7 +742,7 @@
   2. Check attendees list
 - [ ] **Expected:** User B appears in "Accepted" attendees list
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 4.2.4: Accepted User Receives Updates
 - [ ] **Steps:**
@@ -746,7 +750,7 @@
   2. On Device B, check if notification received
 - [ ] **Expected:** User B notified of event changes (if notifications enabled)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -757,7 +761,7 @@
   1. As User A, create event "Movie Night" inviting User B
 - [ ] **Expected:** Event created, User B receives invitation
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 4.3.2: Decline Event Invitation (User B)
 - [ ] **Steps:**
@@ -765,14 +769,14 @@
   2. Tap "Decline" or "Not Going"
 - [ ] **Expected:** Status updated to "Declined", removed from invites
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 4.3.3: Declined Event Not in My Events
 - [ ] **Steps:**
   1. Check User B's "My Events" tab
 - [ ] **Expected:** "Movie Night" does NOT appear
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 4.3.4: Declined Status Visible to Host (User A)
 - [ ] **Steps:**
@@ -780,7 +784,7 @@
   2. Check attendees list
 - [ ] **Expected:** User B appears in "Declined" attendees list
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -792,7 +796,7 @@
   2. Tap "Decline" or "Not Going"
 - [ ] **Expected:** Status changed, event may remain visible with declined status
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 4.4.2: Change from Declined to Accepted (User B)
 - [ ] **Steps:**
@@ -800,14 +804,14 @@
   2. Tap "Accept" or "Going"
 - [ ] **Expected:** Status changed to accepted, event appears in My Events
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 4.4.3: Host Sees Updated Status
 - [ ] **Steps:**
   1. As User A, refresh and check attendee lists for both events
 - [ ] **Expected:** Updated statuses reflected accurately
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 

@@ -105,7 +105,12 @@ struct EventDetailView: View {
             await refreshEventData()
             await loadEventImage()
         }
-        .fullScreenCover(isPresented: $showEditView) {
+        .fullScreenCover(isPresented: $showEditView, onDismiss: {
+            Task {
+                await refreshEventData()
+                await loadEventImage()
+            }
+        }) {
             CreateEventView(
                 user: user,
                 selectedTab: .constant(0),

@@ -161,9 +161,11 @@ struct CreateEventView: View {
                                     isCreatingEvent = false
                                     
                                     if isNewEvent {
-                                        selectedTab = 0
-                                        // Call the callback if provided (for AI suggestions)
-                                        onEventCreated?()
+                                        await MainActor.run {
+                                            selectedTab = 0
+                                            // Call the callback if provided (for AI suggestions)
+                                            onEventCreated?()
+                                        }
                                         
                                         // Small delay to allow tab switch, then reset the form and view identity
                                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -180,16 +182,9 @@ struct CreateEventView: View {
                                             viewIdentityID = UUID().uuidString
                                         }
                                     } else {
-                                        event = EventModel()
-                                        inviteesUserModels = []
-                                        invitedContacts = []
-                                        inviteeStatuses = [:]
-                                        contactStatuses = [:]
-                                        imageSelection = nil
-                                        selectedImage = nil
-                                        tempSelectedImage = nil
-                                        newPhoneNumbers = []
-                                        oldEvent = EventModel()
+                                        await MainActor.run {
+                                            dismiss()
+                                        }
                                     }
                                 } catch {
                                     isCreatingEvent = false
@@ -709,7 +704,7 @@ struct CreateEventView: View {
                             .scaleEffect(0.8)
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     }
-                    Text(isCreatingEvent ? "Creating..." : (isNewEvent ? "Create Event" : "Update Event"))
+                    Text(isCreatingEvent ? (isNewEvent ? "Creating..." : "Updating...") : (isNewEvent ? "Create Event" : "Update Event"))
                         .font(.system(size: 16, weight: .semibold))
                 }
                 .foregroundColor(.white)
@@ -833,9 +828,11 @@ struct CreateEventView: View {
                             isCreatingEvent = false
                             
                             if isNewEvent {
-                                selectedTab = 0
-                                // Call the callback if provided (for AI suggestions)
-                                onEventCreated?()
+                                await MainActor.run {
+                                    selectedTab = 0
+                                    // Call the callback if provided (for AI suggestions)
+                                    onEventCreated?()
+                                }
                                 
                                 // Small delay to allow tab switch, then reset the form and view identity
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
@@ -852,16 +849,9 @@ struct CreateEventView: View {
                                     viewIdentityID = UUID().uuidString
                                 }
                             } else {
-                                event = EventModel()
-                                inviteesUserModels = []
-                                invitedContacts = []
-                                inviteeStatuses = [:]
-                                contactStatuses = [:]
-                                imageSelection = nil
-                                selectedImage = nil
-                                tempSelectedImage = nil
-                                newPhoneNumbers = []
-                                oldEvent = EventModel()
+                                await MainActor.run {
+                                    dismiss()
+                                }
                             }
                         }
                     } catch {
