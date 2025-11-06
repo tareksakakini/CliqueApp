@@ -480,10 +480,10 @@ struct ModernEventPillView: View {
                         .font(.system(size: 10, weight: .bold, design: .rounded))
                         .foregroundColor(.secondary)
                     HStack {
+                        ProfilePictureView(user: host, diameter: 24, isPhone: false)
                         Text(host.fullname.components(separatedBy: " ").first ?? "")
                             .font(.system(size: 14, weight: .medium))
                             .lineLimit(1)
-                        ProfilePictureView(user: host, diameter: 24, isPhone: false)
                     }
                 }
             }

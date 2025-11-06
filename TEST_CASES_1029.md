@@ -15,6 +15,36 @@
 
 ---
 
+Collection of all notes:
+
+------------------------------------
+
+TODO:
+
+-- [Authentication/Phone Linking - Major] This whole feature needs rethinking. There is no verification for the phone number which is a security risk. Switching to sign up by phone number fixes a lot of this. --
+-- [Pictures - Major] Functional, but user experience poor, and still some issues with pictures not matching selection --
+-- [Design - Minor] The way the host is indicated on the outside card needs adjustment --
+-- [Design - Minor] Auto capitalize for event title --
+-- [Design - Minor] Would be good to fix the aesthetics of the "Not a user? Add by phone" button --
+-- [Notifications - Major] I still need to work on making sure I stop receiving notifications on a device I'm logged out of --
+-- [Phone Invite - Major] Event is created with phone contact even when sending out the message is cancelled --
+-- [UX minor] I need to check why sometimes the default time for the start time is not as refreshed --
+-- [Time Zone - Major] I need to check how are we handling time zone differences --
+-- [Design - Minor] Some wrapping happens in the event details in the card at the top when the details are lengthy. Should figure that out --
+-- [Design - Minor] Showing the duration of the event ... I should consider not only using hours and minutes but also days --
+-- [Pictures - Major] Image update still doesn't sync smoothly --
+-- [Notifications - Minor] One issue observed is that invitees are not getting updates when outing details are changed or outing deleted --
+-- [Design - Minor] Would be nice to show a badge on "Invites" to show the number of unanswered invites --
+-- [Design - Minor] Would be nice to make the attendees clickable to view their profile --
+-- [Notifications - Major] It would be nice for the click on the notification to lead you to the right place --
+-- [Pictures - Major] Still having issues with aspect ratios with images --
+-- [Error Handling - Major] This whole section needs rethinking. We have no error handling and we should. --
+-- [Realtime updates - Major] This needs rethinking. Now I mostly have to manually refresh --
+
+DONE:
+
+------------------------------------
+
 ## 1. AUTHENTICATION & ACCOUNT MANAGEMENT
 
 ### 1.1 Sign Up Flow
@@ -692,8 +722,6 @@
 
 ### 4.1 Receiving Invitations
 
--- When updating the event details, the button shows progress and says "Creating ...", it should instead say "Updating ..." --
--- After finishing the update, the screen shows an update details screen with empty fields. It should just go back to events and refresh. --
 -- Image update still doesn't sync smoothly --
 
 #### Test 4.1.1: Receive Event Invitation Notification (User B)
@@ -819,6 +847,8 @@
 
 ### 5.1 Editing Events (Host Only)
 
+-- One issue observed is that invitees are not getting updates when outing details are changed or outing deleted --
+
 #### Test 5.1.1: Edit Event Title (User A)
 - [ ] **Steps:**
   1. As User A (host), view "Beach Day" event
@@ -827,7 +857,7 @@
   4. Tap "Update Event"
 - [ ] **Expected:** Event title updated successfully
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.1.2: Edit Event Description
 - [ ] **Steps:**
@@ -836,7 +866,7 @@
   3. Update event
 - [ ] **Expected:** Description updated
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.1.3: Edit Event Time
 - [ ] **Steps:**
@@ -845,7 +875,7 @@
   3. Update event
 - [ ] **Expected:** Time updated, attendees notified (if enabled)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.1.4: Edit Event Location
 - [ ] **Steps:**
@@ -854,7 +884,7 @@
   3. Update event
 - [ ] **Expected:** Location updated successfully
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.1.5: Edit Event Image
 - [ ] **Steps:**
@@ -864,7 +894,7 @@
   4. Update event
 - [ ] **Expected:** Event image updated
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.1.6: Add More Invitees to Existing Event
 - [ ] **Steps:**
@@ -874,7 +904,7 @@
   4. Update event
 - [ ] **Expected:** New invitees added, receive invitations
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.1.7: Remove Invitees (if supported)
 - [ ] **Steps:**
@@ -882,7 +912,7 @@
   2. Try to remove an invitee
 - [ ] **Expected:** Invitee removed or feature not available
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.1.8: Non-Host Cannot Edit (User B)
 - [ ] **Steps:**
@@ -890,7 +920,7 @@
   2. Look for edit button
 - [ ] **Expected:** No edit button available for non-host
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -904,46 +934,49 @@
   4. Confirm deletion
 - [ ] **Expected:** Event deleted, removed from all users' views
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.2.2: Verify Deletion for Invitees (User B)
 - [ ] **Steps:**
   1. On Device B, check if "Movie Night" still appears
 - [ ] **Expected:** Event no longer visible
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.2.3: Non-Host Cannot Delete
 - [ ] **Steps:**
   1. As User B, look for delete option on events they didn't create
 - [ ] **Expected:** No delete option available
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 5.3 Viewing Events
+
+-- Would be nice to show a badge on "Invites" to show the number of unanswered invites --
+-- Would be nice to make the attendees clickable to view their profile --
 
 #### Test 5.3.1: View Event Details from My Events
 - [ ] **Steps:**
   1. As User A, in My Events tab, tap on "Beach Day - Updated"
 - [ ] **Expected:** Full event details shown
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.3.2: View Attendee List
 - [ ] **Steps:**
   1. In event details, view attendees section
 - [ ] **Expected:** Shows accepted, invited, and declined lists
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.3.3: View Attendee Profile
 - [ ] **Steps:**
   1. Tap on User B in attendee list
 - [ ] **Expected:** User B's profile shown
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Fail
 
 #### Test 5.3.4: Event Sorting in My Events
 - [ ] **Steps:**
@@ -951,7 +984,7 @@
   2. View My Events tab
 - [ ] **Expected:** Events sorted by date (upcoming first)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -962,21 +995,21 @@
   1. As User A, view My Events tab
 - [ ] **Expected:** Shows events where User A is host
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.4.2: My Events Shows Accepted Events
 - [ ] **Steps:**
   1. As User B, view My Events tab
 - [ ] **Expected:** Shows events User B has accepted
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.4.3: Invites Shows Pending Only
 - [ ] **Steps:**
   1. Check Invites tab
 - [ ] **Expected:** Only shows events with pending response
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 5.4.4: Past Events Handling
 - [ ] **Steps:**
@@ -984,7 +1017,7 @@
   2. Check if it still appears or is filtered
 - [ ] **Expected:** Past events handled appropriately (hidden or marked)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -1043,21 +1076,21 @@
   3. Check if notification permission requested
 - [ ] **Expected:** System prompts for notification permission
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 7.1.2: Allow Notifications
 - [ ] **Steps:**
   1. Tap "Allow" on permission prompt
 - [ ] **Expected:** Notifications enabled
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 7.1.3: Deny Notifications
 - [ ] **Steps:**
   1. On second device, deny notification permission
 - [ ] **Expected:** App still functions, no notifications received
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -1069,7 +1102,7 @@
   2. Check Device B for notification
 - [ ] **Expected:** Push notification: "You're invited to [Event Name]"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 7.2.2: Event Acceptance Notification
 - [ ] **Steps:**
@@ -1077,7 +1110,7 @@
   2. Check Device A for notification
 - [ ] **Expected:** Push notification: "[User B] accepted [Event Name]"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 7.2.3: Event Decline Notification
 - [ ] **Steps:**
@@ -1085,7 +1118,7 @@
   2. Check Device A for notification
 - [ ] **Expected:** Push notification: "[User B] declined [Event Name]"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 7.2.4: Event Update Notification
 - [ ] **Steps:**
@@ -1093,7 +1126,7 @@
   2. Check Device B for notification
 - [ ] **Expected:** Push notification: "[Event Name] has been updated"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Fail
 
 #### Test 7.2.5: Event Deletion Notification
 - [ ] **Steps:**
@@ -1101,7 +1134,7 @@
   2. Check Device B for notification
 - [ ] **Expected:** Push notification: "[Event Name] has been cancelled"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Fail
 
 ---
 
@@ -1113,7 +1146,7 @@
   2. Check Device B for notification
 - [ ] **Expected:** Push notification: "[User A] sent you a friend request"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 7.3.2: Friend Request Accepted Notification
 - [ ] **Steps:**
@@ -1121,25 +1154,27 @@
   2. Check Device A for notification
 - [ ] **Expected:** Push notification: "[User B] accepted your friend request"
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 7.4 Notification Actions
+
+-- It would be nice for the click on the notification to lead you to the right place --
 
 #### Test 7.4.1: Tap Notification to Open App
 - [ ] **Steps:**
   1. When notification received, tap on it
 - [ ] **Expected:** App opens to relevant screen (event details, friend request, etc.)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Fail
 
 #### Test 7.4.2: Notification When App is Open
 - [ ] **Steps:**
   1. With app open, trigger notification event
 - [ ] **Expected:** In-app notification or silent update
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 7.4.3: Notification When App is Closed
 - [ ] **Steps:**
@@ -1148,7 +1183,7 @@
   3. Check notification received
 - [ ] **Expected:** Push notification appears
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -1161,7 +1196,7 @@
   1. Navigate through all 5 tabs (My Events, Invites, New Event, Friends, Settings)
 - [ ] **Expected:** Smooth navigation, correct content in each tab
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 8.1.2: Back Navigation
 - [ ] **Steps:**
@@ -1169,7 +1204,7 @@
   2. Tap back button
 - [ ] **Expected:** Returns to previous screen
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 8.1.3: Tab Persistence
 - [ ] **Steps:**
@@ -1178,11 +1213,13 @@
   3. Return
 - [ ] **Expected:** Returns to same tab
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 8.2 Visual Design
+
+-- Still having issues with aspect ratios with images --
 
 #### Test 8.2.1: Light Mode (Forced)
 - [ ] **Steps:**
@@ -1190,7 +1227,7 @@
   2. Verify app appearance
 - [ ] **Expected:** App displays in light mode (forceLightMode = true)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 8.2.2: Dark Mode (If Feature Enabled)
 - [ ] **Steps:**
@@ -1207,14 +1244,14 @@
   1. View various screens with profile pictures (friends list, attendees, etc.)
 - [ ] **Expected:** All profile pictures load and display correctly
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 8.2.4: Event Images Display
 - [ ] **Steps:**
   1. View events with images
 - [ ] **Expected:** Event images load and display with correct aspect ratio
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Fail
 
 #### Test 8.2.5: Placeholder Images
 - [ ] **Steps:**
@@ -1222,7 +1259,7 @@
   2. View event without image
 - [ ] **Expected:** Appropriate placeholder images shown
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -1234,14 +1271,14 @@
   2. Reopen
 - [ ] **Expected:** Loading indicator while data fetches
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 8.3.2: Creating Event Loading
 - [ ] **Steps:**
   1. Create event and observe
 - [ ] **Expected:** Button shows "Creating..." with spinner
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 8.3.3: Image Upload Loading
 - [ ] **Steps:**
@@ -1249,18 +1286,20 @@
   2. Observe upload process
 - [ ] **Expected:** Loading indicator during upload
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 8.3.4: Pull to Refresh
 - [ ] **Steps:**
   1. In My Events or Invites, pull down to refresh
 - [ ] **Expected:** Data refreshes, loading indicator shown
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 8.4 Error Handling
+
+-- This whole section needs rethinking. We have no error handling and we should. --
 
 #### Test 8.4.1: No Internet Connection
 - [ ] **Steps:**
@@ -1276,21 +1315,21 @@
   2. Perform actions
 - [ ] **Expected:** Actions complete, appropriate timeouts or loading indicators
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Skipped
 
 #### Test 8.4.3: Failed Image Upload
 - [ ] **Steps:**
   1. With poor connection, try uploading very large image
 - [ ] **Expected:** Error message if upload fails
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Skipped
 
 #### Test 8.4.4: Server Error Handling
 - [ ] **Steps:**
   1. (Difficult to test manually unless you can trigger server errors)
 - [ ] **Expected:** Graceful error messages
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Skipped
 
 ---
 
@@ -1301,21 +1340,21 @@
   1. Tap on text fields in various forms
 - [ ] **Expected:** Keyboard appears, correct type (email, default, number, etc.)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 8.5.2: Keyboard Dismissal
 - [ ] **Steps:**
   1. Tap outside text field or tap return
 - [ ] **Expected:** Keyboard dismisses appropriately
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 8.5.3: Field Scrolling with Keyboard
 - [ ] **Steps:**
   1. In create event form, tap on field at bottom
 - [ ] **Expected:** Form scrolls so field is visible above keyboard
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 8.5.4: Autocorrect and Autocapitalization
 - [ ] **Steps:**
@@ -1323,7 +1362,7 @@
   2. Check for appropriate autocorrect/autocapitalization
 - [ ] **Expected:** Email fields have autocorrect off, event titles have autocapitalization on, etc.
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -1336,14 +1375,14 @@
   1. First time tapping image picker
 - [ ] **Expected:** System prompts for photo library access
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 9.1.2: Grant Photo Access
 - [ ] **Steps:**
   1. Tap "Allow" on permission prompt
 - [ ] **Expected:** Can select images from library
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 9.1.3: Deny Photo Access
 - [ ] **Steps:**
@@ -1351,7 +1390,7 @@
   2. Try to upload image
 - [ ] **Expected:** Error message or prompt to go to settings
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -1362,7 +1401,7 @@
   1. First time accessing contacts in Add Invitees
 - [ ] **Expected:** System prompts for contacts access
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 9.2.2: Grant Contacts Access
 - [ ] **Steps:**
@@ -1370,7 +1409,7 @@
   2. View contacts in invitees sheet
 - [ ] **Expected:** Device contacts shown
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 9.2.3: Deny Contacts Access
 - [ ] **Steps:**
@@ -1378,7 +1417,7 @@
   2. Try to view contacts
 - [ ] **Expected:** Empty state or prompt to enable in settings
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -1390,7 +1429,7 @@
   2. Check if permission requested
 - [ ] **Expected:** May request location for "nearby" suggestions (implementation dependent)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -1405,7 +1444,7 @@
   3. Reopen app
 - [ ] **Expected:** Draft data may or may not persist (check expected behavior)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 10.1.2: Force Quit and Reopen
 - [ ] **Steps:**
@@ -1414,7 +1453,7 @@
   3. Check if events and data load
 - [ ] **Expected:** All data loads from Firebase
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 10.1.3: Logout and Login
 - [ ] **Steps:**
@@ -1422,11 +1461,13 @@
   2. Login with same credentials
 - [ ] **Expected:** All events, friends, and data restored
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ### 10.2 Real-time Sync
+
+-- This needs rethinking. Now I mostly have to manually refresh --
 
 #### Test 10.2.1: Real-time Event Updates
 - [ ] **Steps:**
@@ -1434,7 +1475,7 @@
   2. On Device B (User B), check if event updates automatically
 - [ ] **Expected:** Event details update in real-time or on refresh
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Skipped
 
 #### Test 10.2.2: Real-time Friend Request
 - [ ] **Steps:**
@@ -1442,7 +1483,7 @@
   2. Check if Device B updates immediately
 - [ ] **Expected:** Friend request appears in real-time or on refresh
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Skipped
 
 #### Test 10.2.3: Real-time RSVP Updates
 - [ ] **Steps:**
@@ -1450,7 +1491,7 @@
   2. Check if attendee list updates on Device A
 - [ ] **Expected:** Attendee list updates in real-time or on refresh
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Skipped
 
 ---
 
@@ -1463,7 +1504,7 @@
   3. Check other device
 - [ ] **Expected:** Data syncs across devices
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 10.3.2: OneSignal Device Association
 - [ ] **Steps:**
@@ -1472,13 +1513,13 @@
   3. Send notification-triggering action
 - [ ] **Expected:** Notification only sent to currently logged-in device
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Fail
 
 ---
 
 ## 11. EDGE CASES & STRESS TESTS
 
-### 11.1 Data Limits
+### 11.1 Data Limits (Skipped)
 
 #### Test 11.1.1: Create Many Events
 - [ ] **Steps:**
@@ -1519,21 +1560,21 @@
   1. Create event with title: "🎉 Birthday Party! @John's Place #2024"
 - [ ] **Expected:** Special characters handled correctly
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 11.2.2: Emojis in Description
 - [ ] **Steps:**
   1. Use multiple emojis in event description
 - [ ] **Expected:** Emojis display correctly
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 11.2.3: Non-English Characters
 - [ ] **Steps:**
   1. Create event with title/description in different language (e.g., "Fiesta de Cumpleaños", "パーティー", "الحفلة")
 - [ ] **Expected:** Text displays and stores correctly
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
@@ -1544,21 +1585,21 @@
   1. Rapidly tap "Create Event" button multiple times
 - [ ] **Expected:** Only one event created (button disabled during processing)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 11.3.2: Quick Navigation
 - [ ] **Steps:**
   1. Rapidly switch between tabs
 - [ ] **Expected:** No crashes, smooth navigation
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 11.3.3: Rapid Friend Requests
 - [ ] **Steps:**
   1. Quickly send multiple friend requests
 - [ ] **Expected:** All requests sent correctly, no duplicates
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Skipped
 
 ---
 
@@ -1569,27 +1610,27 @@
   1. Create event starting at 12:00 AM
 - [ ] **Expected:** Time handled correctly, no date confusion
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 11.4.2: Event Spanning Daylight Saving Time
 - [ ] **Steps:**
   1. Create event during DST transition period
 - [ ] **Expected:** Time zones handled correctly
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Skipped
 
 #### Test 11.4.3: Minimum Title Length (3 characters)
 - [ ] **Steps:**
   1. Create event with exactly 3 character title: "BBQ"
 - [ ] **Expected:** Event created successfully
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ## 12. SECURITY
 
-### 12.1 Authentication Security
+### 12.1 Authentication Security (Skipped)
 
 #### Test 12.1.1: Session Expiration
 - [ ] **Steps:**
@@ -1617,14 +1658,14 @@
   1. As User A, try to view User B's private data
 - [ ] **Expected:** Only public data visible
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 12.2.2: Edit Only Own Events
 - [ ] **Steps:**
   1. As User B, verify cannot edit User A's events
 - [ ] **Expected:** No edit option available
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 #### Test 12.2.3: View Event Data (Invited Users Only)
 - [ ] **Steps:**
@@ -1632,13 +1673,13 @@
   2. Verify only invited users can view
 - [ ] **Expected:** Proper access control (implementation dependent)
 - [ ] **Actual:** _______________
-- [ ] **Pass/Fail:** _______________
+- [ ] **Pass/Fail:** Pass
 
 ---
 
 ## 13. COMPATIBILITY & DEVICES
 
-### 13.1 iOS Versions
+### 13.1 iOS Versions (Skipped)
 
 #### Test 13.1.1: Minimum iOS Version
 - [ ] **Steps:**
@@ -1658,7 +1699,7 @@
 
 ---
 
-### 13.2 Device Types
+### 13.2 Device Types (Skipped)
 
 #### Test 13.2.1: iPhone SE (Small Screen)
 - [ ] **Steps:**
@@ -1686,7 +1727,7 @@
 
 ---
 
-### 13.3 Orientation
+### 13.3 Orientation (Skipped)
 
 #### Test 13.3.1: Portrait Mode
 - [ ] **Steps:**
@@ -1707,7 +1748,7 @@
 
 ## 14. PERFORMANCE
 
-### 14.1 App Launch
+### 14.1 App Launch (Skipped)
 
 #### Test 14.1.1: Cold Launch Time
 - [ ] **Steps:**
@@ -1726,7 +1767,7 @@
 
 ---
 
-### 14.2 Scrolling & Animation
+### 14.2 Scrolling & Animation (Skipped)
 
 #### Test 14.2.1: Smooth Scrolling in Event Lists
 - [ ] **Steps:**
@@ -1753,7 +1794,7 @@
 
 ## 15. ACCESSIBILITY
 
-### 15.1 VoiceOver
+### 15.1 VoiceOver (Skipped)
 
 #### Test 15.1.1: VoiceOver Navigation
 - [ ] **Steps:**
@@ -1772,7 +1813,7 @@
 
 ---
 
-### 15.2 Dynamic Type
+### 15.2 Dynamic Type (Skipped)
 
 #### Test 15.2.1: Larger Text Sizes
 - [ ] **Steps:**
@@ -1792,7 +1833,7 @@
 
 ---
 
-### 15.3 Color Contrast
+### 15.3 Color Contrast (Skipped)
 
 #### Test 15.3.1: Color Contrast Ratios
 - [ ] **Steps:**
@@ -1803,7 +1844,7 @@
 
 ---
 
-## 16. APP FLOW INTEGRATION TESTS
+## 16. APP FLOW INTEGRATION TESTS (Skipped)
 
 ### 16.1 Complete User Journey: User A
 
