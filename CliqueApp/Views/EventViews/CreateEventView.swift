@@ -443,7 +443,8 @@ struct CreateEventView: View {
                 title: "Event Title",
                 text: $event.title,
                 placeholder: "What's the event called?",
-                icon: "textformat"
+                icon: "textformat",
+                autocapitalization: .words
             )
             
             // Location

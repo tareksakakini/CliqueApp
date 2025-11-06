@@ -356,6 +356,7 @@ struct ModernTextField: View {
     let placeholder: String
     let icon: String
     var keyboardType: UIKeyboardType = .default
+    var autocapitalization: TextInputAutocapitalization = .never
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -371,7 +372,7 @@ struct ModernTextField: View {
                 
                 TextField(placeholder, text: $text)
                     .font(.system(size: 16, weight: .medium))
-                    .textInputAutocapitalization(.never)
+                    .textInputAutocapitalization(autocapitalization)
                     .disableAutocorrection(true)
                     .keyboardType(keyboardType)
             }
