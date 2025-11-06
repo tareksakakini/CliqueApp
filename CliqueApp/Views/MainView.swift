@@ -14,6 +14,17 @@ struct MainView: View {
     @State var user: UserModel
     @State var selectedTab = 0
     
+    private var pendingInvitesCount: Int {
+        let now = Date()
+        return vm.events.filter { event in
+            event.attendeesInvited.contains(user.email) && event.startDateTime >= now
+        }.count
+    }
+    
+    private var pendingFriendRequestsCount: Int {
+        return vm.friendInviteReceived.count
+    }
+    
     var body: some View {
         NavigationStack {
             TabView(selection: $selectedTab) {
@@ -29,6 +40,7 @@ struct MainView: View {
                         Image(systemName: "envelope.fill")
                         Text("Invites")
                     }
+                    .badge(pendingInvitesCount > 0 ? "\(pendingInvitesCount)" : nil)
                     .tag(1)
                 
                 CreateEventView(user: user, selectedTab: $selectedTab, event: EventModel(), isNewEvent: true)
@@ -43,6 +55,7 @@ struct MainView: View {
                         Image(systemName: "person.2.fill")
                         Text("Friends")
                     }
+                    .badge(pendingFriendRequestsCount > 0 ? "\(pendingFriendRequestsCount)" : nil)
                     .tag(3)
                 
                 MySettingsView(user: user)
