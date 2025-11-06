@@ -28,14 +28,14 @@ struct MainView: View {
     var body: some View {
         NavigationStack {
             TabView(selection: $selectedTab) {
-                MyEventsView(user: user, isInviteView: false)
+                MyEventsView(user: user, isInviteView: false, selectedTab: $selectedTab)
                     .tabItem {
                         Image(systemName: "shareplay")
                         Text("My Events")
                     }
                     .tag(0)
                 
-                MyEventsView(user: user, isInviteView: true)
+                MyEventsView(user: user, isInviteView: true, selectedTab: $selectedTab)
                     .tabItem {
                         Image(systemName: "envelope.fill")
                         Text("Invites")

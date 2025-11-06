@@ -13,12 +13,14 @@ struct MyEventsView: View {
     
     @State var user: UserModel
     let isInviteView: Bool
+    @Binding var selectedTab: Int
     
     @State private var selectedEventType: EventType = .upcoming
     
-    init(user: UserModel, isInviteView: Bool) {
+    init(user: UserModel, isInviteView: Bool, selectedTab: Binding<Int>) {
         self.user = user
         self.isInviteView = isInviteView
+        self._selectedTab = selectedTab
         // Set default tab based on view type
         self._selectedEventType = State(initialValue: isInviteView ? .pending : .upcoming)
     }
@@ -70,7 +72,11 @@ struct MyEventsView: View {
                 
                 Spacer()
                 
-                ProfilePictureView(user: user, diameter: 50, isPhone: false, isViewingUser: true)
+                Button {
+                    selectedTab = 4
+                } label: {
+                    ProfilePictureView(user: user, diameter: 50, isPhone: false, isViewingUser: true)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 20)
@@ -511,6 +517,6 @@ struct ModernEventPillView: View {
 
 
 #Preview {
-    MyEventsView(user: UserData.userData[0], isInviteView: false)
+    MyEventsView(user: UserData.userData[0], isInviteView: false, selectedTab: .constant(0))
         .environmentObject(ViewModel())
 }

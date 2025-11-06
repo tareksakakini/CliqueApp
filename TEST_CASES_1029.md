@@ -21,27 +21,32 @@ Collection of all notes:
 
 TODO:
 
--- [Authentication/Phone Linking - Major] This whole feature needs rethinking. There is no verification for the phone number which is a security risk. Switching to sign up by phone number fixes a lot of this. --
--- [Pictures - Major] Functional, but user experience poor, and still some issues with pictures not matching selection --
--- [Design - Minor] The way the host is indicated on the outside card needs adjustment --
--- [Design - Minor] Auto capitalize for event title --
--- [Design - Minor] Would be good to fix the aesthetics of the "Not a user? Add by phone" button --
--- [Notifications - Major] I still need to work on making sure I stop receiving notifications on a device I'm logged out of --
--- [Phone Invite - Major] Event is created with phone contact even when sending out the message is cancelled --
--- [UX minor] I need to check why sometimes the default time for the start time is not as refreshed --
--- [Time Zone - Major] I need to check how are we handling time zone differences --
--- [Design - Minor] Some wrapping happens in the event details in the card at the top when the details are lengthy. Should figure that out --
--- [Design - Minor] Showing the duration of the event ... I should consider not only using hours and minutes but also days --
--- [Pictures - Major] Image update still doesn't sync smoothly --
--- [Notifications - Minor] One issue observed is that invitees are not getting updates when outing details are changed or outing deleted --
--- [Design - Minor] Would be nice to show a badge on "Invites" to show the number of unanswered invites --
--- [Design - Minor] Would be nice to make the attendees clickable to view their profile --
--- [Notifications - Major] It would be nice for the click on the notification to lead you to the right place --
--- [Pictures - Major] Still having issues with aspect ratios with images --
--- [Error Handling - Major] This whole section needs rethinking. We have no error handling and we should. --
--- [Realtime updates - Major] This needs rethinking. Now I mostly have to manually refresh --
+-- [Authentication/Phone Linking - Major] This whole feature needs rethinking. There is no verification for the phone number which is a security risk. Switching to sign up by phone number fixes a lot of this.
+-- [Pictures - Major] Functional, but user experience poor, and still some issues with pictures not matching selection
+-- [Notifications - Major] I still need to work on making sure I stop receiving notifications on a device I'm logged out of
+-- [Phone Invite - Major] Event is created with phone contact even when sending out the message is cancelled 
+-- [Time Zone - Major] I need to check how are we handling time zone differences 
+-- [Pictures - Major] Image update still doesn't sync smoothly 
+-- [Notifications - Major] It would be nice for the click on the notification to lead you to the right place 
+-- [Pictures - Major] Still having issues with aspect ratios with images 
+-- [Error Handling - Major] This whole section needs rethinking. We have no error handling and we should. 
+-- [Realtime updates - Major] This needs rethinking. Now I mostly have to manually refresh 
+
+
+
+-- [UX minor] I need to check why sometimes the default time for the start time is not as refreshed 
+-- [Design - Minor] Some wrapping happens in the event details in the card at the top when the details are lengthy. Should figure that out 
+-- [Design - Minor] Showing the duration of the event ... I should consider not only using hours and minutes but also days 
+-- [Notifications - Minor] One issue observed is that invitees are not getting updates when outing details are changed or outing deleted 
+-- UI - Minor] Make the top right profile picture clickable and take you to the settings tab 
+-- [Design - Minor] Would be good to fix the aesthetics of the "Not a user? Add by phone" button
+-- [Design - Minor] Would be nice to make the attendees clickable to view their profile
 
 DONE:
+
+-- [Design - Minor] The way the host is indicated on the outside card needs adjustment
+-- [Design - Minor] Auto capitalize for event title
+-- [Design - Minor] Would be nice to show a badge on "Invites" to show the number of unanswered invites
 
 ------------------------------------
 
