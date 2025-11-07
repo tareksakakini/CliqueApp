@@ -201,27 +201,36 @@ struct EventDetailView: View {
                     .foregroundColor(.white)
                     .shadow(color: .black.opacity(0.5), radius: 2, x: 0, y: 1)
                 
-                HStack(spacing: 16) {
-                    HStack(spacing: 6) {
+                HStack(spacing: 12) {
+                    HStack(spacing: 4) {
                         Image(systemName: "calendar")
                             .font(.system(size: 14, weight: .medium))
+                            .frame(width: 14)
                         Text(vm.formatDate(date: currentEvent.startDateTime))
                             .font(.system(size: 16, weight: .medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
                     }
                     
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
                         Image(systemName: "clock")
                             .font(.system(size: 14, weight: .medium))
+                            .frame(width: 14)
                         Text(vm.formatTime(time: currentEvent.startDateTime))
                             .font(.system(size: 16, weight: .medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
                     }
                     
                     if !currentEvent.noEndTime {
-                            HStack(spacing: 6) {
+                            HStack(spacing: 4) {
                                 Image(systemName: "timer")
                                     .font(.system(size: 14, weight: .medium))
+                                    .frame(width: 14)
                                 Text(durationText)
                                     .font(.system(size: 16, weight: .medium))
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.6)
                             }
                         }
                     }
