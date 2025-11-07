@@ -38,15 +38,15 @@ TODO:
 -- [Design - Minor] Some wrapping happens in the event details in the card at the top when the details are lengthy. Should figure that out 
 -- [Design - Minor] Showing the duration of the event ... I should consider not only using hours and minutes but also days 
 -- [Notifications - Minor] One issue observed is that invitees are not getting updates when outing details are changed or outing deleted 
--- UI - Minor] Make the top right profile picture clickable and take you to the settings tab 
 -- [Design - Minor] Would be good to fix the aesthetics of the "Not a user? Add by phone" button
--- [Design - Minor] Would be nice to make the attendees clickable to view their profile
 
 DONE:
 
 -- [Design - Minor] The way the host is indicated on the outside card needs adjustment
 -- [Design - Minor] Auto capitalize for event title
 -- [Design - Minor] Would be nice to show a badge on "Invites" to show the number of unanswered invites
+-- [UI - Minor] Make the top right profile picture clickable and take you to the settings tab
+-- [Design - Minor] Would be nice to make the attendees clickable to view their profile 
 
 ------------------------------------
 

@@ -25,6 +25,8 @@ struct EventDetailView: View {
     @State private var isAcceptingInvite = false
     @State private var isAcceptingDeclinedInvite = false
     @State private var isDeletingEvent = false
+    @State private var selectedAttendee: UserModel? = nil
+    @State private var showAttendeeProfile = false
     
     init(event: EventModel, user: UserModel, inviteView: Bool) {
         self.event = event
@@ -118,6 +120,11 @@ struct EventDetailView: View {
                 isNewEvent: false,
                 selectedImage: eventImage
             )
+        }
+        .sheet(isPresented: $showAttendeeProfile) {
+            if let attendee = selectedAttendee {
+                FriendDetailsView(friend: attendee, viewingUser: user)
+            }
         }
     }
     
@@ -374,20 +381,48 @@ struct EventDetailView: View {
             }
             
             if let host = vm.getUser(username: currentEvent.host) {
-                HStack(spacing: 12) {
-                    ProfilePictureView(user: host, diameter: 50, isPhone: false)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(host.fullname)
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.primary)
+                let isViewingUser = host.email == user.email
+                
+                if isViewingUser {
+                    // Not clickable when viewing yourself as host
+                    HStack(spacing: 12) {
+                        ProfilePictureView(user: host, diameter: 50, isPhone: false)
                         
-                        Text("@\(host.username.isEmpty ? "username" : host.username)")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("You")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.primary)
+                            
+                            Text("@\(host.username.isEmpty ? "username" : host.username)")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
                     }
-                    
-                    Spacer()
+                } else {
+                    // Clickable for other users
+                    Button {
+                        selectedAttendee = host
+                        showAttendeeProfile = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            ProfilePictureView(user: host, diameter: 50, isPhone: false)
+                            
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(host.fullname)
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.primary)
+                                
+                                Text("@\(host.username.isEmpty ? "username" : host.username)")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                        }
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
             }
         }
@@ -511,25 +546,59 @@ struct EventDetailView: View {
         case coming, pending, notComing
     }
     
-    private func attendeeRow(user: UserModel, status: AttendeeStatus) -> some View {
-        HStack(spacing: 12) {
-            ProfilePictureView(user: user, diameter: 40, isPhone: false)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(user.fullname)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.primary)
-                
-                Text("@\(user.username.isEmpty ? "username" : user.username)")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundColor(.secondary)
+    private func attendeeRow(user attendee: UserModel, status: AttendeeStatus) -> some View {
+        let isViewingUser = attendee.email == user.email
+        
+        return Group {
+            if isViewingUser {
+                // Not clickable when viewing yourself
+                HStack(spacing: 12) {
+                    ProfilePictureView(user: attendee, diameter: 40, isPhone: false)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("You")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.primary)
+                        
+                        Text("@\(attendee.username.isEmpty ? "username" : attendee.username)")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: statusIcon(for: status))
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(statusColor(for: status))
+                }
+            } else {
+                // Clickable for other users
+                Button {
+                    selectedAttendee = attendee
+                    showAttendeeProfile = true
+                } label: {
+                    HStack(spacing: 12) {
+                        ProfilePictureView(user: attendee, diameter: 40, isPhone: false)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(attendee.fullname)
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.primary)
+                            
+                            Text("@\(attendee.username.isEmpty ? "username" : attendee.username)")
+                                .font(.system(size: 14, weight: .regular))
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: statusIcon(for: status))
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(statusColor(for: status))
+                    }
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            
-            Spacer()
-            
-            Image(systemName: statusIcon(for: status))
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(statusColor(for: status))
         }
     }
     
