@@ -21,30 +21,35 @@ Collection of all notes:
 
 TODO:
 
--- [Authentication/Phone Linking - Major] This whole feature needs rethinking. There is no verification for the phone number which is a security risk. Switching to sign up by phone number fixes a lot of this.
--- [Pictures - Major] Functional, but user experience poor, and still some issues with pictures not matching selection
--- [Notifications - Major] I still need to work on making sure I stop receiving notifications on a device I'm logged out of
--- [Phone Invite - Major] Event is created with phone contact even when sending out the message is cancelled 
--- [Time Zone - Major] I need to check how are we handling time zone differences 
--- [Pictures - Major] Image update still doesn't sync smoothly 
--- [Notifications - Major] It would be nice for the click on the notification to lead you to the right place 
--- [Pictures - Major] Still having issues with aspect ratios with images 
--- [Error Handling - Major] This whole section needs rethinking. We have no error handling and we should. 
--- [Realtime updates - Major] This needs rethinking. Now I mostly have to manually refresh 
--- [New Feature - Major] Add chat feature
+1. [Authentication/Phone Linking - Major] This whole feature needs rethinking. There is no verification for the phone number which is a security risk. Switching to sign up by phone number fixes a lot of this.
+
+2. [Pictures - Major] image syncing is not smooth, aspect ratio has issues
+
+3. [Notifications - Major] I still need to work on making sure I stop receiving notifications on a device I'm logged out of
+
+5. [Time Zone - Major] I need to check how are we handling time zone differences
+
+6. [Notifications - Major] It would be nice for the click on the notification to lead you to the right place
+
+7. [Error Handling - Major] This whole section needs rethinking. We have no error handling and we should. 
+
+8. [Realtime updates - Major] This needs rethinking. Now I mostly have to manually refresh 
+
+9. [New Feature - Major] Add chat feature
 
 DONE:
 
--- [Design - Minor] The way the host is indicated on the outside card needs adjustment
--- [Design - Minor] Auto capitalize for event title
--- [Design - Minor] Would be nice to show a badge on "Invites" to show the number of unanswered invites
--- [UI - Minor] Make the top right profile picture clickable and take you to the settings tab
--- [Design - Minor] Would be nice to make the attendees clickable to view their profile 
--- [UX minor] I need to check why sometimes the default time for the start time is not as refreshed
--- [Design - Minor] Some wrapping happens in the event details in the card at the top when the details are lengthy. Should figure that out 
--- [Design - Minor] Showing the duration of the event ... I should consider not only using hours and minutes but also days
--- [Design - Minor] Would be good to fix the aesthetics of the "Not a user? Add by phone" button
--- [Notifications - Minor] One issue observed is that invitees are not getting updates when outing details are changed or outing deleted 
+10. [Design - Minor] The way the host is indicated on the outside card needs adjustment
+11. [Design - Minor] Auto capitalize for event title
+12. [Design - Minor] Would be nice to show a badge on "Invites" to show the number of unanswered invites
+13. [UI - Minor] Make the top right profile picture clickable and take you to the settings tab
+14. [Design - Minor] Would be nice to make the attendees clickable to view their profile 
+15. [UX minor] I need to check why sometimes the default time for the start time is not as refreshed
+16. [Design - Minor] Some wrapping happens in the event details in the card at the top when the details are lengthy. Should figure that out 
+17. [Design - Minor] Showing the duration of the event ... I should consider not only using hours and minutes but also days
+18. [Design - Minor] Would be good to fix the aesthetics of the "Not a user? Add by phone" button
+19. [Notifications - Minor] One issue observed is that invitees are not getting updates when outing details are changed or outing deleted 
+4. [Phone Invite - Major] Event is created with phone contact even when sending out the message is cancelled
 
 ------------------------------------
 
@@ -629,9 +634,6 @@ DONE:
 
 ### 3.6 SMS Invites (Phone Contacts)
 
--- Event is created with phone contact even when sending out the message is cancelled --
-
-
 #### Test 3.6.1: Add Phone Contact as Invitee
 - [ ] **Steps:**
   1. In "Add People" sheet, go to "Contacts" tab
@@ -659,7 +661,7 @@ DONE:
 - [ ] **Steps:**
   1. Create event with phone contact
   2. When SMS composer opens, tap "Cancel"
-- [ ] **Expected:** Event may or may not be created (check expected behavior)
+- [ ] **Expected:** Event is NOT created, user remains on Create Event screen to continue editing
 - [ ] **Actual:** _______________
 - [ ] **Pass/Fail:** Pass
 

@@ -58,7 +58,7 @@ struct ContactPicker: UIViewControllerRepresentable {
 struct MessageComposer: UIViewControllerRepresentable {
     var recipients: [String]
     var body: String
-    var onFinish: () -> Void  // closure like `onSelect` in ContactPicker
+    var onFinish: (MessageComposeResult) -> Void  // closure with result parameter
 
     class Coordinator: NSObject, MFMessageComposeViewControllerDelegate {
         var parent: MessageComposer
@@ -69,7 +69,7 @@ struct MessageComposer: UIViewControllerRepresentable {
 
         func messageComposeViewController(_ controller: MFMessageComposeViewController, didFinishWith result: MessageComposeResult) {
             controller.dismiss(animated: true)
-            parent.onFinish()  // trigger sheet dismissal
+            parent.onFinish(result)  // pass the result to the callback
         }
     }
 

@@ -157,54 +157,62 @@ struct CreateEventView: View {
                     MessageComposer(
                         recipients: newPhoneNumbers,
                         body: "https://cliqueapp-3834b.web.app/?eventId=\(messageEventID)",
-                        onFinish: {
-                            Task {
-                                isCreatingEvent = true
-                                
-                                do {
-                                    // Handle Unsplash image if no user-selected image
-                                    var imageToUse = selectedImage
-                                    if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
-                                        // Download and crop the Unsplash image
-                                        imageToUse = await downloadAndCropUnsplashImage(from: url)
-                                    }
+                        onFinish: { result in
+                            // Check if message was sent or cancelled
+                            if result == .sent {
+                                // Message was sent successfully - create the event
+                                Task {
+                                    isCreatingEvent = true
                                     
-                                    await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                                    await vm.getAllEvents()
-                                    
-                                    isCreatingEvent = false
-                                    
-                                    if isNewEvent {
-                                        await MainActor.run {
-                                            selectedTab = 0
-                                            // Call the callback if provided (for AI suggestions)
-                                            onEventCreated?()
+                                    do {
+                                        // Handle Unsplash image if no user-selected image
+                                        var imageToUse = selectedImage
+                                        if selectedImage == nil, let unsplashURL = unsplashImageURL, let url = URL(string: unsplashURL) {
+                                            // Download and crop the Unsplash image
+                                            imageToUse = await downloadAndCropUnsplashImage(from: url)
                                         }
                                         
-                                        // Small delay to allow tab switch, then reset the form and view identity
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                            event = EventModel()
-                                            inviteesUserModels = []
-                                            invitedContacts = []
-                                            inviteeStatuses = [:]
-                                            contactStatuses = [:]
-                                            imageSelection = nil
-                                            selectedImage = nil
-                                            tempSelectedImage = nil
-                                            newPhoneNumbers = []
-                                            oldEvent = EventModel()
-                                            viewIdentityID = UUID().uuidString
+                                        await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                                        await vm.getAllEvents()
+                                        
+                                        isCreatingEvent = false
+                                        
+                                        if isNewEvent {
+                                            await MainActor.run {
+                                                selectedTab = 0
+                                                // Call the callback if provided (for AI suggestions)
+                                                onEventCreated?()
+                                            }
+                                            
+                                            // Small delay to allow tab switch, then reset the form and view identity
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                event = EventModel()
+                                                inviteesUserModels = []
+                                                invitedContacts = []
+                                                inviteeStatuses = [:]
+                                                contactStatuses = [:]
+                                                imageSelection = nil
+                                                selectedImage = nil
+                                                tempSelectedImage = nil
+                                                newPhoneNumbers = []
+                                                oldEvent = EventModel()
+                                                viewIdentityID = UUID().uuidString
+                                            }
+                                        } else {
+                                            await MainActor.run {
+                                                dismiss()
+                                            }
                                         }
-                                    } else {
-                                        await MainActor.run {
-                                            dismiss()
-                                        }
+                                    } catch {
+                                        isCreatingEvent = false
+                                        alertMessage = "Failed to create event. Please try again."
+                                        showAlert = true
                                     }
-                                } catch {
-                                    isCreatingEvent = false
-                                    alertMessage = "Failed to create event. Please try again."
-                                    showAlert = true
                                 }
+                            } else {
+                                // Message was cancelled or failed - reset state and stay on form
+                                print("SMS composer result: \(result == .cancelled ? "Cancelled" : "Failed")")
+                                isCreatingEvent = false
                             }
                         }
                     )
