@@ -903,9 +903,7 @@ struct EventDetailView: View {
     
     private func deleteEvent() async {
         do {
-            let databaseManager = DatabaseManager()
-            try await databaseManager.deleteEventFromFirestore(id: currentEvent.id)
-            await vm.getAllEvents()
+            try await vm.deleteEventWithNotification(event: currentEvent, user: user)
             
             await MainActor.run {
                 dismiss()

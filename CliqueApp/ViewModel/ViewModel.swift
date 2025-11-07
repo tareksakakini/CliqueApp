@@ -165,6 +165,40 @@ class ViewModel: ObservableObject {
         }
     }
     
+    func deleteEventWithNotification(event: EventModel, user: UserModel) async throws {
+        let firestoreService = DatabaseManager()
+        
+        // Send notifications to all invitees before deleting
+        await sendEventDeletionNotifications(user: user, event: event)
+        
+        // Delete the event from Firestore
+        try await firestoreService.deleteEventFromFirestore(id: event.id)
+        
+        // Remove from local cache
+        self.events.removeAll { $0.id == event.id }
+        
+        print("Event '\(event.title)' deleted successfully with notifications sent")
+    }
+    
+    private func sendEventDeletionNotifications(user: UserModel, event: EventModel) async {
+        // Get all invitees (accepted, invited, and declined)
+        let allInvitees = Set(event.attendeesAccepted + event.attendeesInvited + event.attendeesDeclined)
+        
+        let notificationText = "\(user.fullname) deleted the event \(event.title)"
+        
+        // Send notifications to all invitees except the host
+        for inviteeEmail in allInvitees {
+            if inviteeEmail != user.email { // Don't notify the host
+                if let invitee = self.getUser(username: inviteeEmail) {
+                    sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                    print("Sent event deletion notification to: \(inviteeEmail)")
+                }
+            }
+        }
+        
+        print("Event deletion notifications sent to \(allInvitees.count) invitee(s)")
+    }
+    
     func getSignedInUser() async -> UserModel? {
         let signedInUserUID = await AuthManager.shared.getSignedInUserID()
         if let signedInUserUID = signedInUserUID {
@@ -349,6 +383,7 @@ class ViewModel: ObservableObject {
                 )
             }
             
+            // Handle new invitees
             var newInvitees: [String] = []
             for invitee in event.attendeesInvited {
                 if !oldEvent.attendeesInvited.contains(invitee) {
@@ -356,14 +391,103 @@ class ViewModel: ObservableObject {
                 }
             }
             
-            let notificationText: String = "\(user.fullname) just invited you to an event!"
+            let invitationNotificationText: String = "\(user.fullname) just invited you to an event!"
             for invitee in newInvitees {
                 if let inviteeFull = self.getUser(username: invitee) {
-                    sendPushNotification(notificationText: notificationText, receiverID: inviteeFull.subscriptionId)
+                    sendPushNotification(notificationText: invitationNotificationText, receiverID: inviteeFull.subscriptionId)
                 }
+            }
+            
+            // Handle event updates for existing invitees
+            if !isNewEvent {
+                await sendEventUpdateNotifications(user: user, oldEvent: oldEvent, newEvent: event)
             }
         } catch {
             print("Failed to add or update event: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Event Update Notifications
+    
+    private func sendEventUpdateNotifications(user: UserModel, oldEvent: EventModel, newEvent: EventModel) async {
+        // Collect all changes
+        var changes: [String] = []
+        
+        // Check for title change
+        if oldEvent.title != newEvent.title {
+            changes.append("title")
+        }
+        
+        // Check for location change
+        if oldEvent.location != newEvent.location {
+            changes.append("location")
+        }
+        
+        // Check for description change
+        if oldEvent.description != newEvent.description {
+            changes.append("description")
+        }
+        
+        // Check for start date/time change
+        if oldEvent.startDateTime != newEvent.startDateTime {
+            changes.append("start time")
+        }
+        
+        // Check for end date/time change
+        if oldEvent.endDateTime != newEvent.endDateTime {
+            changes.append("end time")
+        }
+        
+        // If no relevant changes, don't send notifications
+        if changes.isEmpty {
+            print("No relevant event changes detected, skipping update notifications")
+            return
+        }
+        
+        // Create notification message
+        let notificationText = createEventUpdateNotificationText(hostName: user.fullname, oldEventTitle: oldEvent.title, newEventTitle: newEvent.title, changes: changes)
+        
+        // Get all invitees (accepted, invited, and declined)
+        let allInvitees = Set(oldEvent.attendeesAccepted + oldEvent.attendeesInvited + oldEvent.attendeesDeclined)
+        
+        // Send notifications to all invitees except the host
+        for inviteeEmail in allInvitees {
+            if inviteeEmail != user.email { // Don't notify the host
+                if let invitee = self.getUser(username: inviteeEmail) {
+                    sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                    print("Sent event update notification to: \(inviteeEmail)")
+                }
+            }
+        }
+        
+        print("Event update notifications sent to \(allInvitees.count - 1) invitees for \(changes.count) change(s)")
+    }
+    
+    private func createEventUpdateNotificationText(hostName: String, oldEventTitle: String, newEventTitle: String, changes: [String]) -> String {
+        let titleChanged = changes.contains("title")
+        let displayTitle = oldEventTitle // Always use old title so users know which event
+        
+        if changes.count == 1 {
+            if titleChanged {
+                return "\(hostName) changed the title of \(oldEventTitle) (now \(newEventTitle))"
+            } else {
+                return "\(hostName) changed the \(changes[0]) of \(displayTitle)"
+            }
+        } else if changes.count == 2 {
+            if titleChanged {
+                // When title changed along with one other thing
+                let otherChange = changes.first(where: { $0 != "title" }) ?? ""
+                return "\(hostName) changed the title and \(otherChange) of \(oldEventTitle) (now \(newEventTitle))"
+            } else {
+                return "\(hostName) changed the \(changes[0]) and \(changes[1]) of \(displayTitle)"
+            }
+        } else {
+            // For 3+ changes
+            if titleChanged {
+                return "\(hostName) changed the title and other details of \(oldEventTitle) (now \(newEventTitle))"
+            } else {
+                return "\(hostName) changed multiple details of \(displayTitle)"
+            }
         }
     }
     
