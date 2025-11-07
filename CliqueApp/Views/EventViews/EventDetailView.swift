@@ -57,12 +57,27 @@ struct EventDetailView: View {
     
     private var durationText: String {
         let duration = vm.calculateDuration(startDateTime: currentEvent.startDateTime, endDateTime: currentEvent.endDateTime)
-        if duration.hours > 0 && duration.minutes > 0 {
-            return "\(duration.hours)h \(duration.minutes)m"
-        } else if duration.hours > 0 {
-            return "\(duration.hours)h"
+        
+        if duration.days > 0 {
+            // Duration is longer than a day
+            var components: [String] = []
+            components.append("\(duration.days)d")
+            if duration.hours > 0 {
+                components.append("\(duration.hours)h")
+            }
+            if duration.minutes > 0 {
+                components.append("\(duration.minutes)m")
+            }
+            return components.joined(separator: " ")
         } else {
-            return "\(duration.minutes)m"
+            // Duration is less than a day (current behavior)
+            if duration.hours > 0 && duration.minutes > 0 {
+                return "\(duration.hours)h \(duration.minutes)m"
+            } else if duration.hours > 0 {
+                return "\(duration.hours)h"
+            } else {
+                return "\(duration.minutes)m"
+            }
         }
     }
     

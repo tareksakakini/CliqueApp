@@ -415,7 +415,7 @@ class ViewModel: ObservableObject {
         }
     }
 
-    func calculateDuration(startDateTime: Date, endDateTime: Date) -> (hours: Int, minutes: Int) {
+    func calculateDuration(startDateTime: Date, endDateTime: Date) -> (days: Int, hours: Int, minutes: Int) {
         let calendar = Calendar.current
 
         // Strip seconds and nanoseconds
@@ -424,15 +424,17 @@ class ViewModel: ObservableObject {
 
         guard let trimmedStart = calendar.date(from: startComponents),
               let trimmedEnd = calendar.date(from: endComponents) else {
-            return (0, 0)
+            return (0, 0, 0)
         }
 
         let interval = trimmedEnd.timeIntervalSince(trimmedStart)
         let totalMinutes = Int(interval) / 60
-        let hours = totalMinutes / 60
+        let totalHours = totalMinutes / 60
+        let days = totalHours / 24
+        let hours = totalHours % 24
         let minutes = totalMinutes % 60
 
-        return (hours, minutes)
+        return (days, hours, minutes)
     }
     
     func checkEmailVerificationStatus() async {

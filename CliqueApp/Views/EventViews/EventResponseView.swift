@@ -20,7 +20,7 @@ struct EventResponseView: View {
     @Binding var eventImage: UIImage?
     
     @State var editView: Bool = false
-    @State var duration: (hours: Int, minutes: Int) = (0,0)
+    @State var duration: (days: Int, hours: Int, minutes: Int) = (0, 0, 0)
     
     
     var body: some View {
@@ -205,9 +205,25 @@ extension EventResponseView {
     private var EventDuration: some View {
         HStack {
             Image(systemName: "timer")
-            Text("\(duration.hours) Hours \(duration.minutes) Minutes")
+            Text(durationText)
         }
         .font(.body)
+    }
+    
+    private var durationText: String {
+        var components: [String] = []
+        
+        if duration.days > 0 {
+            components.append("\(duration.days) \(duration.days == 1 ? "Day" : "Days")")
+        }
+        if duration.hours > 0 {
+            components.append("\(duration.hours) \(duration.hours == 1 ? "Hour" : "Hours")")
+        }
+        if duration.minutes > 0 {
+            components.append("\(duration.minutes) \(duration.minutes == 1 ? "Minute" : "Minutes")")
+        }
+        
+        return components.isEmpty ? "0 Minutes" : components.joined(separator: " ")
     }
     
     private var EventLocation: some View {
