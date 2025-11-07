@@ -32,9 +32,7 @@ TODO:
 -- [Error Handling - Major] This whole section needs rethinking. We have no error handling and we should. 
 -- [Realtime updates - Major] This needs rethinking. Now I mostly have to manually refresh 
 
-
-
--- [UX minor] I need to check why sometimes the default time for the start time is not as refreshed 
+ 
 -- [Design - Minor] Some wrapping happens in the event details in the card at the top when the details are lengthy. Should figure that out 
 -- [Design - Minor] Showing the duration of the event ... I should consider not only using hours and minutes but also days 
 -- [Notifications - Minor] One issue observed is that invitees are not getting updates when outing details are changed or outing deleted 
@@ -47,6 +45,7 @@ DONE:
 -- [Design - Minor] Would be nice to show a badge on "Invites" to show the number of unanswered invites
 -- [UI - Minor] Make the top right profile picture clickable and take you to the settings tab
 -- [Design - Minor] Would be nice to make the attendees clickable to view their profile 
+-- [UX minor] I need to check why sometimes the default time for the start time is not as refreshed
 
 ------------------------------------
 

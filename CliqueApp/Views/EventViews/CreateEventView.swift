@@ -122,6 +122,20 @@ struct CreateEventView: View {
                 // Load existing invitees when editing an event
                 if !isNewEvent {
                     loadExistingInvitees()
+                } else {
+                    // For new events, update the times to current if all fields are empty
+                    let isFormEmpty = event.title.isEmpty &&
+                                     event.location.isEmpty &&
+                                     event.description.isEmpty &&
+                                     inviteesUserModels.isEmpty &&
+                                     invitedContacts.isEmpty &&
+                                     selectedImage == nil
+                    
+                    if isFormEmpty {
+                        let now = Date()
+                        event.startDateTime = now
+                        event.endDateTime = now
+                    }
                 }
             }
             .alert(alertMessage, isPresented: $showAlert) {
