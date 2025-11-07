@@ -92,11 +92,14 @@ struct AddInviteesView: View {
                     Button(action: {
                         showContactPicker = true
                     }) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 6) {
                             Image(systemName: "phone.fill")
                                 .font(.system(size: 14, weight: .medium))
+                                .frame(width: 14)
                             Text("Not a user? Add by phone")
                                 .font(.system(size: 14, weight: .medium))
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
                         }
                         .foregroundColor(.white)
                         .padding(.horizontal, 16)
