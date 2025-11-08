@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		E61476802EBFB88A00F16811 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = E614767F2EBFB88A00F16811 /* FirebaseCore */; };
+		E61476822EBFB89100F16811 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = E61476812EBFB89100F16811 /* FirebaseFirestore */; };
 		E686B0E02D9D96960099B41C /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = E686B0DF2D9D96960099B41C /* FirebaseStorage */; };
 		E68A6E3B2D3076A200E5AF14 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = E68A6E3A2D3076A200E5AF14 /* FirebaseAnalytics */; };
 		E6D19B442D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E6D19B3D2D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -49,6 +51,13 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		E61476842EBFB8ED00F16811 /* Exceptions for "CliqueApp" folder in "OneSignalNotificationServiceExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				"GoogleService-Info.plist",
+			);
+			target = E6D19B3C2D77A4AD00684D4D /* OneSignalNotificationServiceExtension */;
+		};
 		E6D199E82D6E33E900684D4D /* Exceptions for "CliqueApp" folder in "CliqueApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -78,6 +87,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				E6D199E82D6E33E900684D4D /* Exceptions for "CliqueApp" folder in "CliqueApp" target */,
+				E61476842EBFB8ED00F16811 /* Exceptions for "CliqueApp" folder in "OneSignalNotificationServiceExtension" target */,
 			);
 			path = CliqueApp;
 			sourceTree = "<group>";
@@ -89,7 +99,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E61476802EBFB88A00F16811 /* FirebaseCore in Frameworks */,
 				E6D19B4D2D77A5FA00684D4D /* OneSignalExtension in Frameworks */,
+				E61476822EBFB89100F16811 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -158,6 +170,8 @@
 			name = OneSignalNotificationServiceExtension;
 			packageProductDependencies = (
 				E6D19B4C2D77A5FA00684D4D /* OneSignalExtension */,
+				E614767F2EBFB88A00F16811 /* FirebaseCore */,
+				E61476812EBFB89100F16811 /* FirebaseFirestore */,
 			);
 			productName = OneSignalNotificationServiceExtension;
 			productReference = E6D19B3D2D77A4AD00684D4D /* OneSignalNotificationServiceExtension.appex */;
@@ -593,6 +607,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		E614767F2EBFB88A00F16811 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		E61476812EBFB89100F16811 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
 		E686B0DF2D9D96960099B41C /* FirebaseStorage */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = E68A6E392D3076A200E5AF14 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

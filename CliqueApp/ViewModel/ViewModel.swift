@@ -37,6 +37,9 @@ class ViewModel: ObservableObject {
         await self.getUserFriends(user_email: user_email)
         await self.getUserFriendRequests(user_email: user_email)
         await self.getUserFriendRequestsSent(user_email: user_email)
+        
+        // Update badge after refreshing data
+        await BadgeManager.shared.updateBadge(for: user_email)
     }
     
     func getUserFriends(user_email: String) async {
@@ -192,7 +195,7 @@ class ViewModel: ObservableObject {
         for inviteeEmail in allInvitees {
             if inviteeEmail != user.email { // Don't notify the host
                 if let invitee = self.getUser(username: inviteeEmail) {
-                    sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                    await sendPushNotificationWithBadge(notificationText: notificationText, receiverID: invitee.subscriptionId, receiverEmail: invitee.email)
                     print("Sent event deletion notification to: \(inviteeEmail)")
                 }
             }
@@ -303,9 +306,13 @@ class ViewModel: ObservableObject {
             let databaseManager = DatabaseManager()
             try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "accept")
             print("User successfully moved from inviteeAttended to inviteeAccepted!")
+            
+            // Update badge for the user who accepted
+            await BadgeManager.shared.updateBadge(for: user.email)
+            
             if let host = self.getUser(username: event.host) {
                 let notificationText: String = "\(user.fullname) is coming to your event!"
-                sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                await sendPushNotificationWithBadge(notificationText: notificationText, receiverID: host.subscriptionId, receiverEmail: host.email)
             }
         } catch {
             print("Failed to update: \(error.localizedDescription)")
@@ -317,10 +324,14 @@ class ViewModel: ObservableObject {
             let databaseManager = DatabaseManager()
             try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "reject")
             print("User successfully removed from inviteeAttended!")
+            
+            // Update badge for the user who declined
+            await BadgeManager.shared.updateBadge(for: user.email)
+            
             if let host = self.getUser(username: event.host) {
                 if event.host != user.email {
                     let notificationText: String = "\(user.fullname) cannot make it to your event."
-                    sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                    await sendPushNotificationWithBadge(notificationText: notificationText, receiverID: host.subscriptionId, receiverEmail: host.email)
                 }
             }
         } catch {
@@ -333,10 +344,14 @@ class ViewModel: ObservableObject {
             let databaseManager = DatabaseManager()
             try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "leave")
             print("User successfully removed from inviteeAttended!")
+            
+            // Update badge for the user who left
+            await BadgeManager.shared.updateBadge(for: user.email)
+            
             if let host = self.getUser(username: event.host) {
                 if event.host != user.email {
                     let notificationText: String = "\(user.fullname) cannot make it anymore to your event."
-                    sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                    await sendPushNotificationWithBadge(notificationText: notificationText, receiverID: host.subscriptionId, receiverEmail: host.email)
                 }
             }
         } catch {
@@ -396,7 +411,7 @@ class ViewModel: ObservableObject {
             let invitationNotificationText: String = "\(user.fullname) just invited you to an event!"
             for invitee in newInvitees {
                 if let inviteeFull = self.getUser(username: invitee) {
-                    sendPushNotification(notificationText: invitationNotificationText, receiverID: inviteeFull.subscriptionId)
+                    await sendPushNotificationWithBadge(notificationText: invitationNotificationText, receiverID: inviteeFull.subscriptionId, receiverEmail: inviteeFull.email)
                 }
             }
             
@@ -456,7 +471,7 @@ class ViewModel: ObservableObject {
         for inviteeEmail in allInvitees {
             if inviteeEmail != user.email { // Don't notify the host
                 if let invitee = self.getUser(username: inviteeEmail) {
-                    sendPushNotification(notificationText: notificationText, receiverID: invitee.subscriptionId)
+                    await sendPushNotificationWithBadge(notificationText: notificationText, receiverID: invitee.subscriptionId, receiverEmail: invitee.email)
                     print("Sent event update notification to: \(inviteeEmail)")
                 }
             }

@@ -8,21 +8,40 @@
 import Foundation
 import OneSignalFramework
 
-func sendPushNotification(notificationText: String, receiverID: String) {
+func sendPushNotification(notificationText: String, receiverID: String, receiverEmail: String? = nil, badgeCount: Int? = nil) {
     let url = URL(string: "https://onesignal.com/api/v1/notifications")!
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
     request.setValue("os_v2_app_kn2bhhoqofb4vclavnqu5girwanuad26cpne66v3bw6punh5go7lz726njfiualvmiy2672p5tt7elokzcti2zb2xhqqrwudzmiy2ga", forHTTPHeaderField: "Authorization")
 
-    let payload: [String: Any] = [
+    var payload: [String: Any] = [
         "app_id": "5374139d-d071-43ca-8960-ab614e9911b0",
         "contents": ["en": "\(notificationText)"],
-        "include_player_ids": ["\(receiverID)"]
+        "include_player_ids": ["\(receiverID)"],
+        "mutable_content": true  // REQUIRED - allows notification service extension to modify badge
     ]
+    
+    // DO NOT set badge here - let the Notification Service Extension handle it
+    // This prevents double-counting issues
+    print("📤 Sending notification WITHOUT badge (will be set by extension)")
+    
+    // Add custom data for badge calculation in extension
+    var customData: [String: Any] = [:]
+    if let receiverEmail = receiverEmail {
+        customData["receiverEmail"] = receiverEmail
+        print("📤 Added receiverEmail to notification: \(receiverEmail)")
+    }
+    if !customData.isEmpty {
+        payload["data"] = customData
+    }
 
     do {
-        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted])
+        if let jsonString = String(data: request.httpBody!, encoding: .utf8) {
+            print("📦 Notification payload:")
+            print(jsonString)
+        }
     } catch {
         print("Error serializing JSON: \(error)")
         return
@@ -30,15 +49,61 @@ func sendPushNotification(notificationText: String, receiverID: String) {
 
     let task = URLSession.shared.dataTask(with: request) { data, response, error in
         if let error = error {
-            print("Error sending push notification: \(error)")
+            print("❌ Error sending push notification: \(error)")
             return
         }
+        if let httpResponse = response as? HTTPURLResponse {
+            print("📡 OneSignal response status: \(httpResponse.statusCode)")
+        }
         if let data = data, let responseString = String(data: data, encoding: .utf8) {
-            print("Response: \(responseString)")
+            print("📡 OneSignal response: \(responseString)")
         }
     }
 
     task.resume()
+}
+
+// MARK: - Enhanced Push Notification with Automatic Badge Calculation
+
+/// Sends a push notification with automatic badge count calculation
+func sendPushNotificationWithBadge(notificationText: String, receiverID: String, receiverEmail: String) async {
+    let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverEmail)
+    sendPushNotification(notificationText: notificationText, receiverID: receiverID, receiverEmail: receiverEmail, badgeCount: badgeCount)
+    print("📤 Sent notification to \(receiverEmail)")
+    print("   Text: \(notificationText)")
+    print("   Badge will be set to: \(badgeCount)")
+    print("   PlayerID: \(receiverID)")
+}
+
+/// Sends a silent notification to update badge count only
+func sendSilentBadgeUpdate(receiverID: String, receiverEmail: String) async {
+    let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverEmail)
+    
+    let url = URL(string: "https://onesignal.com/api/v1/notifications")!
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.setValue("os_v2_app_kn2bhhoqofb4vclavnqu5girwanuad26cpne66v3bw6punh5go7lz726njfiualvmiy2672p5tt7elokzcti2zb2xhqqrwudzmiy2ga", forHTTPHeaderField: "Authorization")
+    
+    let payload: [String: Any] = [
+        "app_id": "5374139d-d071-43ca-8960-ab614e9911b0",
+        "include_player_ids": [receiverID],
+        "content_available": true, // Silent notification
+        "ios_badgeType": "SetTo",
+        "ios_badgeCount": badgeCount,
+        "data": ["receiverEmail": receiverEmail, "badgeUpdate": true]
+    ]
+    
+    do {
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        
+        let (data, _) = try await URLSession.shared.data(for: request)
+        if let responseString = String(data: data, encoding: .utf8) {
+            print("🔕 Silent badge update sent: \(responseString)")
+        }
+    } catch {
+        print("❌ Error sending silent badge update: \(error)")
+    }
 }
 
 func getOneSignalSubscriptionId() async -> String? {

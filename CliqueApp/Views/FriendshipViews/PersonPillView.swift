@@ -128,7 +128,12 @@ private extension PersonPillView {
                         try await db.updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "add")
                         await vm.getUserFriends(user_email: viewing.email)
                         await vm.getUserFriendRequests(user_email: viewing.email)
-                        sendPushNotification(notificationText: "\(viewing.fullname) just accepted your friend request!", receiverID: displayed.subscriptionId)
+                        
+                        // Update badge for the user who accepted
+                        await BadgeManager.shared.updateBadge(for: viewing.email)
+                        
+                        // Send notification with badge to the user who sent the request
+                        await sendPushNotificationWithBadge(notificationText: "\(viewing.fullname) just accepted your friend request!", receiverID: displayed.subscriptionId, receiverEmail: displayed.email)
                     } catch {
                         print("Failed to accept friend request: \(error.localizedDescription)")
                     }
@@ -149,6 +154,9 @@ private extension PersonPillView {
                         try await DatabaseManager().removeFriendRequest(sender: displayed.email, receiver: viewing.email)
                         await vm.getUserFriends(user_email: viewing.email)
                         await vm.getUserFriendRequests(user_email: viewing.email)
+                        
+                        // Update badge for the user who rejected
+                        await BadgeManager.shared.updateBadge(for: viewing.email)
                     } catch {
                         print("Failed to reject friend request: \(error.localizedDescription)")
                     }
@@ -173,7 +181,9 @@ private extension PersonPillView {
                     let db = DatabaseManager()
                     try await db.sendFriendRequest(sender: viewing.email, receiver: displayed.email)
                     await vm.getUserFriendRequestsSent(user_email: viewing.email)
-                    sendPushNotification(notificationText: "\(viewing.fullname) just sent you a friend request!", receiverID: displayed.subscriptionId)
+                    
+                    // Send notification with badge to the receiver
+                    await sendPushNotificationWithBadge(notificationText: "\(viewing.fullname) just sent you a friend request!", receiverID: displayed.subscriptionId, receiverEmail: displayed.email)
                 } catch {
                     print("Friend Request Failed: \(error.localizedDescription)")
                 }
