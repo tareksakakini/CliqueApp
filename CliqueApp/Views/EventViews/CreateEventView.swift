@@ -534,41 +534,32 @@ struct CreateEventView: View {
                         .foregroundColor(event.description.count > 1000 ? .red : .secondary)
                 }
                 
-                TextEditor(text: $event.description)
-                    .font(.system(size: 16))
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .frame(minHeight: 80, maxHeight: 120)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color(.systemGray6))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(event.description.count > 1000 ? Color.red : Color(.systemGray4), lineWidth: 1)
-                            )
-                    )
-                    .overlay(
-                        Group {
-                            if event.description.isEmpty {
-                                HStack {
-                                    VStack {
-                                        HStack {
-                                            Text("Tell your friends more about this event...")
-                                                .font(.system(size: 16))
-                                                .foregroundColor(.secondary)
-                                                .padding(.leading, 16)
-                                                .padding(.top, 12)
-                                            Spacer()
-                                        }
-                                        Spacer()
-                                    }
-                                    Spacer()
-                                }
-                            }
-                        }
-                    )
+                ZStack(alignment: .topLeading) {
+                    TextEditor(text: $event.description)
+                        .font(.system(size: 16))
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .frame(minHeight: 80, maxHeight: 120)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                    
+                    if event.description.isEmpty {
+                        Text("Tell your friends more about this event...")
+                            .font(.system(size: 16))
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 17)
+                            .padding(.vertical, 16)
+                            .allowsHitTesting(false)
+                    }
+                }
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemGray6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(event.description.count > 1000 ? Color.red : Color(.systemGray4), lineWidth: 1)
+                        )
+                )
                     .onChange(of: event.description) { _, newValue in
                         if newValue.count > 1000 {
                             event.description = String(newValue.prefix(1000))
