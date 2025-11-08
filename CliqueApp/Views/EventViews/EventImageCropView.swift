@@ -9,10 +9,11 @@ struct EventImageCropView: View {
     @State private var lastOffset = CGSize.zero
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
+    @State private var minimumAllowedScale: CGFloat = 1.0
+    @State private var viewSize: CGSize = .zero
     
     // Constants for better UX - rectangular crop for events
     private let cropSize = CGSize(width: 320, height: 200) // 16:10 aspect ratio
-    private let minScale: CGFloat = 0.5
     private let maxScale: CGFloat = 4.0
     
     var body: some View {
@@ -49,9 +50,7 @@ struct EventImageCropView: View {
                                     MagnificationGesture()
                                         .onChanged { value in
                                             let newScale = lastScale * value
-                                            scale = min(max(newScale, minScale), maxScale)
-                                            
-                                            // Constrain offset when scaling
+                                            scale = min(max(newScale, minimumAllowedScale), maxScale)
                                             offset = constrainOffset(offset, in: geometry.size)
                                         }
                                         .onEnded { _ in
@@ -60,9 +59,6 @@ struct EventImageCropView: View {
                                         }
                                 )
                             )
-                            .onAppear {
-                                setupInitialScale(in: geometry.size)
-                            }
                         
                         // Crop overlay with rectangular preview
                         EventImageCropOverlay(
@@ -71,6 +67,13 @@ struct EventImageCropView: View {
                         )
                         .allowsHitTesting(false)
                     }
+                }
+                .onAppear {
+                    configureScale(in: geometry.size, shouldReset: true)
+                }
+                .onChange(of: geometry.size) { oldValue, newValue in
+                    guard oldValue != newValue else { return }
+                    configureScale(in: newValue, shouldReset: false)
                 }
             }
             .navigationTitle("Crop Event Picture")
@@ -98,8 +101,11 @@ struct EventImageCropView: View {
     
     // MARK: - Helper Methods
     
-    private func setupInitialScale(in screenSize: CGSize) {
-        // Calculate the optimal initial scale using the same logic as cropImage()
+    private func configureScale(in screenSize: CGSize, shouldReset: Bool) {
+        guard screenSize.width > 0, screenSize.height > 0 else { return }
+        
+        viewSize = screenSize
+        
         let imageSize = image.size
         let imageAspectRatio = imageSize.width / imageSize.height
         let screenAspectRatio = screenSize.width / screenSize.height
@@ -119,12 +125,25 @@ struct EventImageCropView: View {
         // Calculate scale needed to fill the crop area
         let scaleToFitWidth = cropSize.width / displayWidth
         let scaleToFitHeight = cropSize.height / displayHeight
+        let requiredScale = max(scaleToFitWidth, scaleToFitHeight)
         
-        // Use the larger scale factor to ensure the image covers the crop area
-        let initialScale = max(scaleToFitWidth, scaleToFitHeight) * 1.1 // 10% larger for better coverage
+        minimumAllowedScale = min(requiredScale, maxScale)
         
-        scale = min(max(initialScale, minScale), maxScale)
-        lastScale = scale
+        if shouldReset {
+            let initialScale = min(max(requiredScale * 1.05, minimumAllowedScale), maxScale)
+            scale = initialScale
+            lastScale = initialScale
+            offset = .zero
+            lastOffset = .zero
+        } else if scale < minimumAllowedScale {
+            scale = minimumAllowedScale
+            lastScale = minimumAllowedScale
+            offset = constrainOffset(offset, in: screenSize)
+            lastOffset = offset
+        } else {
+            offset = constrainOffset(offset, in: screenSize)
+            lastOffset = offset
+        }
     }
     
     private func constrainOffset(_ proposedOffset: CGSize, in screenSize: CGSize) -> CGSize {
@@ -168,9 +187,10 @@ struct EventImageCropView: View {
     private func cropImage() {
         let imageSize = image.size
         let outputSize = CGSize(width: 640, height: 400) // Final event image size (16:10 ratio)
+        let workingScale = max(scale, minimumAllowedScale)
         
         // Get the actual screen size being used for display
-        let screenSize = UIScreen.main.bounds.size
+        let screenSize = viewSize == .zero ? UIScreen.main.bounds.size : viewSize
         
         // Calculate how the image is actually displayed (aspect fit within screen)
         let imageAspectRatio = imageSize.width / imageSize.height
@@ -194,16 +214,16 @@ struct EventImageCropView: View {
         
         // Calculate the crop rectangle in the original image coordinates
         // The crop size in image coordinates, accounting for user's zoom
-        let cropWidthInImage = cropSize.width / (imageToDisplayScale * scale)
-        let cropHeightInImage = cropSize.height / (imageToDisplayScale * scale)
+        let cropWidthInImage = cropSize.width / (imageToDisplayScale * workingScale)
+        let cropHeightInImage = cropSize.height / (imageToDisplayScale * workingScale)
         
         // Calculate the center point in image coordinates, accounting for user's pan
         let imageCenterX = imageSize.width / 2
         let imageCenterY = imageSize.height / 2
         
         // Convert the user's offset to image coordinates
-        let offsetXInImage = offset.width / (imageToDisplayScale * scale)
-        let offsetYInImage = offset.height / (imageToDisplayScale * scale)
+        let offsetXInImage = offset.width / (imageToDisplayScale * workingScale)
+        let offsetYInImage = offset.height / (imageToDisplayScale * workingScale)
         
         // Calculate the crop rectangle center
         let cropCenterX = imageCenterX - offsetXInImage
