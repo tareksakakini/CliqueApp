@@ -10,6 +10,48 @@ import PhotosUI
 import MessageUI
 import ContactsUI
 
+// Extension to handle timezone-agnostic date conversions
+extension Date {
+    // Convert from local time to UTC while preserving the wall-clock time
+    // Example: 8:00 PM local -> 8:00 PM UTC
+    func toUTCPreservingWallClock() -> Date {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents(in: TimeZone.current, from: self)
+        var utcComponents = DateComponents()
+        utcComponents.year = components.year
+        utcComponents.month = components.month
+        utcComponents.day = components.day
+        utcComponents.hour = components.hour
+        utcComponents.minute = components.minute
+        utcComponents.second = components.second
+        utcComponents.timeZone = TimeZone(identifier: "UTC")
+        
+        var utcCalendar = Calendar.current
+        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+        return utcCalendar.date(from: utcComponents) ?? self
+    }
+    
+    // Convert from UTC to local time while preserving the wall-clock time
+    // Example: 8:00 PM UTC -> 8:00 PM local
+    func fromUTCPreservingWallClock() -> Date {
+        var utcCalendar = Calendar.current
+        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+        let components = utcCalendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: self)
+        
+        var localComponents = DateComponents()
+        localComponents.year = components.year
+        localComponents.month = components.month
+        localComponents.day = components.day
+        localComponents.hour = components.hour
+        localComponents.minute = components.minute
+        localComponents.second = components.second
+        localComponents.timeZone = TimeZone.current
+        
+        let calendar = Calendar.current
+        return calendar.date(from: localComponents) ?? self
+    }
+}
+
 enum InviteStatus: String, CaseIterable {
     case invited
     case accepted
@@ -536,6 +578,21 @@ struct CreateEventView: View {
         }
     }
     
+    // Custom binding that converts between local timezone (for DatePicker) and UTC (for storage)
+    private var startDateBinding: Binding<Date> {
+        Binding(
+            get: { event.startDateTime.fromUTCPreservingWallClock() },
+            set: { event.startDateTime = $0.toUTCPreservingWallClock() }
+        )
+    }
+    
+    private var endDateBinding: Binding<Date> {
+        Binding(
+            get: { event.endDateTime.fromUTCPreservingWallClock() },
+            set: { event.endDateTime = $0.toUTCPreservingWallClock() }
+        )
+    }
+    
     private var dateTimeSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Start Date & Time
@@ -544,7 +601,7 @@ struct CreateEventView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.primary)
                 
-                DatePicker("", selection: $event.startDateTime, displayedComponents: [.date, .hourAndMinute])
+                DatePicker("", selection: startDateBinding, displayedComponents: [.date, .hourAndMinute])
                     .labelsHidden()
                     .tint(Color(.accent))
                     .padding(.horizontal, 16)
@@ -572,7 +629,7 @@ struct CreateEventView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.primary)
                     
-                    DatePicker("", selection: $event.endDateTime, displayedComponents: [.date, .hourAndMinute])
+                    DatePicker("", selection: endDateBinding, displayedComponents: [.date, .hourAndMinute])
                         .labelsHidden()
                         .tint(Color(.accent))
                         .padding(.horizontal, 16)
@@ -585,7 +642,7 @@ struct CreateEventView: View {
                                         .stroke(Color(.systemGray4), lineWidth: 1)
                                 )
                         )
-}
+                }
             }
         }
     }

@@ -403,6 +403,7 @@ struct AIEventCreationView: View {
         for format in formatters {
             let formatter = DateFormatter()
             formatter.dateFormat = format
+            formatter.timeZone = TimeZone(identifier: "UTC")
             if let parsed = formatter.date(from: startTimeString) {
                 startTime = parsed
                 startTimeFormat = format
@@ -416,6 +417,7 @@ struct AIEventCreationView: View {
         for format in formatters {
             let formatter = DateFormatter()
             formatter.dateFormat = format
+            formatter.timeZone = TimeZone(identifier: "UTC")
             if let parsed = formatter.date(from: endTimeString) {
                 endTime = parsed
                 endTimeFormat = format
@@ -428,7 +430,8 @@ struct AIEventCreationView: View {
         if let parsedStartTime = startTime, let format = startTimeFormat {
             if (format.contains("EEEE, MMMM d") || format.contains("MMMM d")) && !format.contains("h:mm") {
                 // Date only - add default time based on time of day preferences
-                let calendar = Calendar.current
+                var calendar = Calendar.current
+                calendar.timeZone = TimeZone(identifier: "UTC")!
                 let defaultStartTime = calendar.date(bySettingHour: 14, minute: 0, second: 0, of: parsedStartTime) ?? parsedStartTime
                 startTime = defaultStartTime
                 print("📅 Added default 2:00 PM to date-only start time")
@@ -439,7 +442,8 @@ struct AIEventCreationView: View {
             if (format.contains("EEEE, MMMM d") || format.contains("MMMM d")) && !format.contains("h:mm") {
                 // Date only - add default end time (2 hours after start)
                 if let finalStartTime = startTime {
-                    let calendar = Calendar.current
+                    var calendar = Calendar.current
+                    calendar.timeZone = TimeZone(identifier: "UTC")!
                     let defaultEndTime = calendar.date(byAdding: .hour, value: 2, to: finalStartTime) ?? parsedEndTime
                     endTime = defaultEndTime
                     print("📅 Added default end time (2 hours after start)")

@@ -23,19 +23,17 @@ TODO:
 
 1. [Authentication/Phone Linking - Major] This whole feature needs rethinking. There is no verification for the phone number which is a security risk. Switching to sign up by phone number fixes a lot of this.
 
-2. [Pictures - Major] image syncing is not smooth, aspect ratio has issues
-
-3. [Notifications - Major] I still need to work on making sure I stop receiving notifications on a device I'm logged out of
-
-5. [Time Zone - Major] I need to check how are we handling time zone differences
-
-6. [Notifications - Major] It would be nice for the click on the notification to lead you to the right place
-
-7. [Error Handling - Major] This whole section needs rethinking. We have no error handling and we should. 
-
-8. [Realtime updates - Major] This needs rethinking. Now I mostly have to manually refresh 
-
 9. [New Feature - Major] Add chat feature
+
+2. [Pictures - Medium] image syncing is not smooth, aspect ratio has issues
+
+3. [Notifications - Medium] I still need to work on making sure I stop receiving notifications on a device I'm logged out of
+
+6. [Notifications - Medium] It would be nice for the click on the notification to lead you to the right place
+
+7. [Error Handling - Medium] This whole section needs rethinking. We have no error handling and we should. 
+
+8. [Realtime updates - Medium] This needs rethinking. Now I mostly have to manually refresh 
 
 DONE:
 
@@ -50,6 +48,7 @@ DONE:
 18. [Design - Minor] Would be good to fix the aesthetics of the "Not a user? Add by phone" button
 19. [Notifications - Minor] One issue observed is that invitees are not getting updates when outing details are changed or outing deleted 
 4. [Phone Invite - Major] Event is created with phone contact even when sending out the message is cancelled
+5. [Time Zone - Medium] I need to check how are we handling time zone differences
 
 ------------------------------------
 

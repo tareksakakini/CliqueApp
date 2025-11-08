@@ -432,11 +432,19 @@ struct ModernEventPillView: View {
     }
     
     private var dateElement: some View {
-        VStack(spacing: 2) {
-            Text(event.startDateTime.formatted(Date.FormatStyle().month(.abbreviated)).uppercased())
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM"
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        let monthText = formatter.string(from: event.startDateTime).uppercased()
+        
+        formatter.dateFormat = "d"
+        let dayText = formatter.string(from: event.startDateTime)
+        
+        return VStack(spacing: 2) {
+            Text(monthText)
                 .font(.system(size: 12, weight: .bold))
                 .foregroundColor(Color(.accent))
-            Text(event.startDateTime.formatted(.dateTime.day()))
+            Text(dayText)
                 .font(.system(size: 20, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
         }

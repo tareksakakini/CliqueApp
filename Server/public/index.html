@@ -448,19 +448,21 @@
 
     function formatTimestamp(timestamp) {
       const date = timestamp.toDate();
-      return date.toLocaleDateString(undefined, {
+      return date.toLocaleDateString('en-US', {
         weekday: 'short',
         year: 'numeric',
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'UTC'
       });
     }
 
     function formatTime(timestamp) {
       const date = timestamp.toDate();
-      return date.toLocaleTimeString(undefined, {
+      return date.toLocaleTimeString('en-US', {
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: 'UTC'
       });
     }
 

@@ -147,12 +147,14 @@ class ViewModel: ObservableObject {
     func formatDate(date: Date) -> String {
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "MMM d, yyyy"
+        dateFormatter.timeZone = TimeZone(identifier: "UTC")
         return dateFormatter.string(from: date)
     }
     
     func formatTime(time: Date) -> String {
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "h:mm a"
+        timeFormatter.timeZone = TimeZone(identifier: "UTC")
         return timeFormatter.string(from: time)
     }
     
