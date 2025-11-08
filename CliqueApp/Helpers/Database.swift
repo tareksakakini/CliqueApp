@@ -685,9 +685,15 @@ class DatabaseManager {
         let storageRef = Storage.storage().reference()
         let profilePicRef = storageRef.child("profile_pictures/\(uid).jpg")
         
+        let timestamp = Int(Date().timeIntervalSince1970)
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        metadata.cacheControl = "no-store, max-age=0"
+        metadata.customMetadata = ["updatedAt": "\(timestamp)"]
+        
         // Upload the image using async/await pattern
         let _ = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<StorageMetadata?, Error>) in
-            profilePicRef.putData(imageData, metadata: nil) { metadata, error in
+            profilePicRef.putData(imageData, metadata: metadata) { metadata, error in
                 if let error = error {
                     continuation.resume(throwing: error)
                 } else {
@@ -709,7 +715,10 @@ class DatabaseManager {
             }
         }
         
-        let profilePicUrl = downloadURL.absoluteString
+        var profilePicUrl = downloadURL.absoluteString
+        let cacheBustValue = timestamp
+        let separator = profilePicUrl.contains("?") ? "&" : "?"
+        profilePicUrl += "\(separator)t=\(cacheBustValue)"
         
         // Update Firestore with the new profile picture URL
         let userRef = db.collection("users").document(uid)
@@ -787,4 +796,3 @@ class DatabaseManager {
         }
     }
 }
-

@@ -25,8 +25,6 @@ TODO:
 
 9. [New Feature - Major] Add chat feature
 
-2. [Pictures - Medium] image syncing is not smooth, aspect ratio has issues
-
 3. [Notifications - Medium] I still need to work on making sure I stop receiving notifications on a device I'm logged out of
 
 6. [Notifications - Medium] It would be nice for the click on the notification to lead you to the right place
@@ -49,6 +47,7 @@ DONE:
 19. [Notifications - Minor] One issue observed is that invitees are not getting updates when outing details are changed or outing deleted 
 4. [Phone Invite - Major] Event is created with phone contact even when sending out the message is cancelled
 5. [Time Zone - Medium] I need to check how are we handling time zone differences
+2. [Pictures - Medium] image syncing is not smooth, aspect ratio has issues
 
 ------------------------------------
 

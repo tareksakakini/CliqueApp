@@ -332,7 +332,17 @@ struct ModernEventPillView: View {
                 )
             }
         }
-        .task {
+        .task(id: event.eventPic) {
+            guard !event.eventPic.isEmpty else {
+                await MainActor.run {
+                    eventImage = nil
+                }
+                return
+            }
+            // Reset cached image so the UI shows the new photo once it arrives.
+            await MainActor.run {
+                eventImage = nil
+            }
             await loadEventImage(imageUrl: event.eventPic)
         }
     }

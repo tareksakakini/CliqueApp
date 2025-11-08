@@ -44,6 +44,7 @@ struct MySettingsView: View {
     @State private var showUsernameUpdateResult = false
     @State private var showPhotosPicker = false
     @State private var tempSelectedImage: UIImage? = nil
+    @State private var pendingProfileImage: UIImage? = nil
     @State private var showImageCrop = false
     @State private var showPhoneLinkSheet = false
     @State private var isSigningOut = false
@@ -137,28 +138,7 @@ struct MySettingsView: View {
             // Profile Avatar
             VStack(spacing: 12) {
                 ZStack {
-                    // Show temporary selected image immediately, then fallback to profile pic
-                    if let tempImage = tempSelectedImage {
-                        Image(uiImage: tempImage)
-                            .resizable()
-                            .aspectRatio(contentMode: .fill)
-                            .frame(width: 90, height: 90)
-                            .clipShape(Circle())
-                            .overlay(
-                                // Show upload progress overlay
-                                Circle()
-                                    .fill(Color.black.opacity(isUploadingImage ? 0.3 : 0))
-                                    .overlay(
-                                        Group {
-                                            if isUploadingImage {
-                                                ProgressView()
-                                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                                    .scaleEffect(0.8)
-                                            }
-                                        }
-                                    )
-                            )
-                    } else if user.profilePic != "" && user.profilePic != "userDefault" {
+                    if user.profilePic != "" && user.profilePic != "userDefault" {
                         AsyncImage(url: URL(string: user.profilePic)) { phase in
                             switch phase {
                             case .empty:
@@ -177,6 +157,13 @@ struct MySettingsView: View {
                                     .clipShape(Circle())
                                     .onTapGesture {
                                         showFullSizeImage = true
+                                    }
+                                    .onAppear {
+                                        if pendingProfileImage != nil {
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                pendingProfileImage = nil
+                                            }
+                                        }
                                     }
                             case .failure(_):
                                 Circle()
@@ -200,6 +187,26 @@ struct MySettingsView: View {
                                 Text(user.fullname.prefix(1))
                                     .font(.system(size: 32, weight: .medium, design: .rounded))
                                     .foregroundColor(.white)
+                            )
+                    }
+                    
+                    if let overlayImage = pendingProfileImage ?? tempSelectedImage {
+                        Image(uiImage: overlayImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 90, height: 90)
+                            .clipShape(Circle())
+                            .transition(.opacity)
+                    }
+                    
+                    if isUploadingImage && (pendingProfileImage != nil || tempSelectedImage != nil) {
+                        Circle()
+                            .fill(Color.black.opacity(0.35))
+                            .frame(width: 90, height: 90)
+                            .overlay(
+                                ProgressView()
+                                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                    .scaleEffect(0.8)
                             )
                     }
                     
@@ -762,13 +769,18 @@ struct MySettingsView: View {
                 ProfileImageCropView(
                     image: image,
                     onCrop: { croppedImage in
+                        DispatchQueue.main.async {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                self.pendingProfileImage = croppedImage
+                            }
+                            self.showImageCrop = false
+                            self.tempSelectedImage = nil
+                            self.imageSelection = nil
+                        }
                         // Upload the cropped image
                         Task {
                             await uploadProfileImage(croppedImage)
                         }
-                        showImageCrop = false
-                        tempSelectedImage = nil
-                        imageSelection = nil
                     },
                     onCancel: {
                         showImageCrop = false
@@ -845,6 +857,9 @@ struct MySettingsView: View {
             if oldValue != newValue && !newValue.isEmpty {
                 imageRefreshId = UUID()
             }
+            if newValue == "userDefault" {
+                pendingProfileImage = nil
+            }
         }
     }
     
@@ -868,6 +883,9 @@ struct MySettingsView: View {
                 self.imageRefreshId = UUID()
             } else {
                 self.uploadResult = (false, result.errorMessage ?? "Failed to upload profile picture")
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    self.pendingProfileImage = nil
+                }
             }
             
             self.showUploadResult = true
