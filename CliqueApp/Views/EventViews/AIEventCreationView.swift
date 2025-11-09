@@ -451,14 +451,43 @@ struct AIEventCreationView: View {
             }
         }
         
-        // If parsing fails, use smart defaults
+        // If parsing fails, use smart defaults in UTC-preserving format
         if startTime == nil || endTime == nil {
             print("⚠️ Date parsing failed, using defaults")
-            let defaultStart = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
-            let defaultEnd = Calendar.current.date(byAdding: .hour, value: 2, to: defaultStart) ?? Date()
             
-            startTime = startTime ?? defaultStart
-            endTime = endTime ?? defaultEnd
+            // Create default dates in local time
+            let localDefaultStart = Calendar.current.date(byAdding: .day, value: 1, to: Date()) ?? Date()
+            let localDefaultEnd = Calendar.current.date(byAdding: .hour, value: 2, to: localDefaultStart) ?? Date()
+            
+            // Convert to UTC-preserving format
+            var utcCalendar = Calendar.current
+            utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+            
+            if startTime == nil {
+                let components = Calendar.current.dateComponents(in: TimeZone.current, from: localDefaultStart)
+                var utcComponents = DateComponents()
+                utcComponents.year = components.year
+                utcComponents.month = components.month
+                utcComponents.day = components.day
+                utcComponents.hour = components.hour
+                utcComponents.minute = components.minute
+                utcComponents.second = components.second
+                utcComponents.timeZone = TimeZone(identifier: "UTC")
+                startTime = utcCalendar.date(from: utcComponents) ?? localDefaultStart
+            }
+            
+            if endTime == nil {
+                let components = Calendar.current.dateComponents(in: TimeZone.current, from: localDefaultEnd)
+                var utcComponents = DateComponents()
+                utcComponents.year = components.year
+                utcComponents.month = components.month
+                utcComponents.day = components.day
+                utcComponents.hour = components.hour
+                utcComponents.minute = components.minute
+                utcComponents.second = components.second
+                utcComponents.timeZone = TimeZone(identifier: "UTC")
+                endTime = utcCalendar.date(from: utcComponents) ?? localDefaultEnd
+            }
         }
         
         let suggestion = EventSuggestion(

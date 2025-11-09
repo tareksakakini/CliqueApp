@@ -13,8 +13,42 @@ struct EventModel: Hashable {
     var title: String = ""
     var location: String = ""
     var description: String = ""
-    var startDateTime: Date = Date()
-    var endDateTime: Date = Date()
+    var startDateTime: Date = {
+        // Initialize with current local time converted to UTC-preserving format
+        let now = Date()
+        let calendar = Calendar.current
+        let components = calendar.dateComponents(in: TimeZone.current, from: now)
+        var utcComponents = DateComponents()
+        utcComponents.year = components.year
+        utcComponents.month = components.month
+        utcComponents.day = components.day
+        utcComponents.hour = components.hour
+        utcComponents.minute = components.minute
+        utcComponents.second = components.second
+        utcComponents.timeZone = TimeZone(identifier: "UTC")
+        
+        var utcCalendar = Calendar.current
+        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+        return utcCalendar.date(from: utcComponents) ?? Date()
+    }()
+    var endDateTime: Date = {
+        // Initialize with current local time converted to UTC-preserving format
+        let now = Date()
+        let calendar = Calendar.current
+        let components = calendar.dateComponents(in: TimeZone.current, from: now)
+        var utcComponents = DateComponents()
+        utcComponents.year = components.year
+        utcComponents.month = components.month
+        utcComponents.day = components.day
+        utcComponents.hour = components.hour
+        utcComponents.minute = components.minute
+        utcComponents.second = components.second
+        utcComponents.timeZone = TimeZone(identifier: "UTC")
+        
+        var utcCalendar = Calendar.current
+        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+        return utcCalendar.date(from: utcComponents) ?? Date()
+    }()
     var noEndTime: Bool = false
     var attendeesAccepted: [String] = []
     var attendeesInvited: [String] = []

@@ -175,8 +175,9 @@ struct CreateEventView: View {
                     
                     if isFormEmpty {
                         let now = Date()
-                        event.startDateTime = now
-                        event.endDateTime = now
+                        // Convert current time to UTC-preserving format
+                        event.startDateTime = now.toUTCPreservingWallClock()
+                        event.endDateTime = now.toUTCPreservingWallClock()
                     }
                 }
             }
@@ -797,6 +798,7 @@ struct CreateEventView: View {
     
     private func handleCreateEvent() {
         let now = Date()
+        let nowUTC = now.toUTCPreservingWallClock()
         
             if event.title.count < 3 {
             alertMessage = "Event title must be at least 3 characters long"
@@ -804,7 +806,7 @@ struct CreateEventView: View {
             } else if event.location.isEmpty {
             alertMessage = "Please select a location for your event"
             showAlert = true
-        } else if event.startDateTime < now {
+        } else if event.startDateTime < nowUTC {
             alertMessage = "Event start time cannot be in the past"
             showAlert = true
         } else if !event.noEndTime && event.endDateTime <= event.startDateTime {
