@@ -133,7 +133,11 @@ private extension PersonPillView {
                         await BadgeManager.shared.updateBadge(for: viewing.email)
                         
                         // Send notification with badge to the user who sent the request
-                        await sendPushNotificationWithBadge(notificationText: "\(viewing.fullname) just accepted your friend request!", receiverID: displayed.subscriptionId, receiverEmail: displayed.email)
+                        let route = NotificationRouteBuilder.friends(section: .friends)
+                        await sendPushNotificationWithBadge(notificationText: "\(viewing.fullname) just accepted your friend request!",
+                                                            receiverID: displayed.subscriptionId,
+                                                            receiverEmail: displayed.email,
+                                                            route: route)
                     } catch {
                         print("Failed to accept friend request: \(error.localizedDescription)")
                     }
@@ -183,7 +187,11 @@ private extension PersonPillView {
                     await vm.getUserFriendRequestsSent(user_email: viewing.email)
                     
                     // Send notification with badge to the receiver
-                    await sendPushNotificationWithBadge(notificationText: "\(viewing.fullname) just sent you a friend request!", receiverID: displayed.subscriptionId, receiverEmail: displayed.email)
+                    let route = NotificationRouteBuilder.friends(section: .requests)
+                    await sendPushNotificationWithBadge(notificationText: "\(viewing.fullname) just sent you a friend request!",
+                                                        receiverID: displayed.subscriptionId,
+                                                        receiverEmail: displayed.email,
+                                                        route: route)
                 } catch {
                     print("Friend Request Failed: \(error.localizedDescription)")
                 }

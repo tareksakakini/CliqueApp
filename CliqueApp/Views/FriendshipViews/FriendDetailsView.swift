@@ -461,7 +461,11 @@ struct FriendDetailsView: View {
             await BadgeManager.shared.updateBadge(for: viewingUser.email)
             
             // Send notification with badge to the user who sent the request
-            await sendPushNotificationWithBadge(notificationText: "\(viewingUser.fullname) just accepted your friend request!", receiverID: friend.subscriptionId, receiverEmail: friend.email)
+            let route = NotificationRouteBuilder.friends(section: .friends)
+            await sendPushNotificationWithBadge(notificationText: "\(viewingUser.fullname) just accepted your friend request!",
+                                                receiverID: friend.subscriptionId,
+                                                receiverEmail: friend.email,
+                                                route: route)
         } catch {
             print("Failed to accept friend request: \(error.localizedDescription)")
         }
@@ -496,7 +500,11 @@ struct FriendDetailsView: View {
             await vm.getUserFriendRequestsSent(user_email: viewingUser.email)
             
             // Send notification with badge to the receiver
-            await sendPushNotificationWithBadge(notificationText: "\(viewingUser.fullname) just sent you a friend request!", receiverID: friend.subscriptionId, receiverEmail: friend.email)
+            let route = NotificationRouteBuilder.friends(section: .requests)
+            await sendPushNotificationWithBadge(notificationText: "\(viewingUser.fullname) just sent you a friend request!",
+                                                receiverID: friend.subscriptionId,
+                                                receiverEmail: friend.email,
+                                                route: route)
         } catch {
             print("Friend Request Failed: \(error.localizedDescription)")
         }

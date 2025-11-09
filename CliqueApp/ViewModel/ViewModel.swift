@@ -195,7 +195,13 @@ class ViewModel: ObservableObject {
         for inviteeEmail in allInvitees {
             if inviteeEmail != user.email { // Don't notify the host
                 if let invitee = self.getUser(username: inviteeEmail) {
-                    await sendPushNotificationWithBadge(notificationText: notificationText, receiverID: invitee.subscriptionId, receiverEmail: invitee.email)
+                    let inviteView = event.attendeesInvited.contains(inviteeEmail) || event.attendeesDeclined.contains(inviteeEmail)
+                    let preferredTab: NotificationRouter.NotificationTab = inviteView ? .invites : .myEvents
+                    let route = NotificationRouteBuilder.tab(preferredTab)
+                    await sendPushNotificationWithBadge(notificationText: notificationText,
+                                                        receiverID: invitee.subscriptionId,
+                                                        receiverEmail: invitee.email,
+                                                        route: route)
                     print("Sent event deletion notification to: \(inviteeEmail)")
                 }
             }
@@ -310,9 +316,15 @@ class ViewModel: ObservableObject {
             // Update badge for the user who accepted
             await BadgeManager.shared.updateBadge(for: user.email)
             
-            if let host = self.getUser(username: event.host) {
+            if let host = self.getUser(username: event.host), !event.id.isEmpty {
                 let notificationText: String = "\(user.fullname) is coming to your event!"
-                await sendPushNotificationWithBadge(notificationText: notificationText, receiverID: host.subscriptionId, receiverEmail: host.email)
+                let route = NotificationRouteBuilder.eventDetail(eventId: event.id,
+                                                                 inviteView: false,
+                                                                 preferredTab: .myEvents)
+                await sendPushNotificationWithBadge(notificationText: notificationText,
+                                                    receiverID: host.subscriptionId,
+                                                    receiverEmail: host.email,
+                                                    route: route)
             }
         } catch {
             print("Failed to update: \(error.localizedDescription)")
@@ -328,10 +340,16 @@ class ViewModel: ObservableObject {
             // Update badge for the user who declined
             await BadgeManager.shared.updateBadge(for: user.email)
             
-            if let host = self.getUser(username: event.host) {
+            if let host = self.getUser(username: event.host), !event.id.isEmpty {
                 if event.host != user.email {
                     let notificationText: String = "\(user.fullname) cannot make it to your event."
-                    await sendPushNotificationWithBadge(notificationText: notificationText, receiverID: host.subscriptionId, receiverEmail: host.email)
+                    let route = NotificationRouteBuilder.eventDetail(eventId: event.id,
+                                                                     inviteView: false,
+                                                                     preferredTab: .myEvents)
+                    await sendPushNotificationWithBadge(notificationText: notificationText,
+                                                        receiverID: host.subscriptionId,
+                                                        receiverEmail: host.email,
+                                                        route: route)
                 }
             }
         } catch {
@@ -348,10 +366,16 @@ class ViewModel: ObservableObject {
             // Update badge for the user who left
             await BadgeManager.shared.updateBadge(for: user.email)
             
-            if let host = self.getUser(username: event.host) {
+            if let host = self.getUser(username: event.host), !event.id.isEmpty {
                 if event.host != user.email {
                     let notificationText: String = "\(user.fullname) cannot make it anymore to your event."
-                    await sendPushNotificationWithBadge(notificationText: notificationText, receiverID: host.subscriptionId, receiverEmail: host.email)
+                    let route = NotificationRouteBuilder.eventDetail(eventId: event.id,
+                                                                     inviteView: false,
+                                                                     preferredTab: .myEvents)
+                    await sendPushNotificationWithBadge(notificationText: notificationText,
+                                                        receiverID: host.subscriptionId,
+                                                        receiverEmail: host.email,
+                                                        route: route)
                 }
             }
         } catch {
@@ -411,7 +435,15 @@ class ViewModel: ObservableObject {
             let invitationNotificationText: String = "\(user.fullname) just invited you to an event!"
             for invitee in newInvitees {
                 if let inviteeFull = self.getUser(username: invitee) {
-                    await sendPushNotificationWithBadge(notificationText: invitationNotificationText, receiverID: inviteeFull.subscriptionId, receiverEmail: inviteeFull.email)
+                    let resolvedEventId = event.id.isEmpty ? eventID : event.id
+                    let route = resolvedEventId.isEmpty ? nil :
+                        NotificationRouteBuilder.eventDetail(eventId: resolvedEventId,
+                                                              inviteView: true,
+                                                              preferredTab: .invites)
+                    await sendPushNotificationWithBadge(notificationText: invitationNotificationText,
+                                                        receiverID: inviteeFull.subscriptionId,
+                                                        receiverEmail: inviteeFull.email,
+                                                        route: route)
                 }
             }
             
@@ -471,7 +503,16 @@ class ViewModel: ObservableObject {
         for inviteeEmail in allInvitees {
             if inviteeEmail != user.email { // Don't notify the host
                 if let invitee = self.getUser(username: inviteeEmail) {
-                    await sendPushNotificationWithBadge(notificationText: notificationText, receiverID: invitee.subscriptionId, receiverEmail: invitee.email)
+                    let inviteView = newEvent.attendeesInvited.contains(inviteeEmail) || newEvent.attendeesDeclined.contains(inviteeEmail)
+                    let preferredTab: NotificationRouter.NotificationTab = inviteView ? .invites : .myEvents
+                    let route = newEvent.id.isEmpty ? nil :
+                        NotificationRouteBuilder.eventDetail(eventId: newEvent.id,
+                                                              inviteView: inviteView,
+                                                              preferredTab: preferredTab)
+                    await sendPushNotificationWithBadge(notificationText: notificationText,
+                                                        receiverID: invitee.subscriptionId,
+                                                        receiverEmail: invitee.email,
+                                                        route: route)
                     print("Sent event update notification to: \(inviteeEmail)")
                 }
             }

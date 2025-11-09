@@ -11,7 +11,7 @@ struct MyFriendsView: View {
     
     @EnvironmentObject private var vm: ViewModel
     @State private var isAddFriendSheetPresented: Bool = false
-    @State private var selectedSection: FriendSection = .friends
+    @Binding private var selectedSection: FriendSection
     @State private var selectedFriend: UserModel? = nil
     
     @State var user: UserModel
@@ -20,6 +20,11 @@ struct MyFriendsView: View {
         case friends = "Friends"
         case requests = "Requests"
         case sent = "Sent"
+    }
+    
+    init(user: UserModel, selectedSection: Binding<FriendSection> = .constant(.friends)) {
+        self._user = State(initialValue: user)
+        self._selectedSection = selectedSection
     }
     
     var body: some View {
@@ -449,6 +454,6 @@ struct ModernPersonPillView: View {
 }
 
 #Preview {
-    MyFriendsView(user: UserData.userData[0])
+    MyFriendsView(user: UserData.userData[0], selectedSection: .constant(.friends))
         .environmentObject(ViewModel())
 }

@@ -918,7 +918,13 @@ struct EventDetailView: View {
             // Send notification to host
             if let host = vm.getUser(username: currentEvent.host), currentEvent.host != user.email {
                 let notificationText = "\(user.fullname) has accepted your event invitation!"
-                sendPushNotification(notificationText: notificationText, receiverID: host.subscriptionId)
+                let route = NotificationRouteBuilder.eventDetail(eventId: currentEvent.id,
+                                                                 inviteView: false,
+                                                                 preferredTab: .myEvents)
+                sendPushNotification(notificationText: notificationText,
+                                     receiverID: host.subscriptionId,
+                                     receiverEmail: host.email,
+                                     route: route)
             }
         } catch {
             print("Failed to accept declined invite: \(error.localizedDescription)")

@@ -9,6 +9,7 @@ import SwiftUI
 import Firebase
 import OneSignalFramework
 import FirebaseAuth
+import UserNotifications
 
 @main
 struct CliqueAppApp: App {
@@ -16,12 +17,14 @@ struct CliqueAppApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     
     @StateObject private var vm = ViewModel()
+    @StateObject private var routeManager = NotificationRouter.shared
     @Environment(\.scenePhase) private var scenePhase
     
     var body: some Scene {
         WindowGroup {
             StartingView()
                 .environmentObject(vm)
+                .environmentObject(routeManager)
                 .accentColor(.green)
                 .preferredColorScheme(FeatureFlags.forceLightMode ? .light : nil)
                 .onChange(of: scenePhase) { oldPhase, newPhase in
@@ -56,9 +59,10 @@ struct CliqueAppApp: App {
     }
 }
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
+        UNUserNotificationCenter.current().delegate = self
         
         // Load OneSignal App ID from config file
         guard let path = Bundle.main.path(forResource: "OneSignal-Info", ofType: "plist"),
@@ -83,6 +87,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Initialize OneSignal with clean state
         Task {
             await initializeOneSignalCleanState()
+        }
+        
+        if let launchedFromNotification = launchOptions?[.remoteNotification] as? [AnyHashable: Any] {
+            NotificationRouter.shared.handleNotificationPayload(launchedFromNotification)
         }
         
         return true
@@ -126,5 +134,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         } else {
             completionHandler(.noData)
         }
+    }
+    
+    // MARK: - Foreground Tap Handling
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        NotificationRouter.shared.handleNotificationPayload(response.notification.request.content.userInfo)
+        completionHandler()
     }
 }

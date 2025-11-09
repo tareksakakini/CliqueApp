@@ -10,9 +10,14 @@ import SwiftUI
 struct MainView: View {
     
     @EnvironmentObject private var vm: ViewModel
+    @EnvironmentObject private var router: NotificationRouter
     
     @State var user: UserModel
     @State var selectedTab = 0
+    @State private var deepLinkEvent: EventModel?
+    @State private var showDeepLinkEvent = false
+    @State private var deepLinkInviteView = false
+    @State private var friendsSectionSelection: MyFriendsView.FriendSection = .friends
     
     private var pendingInvitesCount: Int {
         let now = Date()
@@ -50,7 +55,7 @@ struct MainView: View {
                     }
                     .tag(2)
                 
-                MyFriendsView(user: user)
+                MyFriendsView(user: user, selectedSection: $friendsSectionSelection)
                     .tabItem {
                         Image(systemName: "person.2.fill")
                         Text("Friends")
@@ -100,13 +105,82 @@ struct MainView: View {
             appearance.backgroundColor = UIColor.white
             UITabBar.appearance().standardAppearance = appearance
             UITabBar.appearance().scrollEdgeAppearance = appearance
+            
+            if let pending = router.pendingRoute {
+                handleRoute(pending)
+            }
+        }
+        .onChange(of: router.pendingRoute) { _, newRoute in
+            guard let destination = newRoute else { return }
+            handleRoute(destination)
         }
         .tint(Color(.accent))
+        .fullScreenCover(isPresented: $showDeepLinkEvent, onDismiss: {
+            deepLinkEvent = nil
+            deepLinkInviteView = false
+        }) {
+            if let eventToShow = deepLinkEvent {
+                EventDetailView(event: eventToShow, user: user, inviteView: deepLinkInviteView)
+            }
+        }
     }
 }
 
 #Preview {
     MainView(user: UserData.userData[1])
         .environmentObject(ViewModel())
+        .environmentObject(NotificationRouter.shared)
     
+}
+
+private extension MainView {
+    func handleRoute(_ destination: NotificationRouter.Destination) {
+        switch destination {
+        case .eventDetail(let id, let inviteView, let preferredTab):
+            Task {
+                await presentEventRoute(eventId: id, inviteView: inviteView, preferredTab: preferredTab)
+            }
+        case .tab(let tab):
+            selectedTab = tab.tabIndex
+            router.consumeRoute()
+        case .friends(let section):
+            applyFriendSection(section)
+            selectedTab = NotificationRouter.NotificationTab.friends.tabIndex
+            router.consumeRoute()
+        }
+    }
+    
+    func applyFriendSection(_ shortcut: NotificationRouter.FriendSectionShortcut) {
+        switch shortcut {
+        case .friends:
+            friendsSectionSelection = .friends
+        case .requests:
+            friendsSectionSelection = .requests
+        case .sent:
+            friendsSectionSelection = .sent
+        }
+    }
+    
+    func presentEventRoute(eventId: String,
+                           inviteView: Bool,
+                           preferredTab: NotificationRouter.NotificationTab?) async {
+        let targetTab = preferredTab ?? (inviteView ? .invites : .myEvents)
+        await MainActor.run {
+            selectedTab = targetTab.tabIndex
+        }
+        
+        let refreshedEvent = await vm.refreshEventById(id: eventId)
+        let fallbackEvent = vm.events.first(where: { $0.id == eventId })
+        
+        await MainActor.run {
+            if let eventToDisplay = refreshedEvent ?? fallbackEvent {
+                deepLinkEvent = eventToDisplay
+                deepLinkInviteView = inviteView
+                showDeepLinkEvent = true
+            } else {
+                print("🔗 Unable to locate event with id \(eventId) for routing")
+            }
+            router.consumeRoute()
+        }
+    }
 }

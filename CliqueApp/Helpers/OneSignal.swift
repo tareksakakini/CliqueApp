@@ -22,7 +22,11 @@ private func loadOneSignalConfig() -> (apiKey: String, appId: String)? {
     return (apiKey, appId)
 }
 
-func sendPushNotification(notificationText: String, receiverID: String, receiverEmail: String? = nil, badgeCount: Int? = nil) {
+func sendPushNotification(notificationText: String,
+                          receiverID: String,
+                          receiverEmail: String? = nil,
+                          badgeCount: Int? = nil,
+                          route: [String: Any]? = nil) {
     guard let config = loadOneSignalConfig() else {
         print("❌ Cannot send notification: OneSignal configuration not loaded")
         return
@@ -50,6 +54,10 @@ func sendPushNotification(notificationText: String, receiverID: String, receiver
     if let receiverEmail = receiverEmail {
         customData["receiverEmail"] = receiverEmail
         print("📤 Added receiverEmail to notification: \(receiverEmail)")
+    }
+    if let route = route {
+        customData[NotificationRouter.Key.route] = route
+        print("📤 Added route to notification: \(route)")
     }
     if !customData.isEmpty {
         payload["data"] = customData
@@ -85,9 +93,16 @@ func sendPushNotification(notificationText: String, receiverID: String, receiver
 // MARK: - Enhanced Push Notification with Automatic Badge Calculation
 
 /// Sends a push notification with automatic badge count calculation
-func sendPushNotificationWithBadge(notificationText: String, receiverID: String, receiverEmail: String) async {
+func sendPushNotificationWithBadge(notificationText: String,
+                                   receiverID: String,
+                                   receiverEmail: String,
+                                   route: [String: Any]? = nil) async {
     let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverEmail)
-    sendPushNotification(notificationText: notificationText, receiverID: receiverID, receiverEmail: receiverEmail, badgeCount: badgeCount)
+    sendPushNotification(notificationText: notificationText,
+                         receiverID: receiverID,
+                         receiverEmail: receiverEmail,
+                         badgeCount: badgeCount,
+                         route: route)
     print("📤 Sent notification to \(receiverEmail)")
     print("   Text: \(notificationText)")
     print("   Badge will be set to: \(badgeCount)")
@@ -284,4 +299,3 @@ func verifyOneSignalState(expectedUserID: String?) async -> Bool {
     
     return isCorrect
 }
-
