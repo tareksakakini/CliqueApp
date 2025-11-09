@@ -24,6 +24,8 @@ struct EventDetailView: View {
     @State private var showLeaveConfirmation = false
     @State private var isAcceptingInvite = false
     @State private var isAcceptingDeclinedInvite = false
+    @State private var isDecliningInvite = false
+    @State private var isLeavingEvent = false
     @State private var isDeletingEvent = false
     @State private var selectedAttendee: UserModel? = nil
     @State private var showAttendeeProfile = false
@@ -725,9 +727,15 @@ struct EventDetailView: View {
                         showDeclineConfirmation = true
                     }) {
                         HStack(spacing: 8) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 16, weight: .semibold))
-                            Text("Decline")
+                            if isDecliningInvite {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .tint(Color(.accent))
+                            } else {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 16, weight: .semibold))
+                            }
+                            Text(isDecliningInvite ? "Declining..." : "Decline")
                                 .font(.system(size: 16, weight: .semibold))
                         }
                         .foregroundColor(Color(.accent))
@@ -740,6 +748,7 @@ struct EventDetailView: View {
                         )
                         .cornerRadius(16)
                     }
+                    .disabled(isDecliningInvite)
                 }
             } else if isAttending {
                 // Leave event button
@@ -747,9 +756,15 @@ struct EventDetailView: View {
                     showLeaveConfirmation = true
                 }) {
                     HStack(spacing: 8) {
-                        Image(systemName: "arrow.left.circle")
-                            .font(.system(size: 16, weight: .semibold))
-                        Text("Leave Event")
+                        if isLeavingEvent {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .tint(.red)
+                        } else {
+                            Image(systemName: "arrow.left.circle")
+                                .font(.system(size: 16, weight: .semibold))
+                        }
+                        Text(isLeavingEvent ? "Leaving..." : "Leave Event")
                             .font(.system(size: 16, weight: .semibold))
                     }
                     .foregroundColor(.red)
@@ -762,6 +777,7 @@ struct EventDetailView: View {
                     )
                     .cornerRadius(16)
                 }
+                .disabled(isLeavingEvent)
             } else if inviteView && hasDeclined {
                 // Accept declined invite button
                 Button(action: {
@@ -808,8 +824,10 @@ struct EventDetailView: View {
         ) {
             Button("Decline", role: .destructive) {
                 Task {
+                    isDecliningInvite = true
                     await vm.declineButtonPressed(user: user, event: event)
                     await vm.getAllEvents()
+                    isDecliningInvite = false
                 }
             }
             Button("Cancel", role: .cancel) { }
@@ -823,8 +841,14 @@ struct EventDetailView: View {
         ) {
             Button("Leave Event", role: .destructive) {
                 Task {
+                    isLeavingEvent = true
                     await vm.leaveButtonPressed(user: user, event: event)
                     await vm.getAllEvents()
+                    
+                    await MainActor.run {
+                        isLeavingEvent = false
+                        dismiss()
+                    }
                 }
             }
             Button("Cancel", role: .cancel) { }

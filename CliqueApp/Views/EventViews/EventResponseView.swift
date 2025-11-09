@@ -21,6 +21,9 @@ struct EventResponseView: View {
     
     @State var editView: Bool = false
     @State var duration: (days: Int, hours: Int, minutes: Int) = (0, 0, 0)
+    @State var isAcceptingInvite: Bool = false
+    @State var isDecliningInvite: Bool = false
+    @State var isLeavingEvent: Bool = false
     
     
     var body: some View {
@@ -86,40 +89,60 @@ extension EventResponseView {
     private var AcceptButton: some View {
         Button {
             Task {
+                isAcceptingInvite = true
                 await vm.acceptButtonPressed(user: user, event: event)
                 await vm.getAllEvents()
+                isAcceptingInvite = false
                 isPresented.toggle()
             }
         } label: {
-            Text("Accept")
-                .padding()
-                .padding(.horizontal)
-                .background(.green.opacity(0.8))
-                .cornerRadius(10)
-                .foregroundColor(.white)
-                .bold()
-                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
+            HStack(spacing: 8) {
+                if isAcceptingInvite {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                }
+                Text(isAcceptingInvite ? "Accepting..." : "Accept")
+            }
+            .padding()
+            .padding(.horizontal)
+            .background(.green.opacity(0.8))
+            .cornerRadius(10)
+            .foregroundColor(.white)
+            .bold()
+            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
+        .disabled(isAcceptingInvite)
     }
     
     private var DeclineButton: some View {
         Button {
             Task {
+                isDecliningInvite = true
                 await vm.declineButtonPressed(user: user, event: event)
                 await vm.getAllEvents()
+                isDecliningInvite = false
                 isPresented.toggle()
             }
             
         } label: {
-            Text("Decline")
-                .padding()
-                .padding(.horizontal)
-                .background(.white)
-                .cornerRadius(10)
-                .foregroundColor(Color(.accent))
-                .bold()
-                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
+            HStack(spacing: 8) {
+                if isDecliningInvite {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .tint(Color(.accent))
+                }
+                Text(isDecliningInvite ? "Declining..." : "Decline")
+            }
+            .padding()
+            .padding(.horizontal)
+            .background(.white)
+            .cornerRadius(10)
+            .foregroundColor(Color(.accent))
+            .bold()
+            .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
         }
+        .disabled(isDecliningInvite)
     }
     private var ResponseButtons: some View {
         HStack {
@@ -136,20 +159,30 @@ extension EventResponseView {
             Spacer()
             Button {
                 Task {
+                    isLeavingEvent = true
                     await vm.leaveButtonPressed(user: user, event: event)
                     await vm.getAllEvents()
+                    isLeavingEvent = false
                     isPresented.toggle()
                 }
             } label: {
-                Text("Leave Event")
-                    .padding()
-                    .padding(.horizontal)
-                    .background(.white)
-                    .cornerRadius(10)
-                    .foregroundColor(Color(.accent))
-                    .bold()
-                    .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
+                HStack(spacing: 8) {
+                    if isLeavingEvent {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                            .tint(Color(.accent))
+                    }
+                    Text(isLeavingEvent ? "Leaving..." : "Leave Event")
+                }
+                .padding()
+                .padding(.horizontal)
+                .background(.white)
+                .cornerRadius(10)
+                .foregroundColor(Color(.accent))
+                .bold()
+                .shadow(color: Color.black.opacity(0.3), radius: 20, x: 0, y: 15)
             }
+            .disabled(isLeavingEvent)
             Spacer()
         }
     }
