@@ -173,3 +173,7 @@ final class NotificationRouter: ObservableObject {
         return nil
     }
 }
+
+extension Notification.Name {
+    static let dismissPresentedEventDetails = Notification.Name("DismissPresentedEventDetails")
+}

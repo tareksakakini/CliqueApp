@@ -14,9 +14,7 @@ struct MainView: View {
     
     @State var user: UserModel
     @State var selectedTab = 0
-    @State private var deepLinkEvent: EventModel?
-    @State private var showDeepLinkEvent = false
-    @State private var deepLinkInviteView = false
+    @State private var deepLinkEvent: DeepLinkEvent?
     @State private var friendsSectionSelection: MyFriendsView.FriendSection = .friends
     
     private var pendingInvitesCount: Int {
@@ -115,13 +113,10 @@ struct MainView: View {
             handleRoute(destination)
         }
         .tint(Color(.accent))
-        .fullScreenCover(isPresented: $showDeepLinkEvent, onDismiss: {
+        .fullScreenCover(item: $deepLinkEvent, onDismiss: {
             deepLinkEvent = nil
-            deepLinkInviteView = false
-        }) {
-            if let eventToShow = deepLinkEvent {
-                EventDetailView(event: eventToShow, user: user, inviteView: deepLinkInviteView)
-            }
+        }) { deepLink in
+            EventDetailView(event: deepLink.event, user: user, inviteView: deepLink.inviteView)
         }
     }
 }
@@ -137,6 +132,7 @@ private extension MainView {
     func handleRoute(_ destination: NotificationRouter.Destination) {
         switch destination {
         case .eventDetail(let id, let inviteView, let preferredTab):
+            NotificationCenter.default.post(name: .dismissPresentedEventDetails, object: nil)
             Task {
                 await presentEventRoute(eventId: id, inviteView: inviteView, preferredTab: preferredTab)
             }
@@ -174,13 +170,17 @@ private extension MainView {
         
         await MainActor.run {
             if let eventToDisplay = refreshedEvent ?? fallbackEvent {
-                deepLinkEvent = eventToDisplay
-                deepLinkInviteView = inviteView
-                showDeepLinkEvent = true
+                deepLinkEvent = DeepLinkEvent(event: eventToDisplay, inviteView: inviteView)
             } else {
                 print("🔗 Unable to locate event with id \(eventId) for routing")
             }
             router.consumeRoute()
         }
     }
+}
+
+private struct DeepLinkEvent: Identifiable, Equatable {
+    let id = UUID()
+    let event: EventModel
+    let inviteView: Bool
 }

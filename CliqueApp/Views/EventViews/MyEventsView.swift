@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 struct MyEventsView: View {
     
@@ -344,6 +345,9 @@ struct ModernEventPillView: View {
                 eventImage = nil
             }
             await loadEventImage(imageUrl: event.eventPic)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .dismissPresentedEventDetails)) { _ in
+            showEventDetail = false
         }
     }
     
