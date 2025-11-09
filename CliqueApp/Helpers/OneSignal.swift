@@ -8,15 +8,34 @@
 import Foundation
 import OneSignalFramework
 
+// MARK: - OneSignal Configuration
+
+/// Loads OneSignal configuration from OneSignal-Info.plist
+private func loadOneSignalConfig() -> (apiKey: String, appId: String)? {
+    guard let path = Bundle.main.path(forResource: "OneSignal-Info", ofType: "plist"),
+          let config = NSDictionary(contentsOfFile: path),
+          let apiKey = config["API_KEY"] as? String,
+          let appId = config["APP_ID"] as? String else {
+        print("❌ ERROR: Could not load OneSignal-Info.plist. Make sure the file exists in CliqueApp/Services/")
+        return nil
+    }
+    return (apiKey, appId)
+}
+
 func sendPushNotification(notificationText: String, receiverID: String, receiverEmail: String? = nil, badgeCount: Int? = nil) {
+    guard let config = loadOneSignalConfig() else {
+        print("❌ Cannot send notification: OneSignal configuration not loaded")
+        return
+    }
+    
     let url = URL(string: "https://onesignal.com/api/v1/notifications")!
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("os_v2_app_kn2bhhoqofb4vclavnqu5girwanuad26cpne66v3bw6punh5go7lz726njfiualvmiy2672p5tt7elokzcti2zb2xhqqrwudzmiy2ga", forHTTPHeaderField: "Authorization")
+    request.setValue(config.apiKey, forHTTPHeaderField: "Authorization")
 
     var payload: [String: Any] = [
-        "app_id": "5374139d-d071-43ca-8960-ab614e9911b0",
+        "app_id": config.appId,
         "contents": ["en": "\(notificationText)"],
         "include_player_ids": ["\(receiverID)"],
         "mutable_content": true  // REQUIRED - allows notification service extension to modify badge
@@ -77,16 +96,21 @@ func sendPushNotificationWithBadge(notificationText: String, receiverID: String,
 
 /// Sends a silent notification to update badge count only
 func sendSilentBadgeUpdate(receiverID: String, receiverEmail: String) async {
+    guard let config = loadOneSignalConfig() else {
+        print("❌ Cannot send silent badge update: OneSignal configuration not loaded")
+        return
+    }
+    
     let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverEmail)
     
     let url = URL(string: "https://onesignal.com/api/v1/notifications")!
     var request = URLRequest(url: url)
     request.httpMethod = "POST"
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.setValue("os_v2_app_kn2bhhoqofb4vclavnqu5girwanuad26cpne66v3bw6punh5go7lz726njfiualvmiy2672p5tt7elokzcti2zb2xhqqrwudzmiy2ga", forHTTPHeaderField: "Authorization")
+    request.setValue(config.apiKey, forHTTPHeaderField: "Authorization")
     
     let payload: [String: Any] = [
-        "app_id": "5374139d-d071-43ca-8960-ab614e9911b0",
+        "app_id": config.appId,
         "include_player_ids": [receiverID],
         "content_available": true, // Silent notification
         "ios_badgeType": "SetTo",

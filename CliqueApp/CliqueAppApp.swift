@@ -60,7 +60,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         FirebaseApp.configure()
         
-        OneSignal.initialize("5374139d-d071-43ca-8960-ab614e9911b0", withLaunchOptions: launchOptions)
+        // Load OneSignal App ID from config file
+        guard let path = Bundle.main.path(forResource: "OneSignal-Info", ofType: "plist"),
+              let config = NSDictionary(contentsOfFile: path),
+              let appId = config["APP_ID"] as? String else {
+            print("❌ CRITICAL: Could not load OneSignal App ID from OneSignal-Info.plist")
+            print("❌ Notifications will NOT work!")
+            return true
+        }
+        
+        OneSignal.initialize(appId, withLaunchOptions: launchOptions)
         OneSignal.Notifications.requestPermission({ accepted in
             print("User accepted notifications: \(accepted)")
             if accepted {

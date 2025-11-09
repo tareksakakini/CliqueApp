@@ -68,3 +68,6 @@ CliqueApp/Config/OpenAI-Info.plist
 Unsplash-Info.plist
 
 CliqueApp/Services/Unsplash-Info.sample.plist
+
+# OneSignal API key (local only)
+CliqueApp/Services/OneSignal-Info.plist
