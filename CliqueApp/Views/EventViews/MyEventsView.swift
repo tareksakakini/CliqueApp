@@ -11,12 +11,14 @@ import Combine
 struct MyEventsView: View {
     
     @EnvironmentObject private var vm: ViewModel
+    @StateObject private var networkMonitor = NetworkMonitor.shared
     
     @State var user: UserModel
     let isInviteView: Bool
     @Binding var selectedTab: Int
     
     @State private var selectedEventType: EventType = .upcoming
+    @State private var alertConfig: AlertConfig? = nil
     
     init(user: UserModel, isInviteView: Bool, selectedTab: Binding<Int>) {
         self.user = user
@@ -48,6 +50,13 @@ struct MyEventsView: View {
                     eventsContent
                 }
             }
+        }
+        .alert(item: $alertConfig) { config in
+            Alert(
+                title: Text(config.title),
+                message: Text(config.message),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
     
@@ -137,10 +146,21 @@ struct MyEventsView: View {
             .padding(.bottom, 40)
         }
         .refreshable {
+            // Check if device is offline
+            guard networkMonitor.isConnected else {
+                alertConfig = AlertConfig(
+                    title: "No Internet Connection",
+                    message: "Your device is offline. Please check your internet connection and try again."
+                )
+                return
+            }
+            
             do {
                 try await vm.getAllEvents()
             } catch {
                 print("Failed to refresh events: \(error.localizedDescription)")
+                let errorMessage = ErrorHandler.shared.handleError(error, operation: "Refresh events")
+                alertConfig = AlertConfig(title: "Refresh Failed", message: errorMessage)
             }
         }
     }

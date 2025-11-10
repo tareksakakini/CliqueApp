@@ -11,6 +11,7 @@ struct FriendDetailsView: View {
     
     @EnvironmentObject private var vm: ViewModel
     @Environment(\.dismiss) private var dismiss
+    @StateObject private var networkMonitor = NetworkMonitor.shared
     
     let friend: UserModel
     let viewingUser: UserModel
@@ -20,6 +21,7 @@ struct FriendDetailsView: View {
     @State private var showFriendsList = false
     @State private var showFullSizeImage = false
     @State private var showActionSheet = false
+    @State private var alertConfig: AlertConfig? = nil
     
     var body: some View {
         GeometryReader { geometry in
@@ -83,6 +85,13 @@ struct FriendDetailsView: View {
                 }
                 Button("Cancel", role: .cancel) { }
             }
+        }
+        .alert(item: $alertConfig) { config in
+            Alert(
+                title: Text(config.title),
+                message: Text(config.message),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
     
@@ -442,15 +451,41 @@ struct FriendDetailsView: View {
     }
     
     private func removeFriend() async {
+        // Check if device is offline
+        guard networkMonitor.isConnected else {
+            await MainActor.run {
+                alertConfig = AlertConfig(
+                    title: "No Internet Connection",
+                    message: "Your device is offline. Please check your internet connection and try again."
+                )
+            }
+            return
+        }
+        
         do {
             try await DatabaseManager().updateFriends(viewing_user: viewingUser.email, viewed_user: friend.email, action: "remove")
             try await vm.getUserFriends(user_email: viewingUser.email)
         } catch {
             print("Failed to remove friendship: \(error.localizedDescription)")
+            let errorMessage = ErrorHandler.shared.handleError(error, operation: "Remove friend")
+            await MainActor.run {
+                alertConfig = AlertConfig(title: "Operation Failed", message: errorMessage)
+            }
         }
     }
     
     private func acceptFriendRequest() async {
+        // Check if device is offline
+        guard networkMonitor.isConnected else {
+            await MainActor.run {
+                alertConfig = AlertConfig(
+                    title: "No Internet Connection",
+                    message: "Your device is offline. Please check your internet connection and try again."
+                )
+            }
+            return
+        }
+        
         do {
             let db = DatabaseManager()
             try await db.updateFriends(viewing_user: viewingUser.email, viewed_user: friend.email, action: "add")
@@ -468,10 +503,25 @@ struct FriendDetailsView: View {
                                                 route: route)
         } catch {
             print("Failed to accept friend request: \(error.localizedDescription)")
+            let errorMessage = ErrorHandler.shared.handleError(error, operation: "Accept friend request")
+            await MainActor.run {
+                alertConfig = AlertConfig(title: "Operation Failed", message: errorMessage)
+            }
         }
     }
     
     private func rejectFriendRequest() async {
+        // Check if device is offline
+        guard networkMonitor.isConnected else {
+            await MainActor.run {
+                alertConfig = AlertConfig(
+                    title: "No Internet Connection",
+                    message: "Your device is offline. Please check your internet connection and try again."
+                )
+            }
+            return
+        }
+        
         do {
             try await DatabaseManager().removeFriendRequest(sender: friend.email, receiver: viewingUser.email)
             try await vm.getUserFriends(user_email: viewingUser.email)
@@ -481,19 +531,49 @@ struct FriendDetailsView: View {
             await BadgeManager.shared.updateBadge(for: viewingUser.email)
         } catch {
             print("Failed to reject friend request: \(error.localizedDescription)")
+            let errorMessage = ErrorHandler.shared.handleError(error, operation: "Decline friend request")
+            await MainActor.run {
+                alertConfig = AlertConfig(title: "Operation Failed", message: errorMessage)
+            }
         }
     }
     
     private func unsendFriendRequest() async {
+        // Check if device is offline
+        guard networkMonitor.isConnected else {
+            await MainActor.run {
+                alertConfig = AlertConfig(
+                    title: "No Internet Connection",
+                    message: "Your device is offline. Please check your internet connection and try again."
+                )
+            }
+            return
+        }
+        
         do {
             try await DatabaseManager().removeFriendRequest(sender: viewingUser.email, receiver: friend.email)
             try await vm.getUserFriendRequestsSent(user_email: viewingUser.email)
         } catch {
             print("Failed to unsend friend request: \(error.localizedDescription)")
+            let errorMessage = ErrorHandler.shared.handleError(error, operation: "Unsend friend request")
+            await MainActor.run {
+                alertConfig = AlertConfig(title: "Operation Failed", message: errorMessage)
+            }
         }
     }
     
     private func sendFriendRequest() async {
+        // Check if device is offline
+        guard networkMonitor.isConnected else {
+            await MainActor.run {
+                alertConfig = AlertConfig(
+                    title: "No Internet Connection",
+                    message: "Your device is offline. Please check your internet connection and try again."
+                )
+            }
+            return
+        }
+        
         do {
             let db = DatabaseManager()
             try await db.sendFriendRequest(sender: viewingUser.email, receiver: friend.email)
@@ -507,6 +587,10 @@ struct FriendDetailsView: View {
                                                 route: route)
         } catch {
             print("Friend Request Failed: \(error.localizedDescription)")
+            let errorMessage = ErrorHandler.shared.handleError(error, operation: "Send friend request")
+            await MainActor.run {
+                alertConfig = AlertConfig(title: "Operation Failed", message: errorMessage)
+            }
         }
     }
 }

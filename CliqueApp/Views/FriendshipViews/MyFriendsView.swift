@@ -10,9 +10,12 @@ import SwiftUI
 struct MyFriendsView: View {
     
     @EnvironmentObject private var vm: ViewModel
+    @StateObject private var networkMonitor = NetworkMonitor.shared
+    
     @State private var isAddFriendSheetPresented: Bool = false
     @Binding private var selectedSection: FriendSection
     @State private var selectedFriend: UserModel? = nil
+    @State private var alertConfig: AlertConfig? = nil
     
     @State var user: UserModel
     
@@ -44,6 +47,13 @@ struct MyFriendsView: View {
         }
         .sheet(item: $selectedFriend) { friend in
             FriendDetailsView(friend: friend, viewingUser: user)
+        }
+        .alert(item: $alertConfig) { config in
+            Alert(
+                title: Text(config.title),
+                message: Text(config.message),
+                dismissButton: .default(Text("OK"))
+            )
         }
     }
     
@@ -111,6 +121,15 @@ struct MyFriendsView: View {
             .padding(.bottom, 40)
         }
         .refreshable {
+            // Check if device is offline
+            guard networkMonitor.isConnected else {
+                alertConfig = AlertConfig(
+                    title: "No Internet Connection",
+                    message: "Your device is offline. Please check your internet connection and try again."
+                )
+                return
+            }
+            
             do {
                 try await vm.getAllUsers()
                 try await vm.getUserFriends(user_email: user.email)
@@ -118,6 +137,8 @@ struct MyFriendsView: View {
                 try await vm.getUserFriendRequestsSent(user_email: user.email)
             } catch {
                 print("Failed to refresh friends data: \(error.localizedDescription)")
+                let errorMessage = ErrorHandler.shared.handleError(error, operation: "Refresh friends")
+                alertConfig = AlertConfig(title: "Refresh Failed", message: errorMessage)
             }
         }
     }
