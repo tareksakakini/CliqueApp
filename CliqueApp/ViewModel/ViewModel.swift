@@ -32,47 +32,75 @@ class ViewModel: ObservableObject {
     }
     
     func refreshData(user_email: String) async {
-        await self.getAllUsers()
-        await self.getAllEvents()
-        await self.getUserFriends(user_email: user_email)
-        await self.getUserFriendRequests(user_email: user_email)
-        await self.getUserFriendRequestsSent(user_email: user_email)
+        // Silent refresh - don't throw errors, just log them
+        do {
+            try await self.getAllUsers()
+        } catch {
+            print("Failed to refresh users: \(error.localizedDescription)")
+        }
+        
+        do {
+            try await self.getAllEvents()
+        } catch {
+            print("Failed to refresh events: \(error.localizedDescription)")
+        }
+        
+        do {
+            try await self.getUserFriends(user_email: user_email)
+        } catch {
+            print("Failed to refresh friends: \(error.localizedDescription)")
+        }
+        
+        do {
+            try await self.getUserFriendRequests(user_email: user_email)
+        } catch {
+            print("Failed to refresh friend requests: \(error.localizedDescription)")
+        }
+        
+        do {
+            try await self.getUserFriendRequestsSent(user_email: user_email)
+        } catch {
+            print("Failed to refresh sent friend requests: \(error.localizedDescription)")
+        }
         
         // Update badge after refreshing data
         await BadgeManager.shared.updateBadge(for: user_email)
     }
     
-    func getUserFriends(user_email: String) async {
+    func getUserFriends(user_email: String) async throws {
         let firestoreService = DatabaseManager()
         do {
             let fetchedRequests = try await firestoreService.retrieveFriends(user_email: user_email)
             self.friendship = fetchedRequests
         } catch {
-            print("Failed to fetch events: \(error.localizedDescription)")
+            print("Failed to fetch friends: \(error.localizedDescription)")
+            throw error
         }
     }
     
-    func getUserFriendRequests(user_email: String) async {
+    func getUserFriendRequests(user_email: String) async throws {
         let firestoreService = DatabaseManager()
         do {
             let fetchedRequests = try await firestoreService.retrieveFriendRequest(user_email: user_email)
             self.friendInviteReceived = fetchedRequests
         } catch {
-            print("Failed to fetch events: \(error.localizedDescription)")
+            print("Failed to fetch friend requests: \(error.localizedDescription)")
+            throw error
         }
     }
     
-    func getUserFriendRequestsSent(user_email: String) async {
+    func getUserFriendRequestsSent(user_email: String) async throws {
         let firestoreService = DatabaseManager()
         do {
             let fetchedRequests = try await firestoreService.retrieveFriendRequestSent(user_email: user_email)
             self.friendInviteSent = fetchedRequests
         } catch {
-            print("Failed to fetch events: \(error.localizedDescription)")
+            print("Failed to fetch sent friend requests: \(error.localizedDescription)")
+            throw error
         }
     }
     
-    func getAllEvents() async {
+    func getAllEvents() async throws {
         let firestoreService = DatabaseManager()
         do {
             let fetchedEvents = try await firestoreService.getAllEvents()
@@ -81,6 +109,7 @@ class ViewModel: ObservableObject {
             print("Fetched all events")
         } catch {
             print("Failed to fetch events: \(error.localizedDescription)")
+            throw error
         }
     }
     
@@ -102,13 +131,14 @@ class ViewModel: ObservableObject {
         return nil
     }
     
-    func getAllUsers() async {
+    func getAllUsers() async throws {
         let firestoreService = DatabaseManager()
         do {
             let fetchedUsers = try await firestoreService.getAllUsers()
             self.users = fetchedUsers
         } catch {
-            print("Failed to fetch events: \(error.localizedDescription)")
+            print("Failed to fetch users: \(error.localizedDescription)")
+            throw error
         }
     }
     
@@ -225,8 +255,11 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func signUpUserAndAddToFireStore(email: String, password: String, fullname: String, username: String, profilePic: String, gender: String, phoneNumber: String = "") async -> UserModel? {
+    func signUpUserAndAddToFireStore(email: String, password: String, fullname: String, username: String, profilePic: String, gender: String, phoneNumber: String = "") async throws -> UserModel? {
         do {
+            // Check network connection before attempting operation
+            try ErrorHandler.shared.validateNetworkConnection()
+            
             let signup_user = try await AuthManager.shared.signUp(email: email, password: password)
             let firestoreService = DatabaseManager()
             try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: email, fullname: fullname, username: username, profilePic: "userDefault", gender: gender, phoneNumber: phoneNumber)
@@ -238,7 +271,7 @@ class ViewModel: ObservableObject {
             return user
         } catch {
             print("Sign up failed: \(error.localizedDescription)")
-            return nil
+            throw error
         }
     }
     
@@ -253,8 +286,11 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func signInUser(email: String, password: String) async -> UserModel? {
+    func signInUser(email: String, password: String) async throws -> UserModel? {
         do {
+            // Check network connection before attempting operation
+            try ErrorHandler.shared.validateNetworkConnection()
+            
             let signedInUser = try await AuthManager.shared.signIn(email: email, password: password)
             let firestoreService = DatabaseManager()
             let user = try await firestoreService.getUserFromFirestore(uid: signedInUser.uid)
@@ -279,7 +315,7 @@ class ViewModel: ObservableObject {
             return user
         } catch {
             print("Sign in failed: \(error.localizedDescription)")
-            return nil
+            throw error
         }
     }
     
@@ -307,7 +343,7 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func acceptButtonPressed(user: UserModel, event: EventModel) async {
+    func acceptButtonPressed(user: UserModel, event: EventModel) async throws {
         do {
             let databaseManager = DatabaseManager()
             try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "accept")
@@ -327,11 +363,12 @@ class ViewModel: ObservableObject {
                                                     route: route)
             }
         } catch {
-            print("Failed to update: \(error.localizedDescription)")
+            print("Failed to accept invite: \(error.localizedDescription)")
+            throw error
         }
     }
     
-    func declineButtonPressed(user: UserModel, event: EventModel) async {
+    func declineButtonPressed(user: UserModel, event: EventModel) async throws {
         do {
             let databaseManager = DatabaseManager()
             try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "reject")
@@ -353,11 +390,12 @@ class ViewModel: ObservableObject {
                 }
             }
         } catch {
-            print("Failed to update: \(error.localizedDescription)")
+            print("Failed to decline invite: \(error.localizedDescription)")
+            throw error
         }
     }
     
-    func leaveButtonPressed(user: UserModel, event: EventModel) async {
+    func leaveButtonPressed(user: UserModel, event: EventModel) async throws {
         do {
             let databaseManager = DatabaseManager()
             try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "leave")
@@ -379,11 +417,12 @@ class ViewModel: ObservableObject {
                 }
             }
         } catch {
-            print("Failed to update: \(error.localizedDescription)")
+            print("Failed to leave event: \(error.localizedDescription)")
+            throw error
         }
     }
     
-    func createEventButtonPressed(eventID: String, user: UserModel, event: EventModel, selectedImage: UIImage?, isNewEvent: Bool, oldEvent: EventModel) async {
+    func createEventButtonPressed(eventID: String, user: UserModel, event: EventModel, selectedImage: UIImage?, isNewEvent: Bool, oldEvent: EventModel) async throws {
         do {
             let firestoreService = DatabaseManager()
             if isNewEvent {
@@ -452,7 +491,8 @@ class ViewModel: ObservableObject {
                 await sendEventUpdateNotifications(user: user, oldEvent: oldEvent, newEvent: event)
             }
         } catch {
-            print("Failed to add or update event: \(error.localizedDescription)")
+            print("Failed to create/update event: \(error.localizedDescription)")
+            throw error
         }
     }
     
@@ -558,18 +598,22 @@ class ViewModel: ObservableObject {
         await firestoreService.uploadImage(image: image, storageLocation: storageLocation, referenceLocation: referenceLocation, fieldName: "profilePic")
     }
     
-    func loadProfilePic(imageUrl: String) async {
+    func loadProfilePic(imageUrl: String) async throws {
         // Don't attempt to load if URL is empty or the default placeholder
         guard !imageUrl.isEmpty && imageUrl != "userDefault" else { return }
         guard let url = URL(string: imageUrl) else { return }
         
         do {
+            // Check network connection before attempting operation
+            try ErrorHandler.shared.validateNetworkConnection()
+            
             let (data, _) = try await URLSession.shared.data(from: url)
             if let uiImage = UIImage(data: data) {
                 self.userProfilePic = uiImage
             }
         } catch {
             print("Error loading image: \(error)")
+            throw error
         }
     }
     
@@ -588,7 +632,7 @@ class ViewModel: ObservableObject {
             }
             
             // Refresh events to show updated information
-            await getAllEvents()
+            try await getAllEvents()
             
             return (true, linkedEvents.count, nil)
         } catch {

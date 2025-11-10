@@ -216,14 +216,19 @@ struct LoginView: View {
             isLoading = true
             wrongMessage = " "
             Task {
-                user = await vm.signInUser(email: email, password: password)
-                if user != nil {
-                    vm.signedInUser = user
-                    isVerified = await AuthManager.shared.getEmailVerified()
-                    // Always navigate to next screen for successful login
-                    goToNextScreen = true
-                } else {
-                    wrongMessage = "Email or password is incorrect"
+                do {
+                    user = try await vm.signInUser(email: email, password: password)
+                    if user != nil {
+                        vm.signedInUser = user
+                        isVerified = await AuthManager.shared.getEmailVerified()
+                        // Always navigate to next screen for successful login
+                        goToNextScreen = true
+                    } else {
+                        wrongMessage = "Email or password is incorrect"
+                        isLoading = false
+                    }
+                } catch {
+                    wrongMessage = ErrorHandler.shared.handleError(error, operation: "Sign in")
                     isLoading = false
                 }
             }

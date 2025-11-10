@@ -137,7 +137,11 @@ struct MyEventsView: View {
             .padding(.bottom, 40)
         }
         .refreshable {
-            await vm.getAllEvents()
+            do {
+                try await vm.getAllEvents()
+            } catch {
+                print("Failed to refresh events: \(error.localizedDescription)")
+            }
         }
     }
     

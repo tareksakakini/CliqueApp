@@ -86,7 +86,7 @@ private extension PersonPillView {
             Task {
                 do {
                     try await DatabaseManager().updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "remove")
-                    await vm.getUserFriends(user_email: viewing.email)
+                    try await vm.getUserFriends(user_email: viewing.email)
                 } catch {
                     print("Failed to remove friendship: \(error.localizedDescription)")
                 }
@@ -126,8 +126,8 @@ private extension PersonPillView {
                     do {
                         let db = DatabaseManager()
                         try await db.updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "add")
-                        await vm.getUserFriends(user_email: viewing.email)
-                        await vm.getUserFriendRequests(user_email: viewing.email)
+                        try await vm.getUserFriends(user_email: viewing.email)
+                        try await vm.getUserFriendRequests(user_email: viewing.email)
                         
                         // Update badge for the user who accepted
                         await BadgeManager.shared.updateBadge(for: viewing.email)
@@ -156,8 +156,8 @@ private extension PersonPillView {
                 Task {
                     do {
                         try await DatabaseManager().removeFriendRequest(sender: displayed.email, receiver: viewing.email)
-                        await vm.getUserFriends(user_email: viewing.email)
-                        await vm.getUserFriendRequests(user_email: viewing.email)
+                        try await vm.getUserFriends(user_email: viewing.email)
+                        try await vm.getUserFriendRequests(user_email: viewing.email)
                         
                         // Update badge for the user who rejected
                         await BadgeManager.shared.updateBadge(for: viewing.email)
@@ -184,7 +184,7 @@ private extension PersonPillView {
                 do {
                     let db = DatabaseManager()
                     try await db.sendFriendRequest(sender: viewing.email, receiver: displayed.email)
-                    await vm.getUserFriendRequestsSent(user_email: viewing.email)
+                    try await vm.getUserFriendRequestsSent(user_email: viewing.email)
                     
                     // Send notification with badge to the receiver
                     let route = NotificationRouteBuilder.friends(section: .requests)

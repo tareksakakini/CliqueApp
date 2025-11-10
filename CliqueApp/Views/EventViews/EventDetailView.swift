@@ -29,6 +29,7 @@ struct EventDetailView: View {
     @State private var isDeletingEvent = false
     @State private var selectedAttendee: UserModel? = nil
     @State private var showAttendeeProfile = false
+    @State private var errorAlert: AlertConfig? = nil
     
     init(event: EventModel, user: UserModel, inviteView: Bool) {
         self.event = event
@@ -141,6 +142,16 @@ struct EventDetailView: View {
         .sheet(isPresented: $showAttendeeProfile) {
             if let attendee = selectedAttendee {
                 FriendDetailsView(friend: attendee, viewingUser: user)
+            }
+        }
+        .alert(errorAlert?.title ?? "Error", isPresented: Binding(
+            get: { errorAlert != nil },
+            set: { if !$0 { errorAlert = nil } }
+        )) {
+            Button("OK", role: .cancel) { errorAlert = nil }
+        } message: {
+            if let errorAlert = errorAlert {
+                Text(errorAlert.message)
             }
         }
     }
@@ -690,8 +701,12 @@ struct EventDetailView: View {
                     Button(action: {
                         Task {
                             isAcceptingInvite = true
-                            await vm.acceptButtonPressed(user: user, event: event)
-                            await vm.getAllEvents()
+                            do {
+                                try await vm.acceptButtonPressed(user: user, event: event)
+                                try await vm.getAllEvents()
+                            } catch {
+                                errorAlert = AlertConfig(message: ErrorHandler.shared.handleError(error, operation: "Accept invitation"))
+                            }
                             isAcceptingInvite = false
                         }
                     }) {
@@ -825,8 +840,12 @@ struct EventDetailView: View {
             Button("Decline", role: .destructive) {
                 Task {
                     isDecliningInvite = true
-                    await vm.declineButtonPressed(user: user, event: event)
-                    await vm.getAllEvents()
+                    do {
+                        try await vm.declineButtonPressed(user: user, event: event)
+                        try await vm.getAllEvents()
+                    } catch {
+                        errorAlert = AlertConfig(message: ErrorHandler.shared.handleError(error, operation: "Decline invitation"))
+                    }
                     isDecliningInvite = false
                 }
             }
@@ -842,12 +861,17 @@ struct EventDetailView: View {
             Button("Leave Event", role: .destructive) {
                 Task {
                     isLeavingEvent = true
-                    await vm.leaveButtonPressed(user: user, event: event)
-                    await vm.getAllEvents()
-                    
-                    await MainActor.run {
+                    do {
+                        try await vm.leaveButtonPressed(user: user, event: event)
+                        try await vm.getAllEvents()
+                        
+                        await MainActor.run {
+                            isLeavingEvent = false
+                            dismiss()
+                        }
+                    } catch {
+                        errorAlert = AlertConfig(message: ErrorHandler.shared.handleError(error, operation: "Leave event"))
                         isLeavingEvent = false
-                        dismiss()
                     }
                 }
             }
@@ -913,7 +937,7 @@ struct EventDetailView: View {
         do {
             let databaseManager = DatabaseManager()
             try await databaseManager.respondInvite(eventId: currentEvent.id, userId: user.email, action: "acceptDeclined")
-            await vm.getAllEvents()
+            try await vm.getAllEvents()
             
             // Send notification to host
             if let host = vm.getUser(username: currentEvent.host), currentEvent.host != user.email {
@@ -928,6 +952,7 @@ struct EventDetailView: View {
             }
         } catch {
             print("Failed to accept declined invite: \(error.localizedDescription)")
+            errorAlert = AlertConfig(message: ErrorHandler.shared.handleError(error, operation: "Accept invitation"))
         }
     }
     
@@ -940,6 +965,7 @@ struct EventDetailView: View {
             }
         } catch {
             print("Error deleting event: \(error)")
+            errorAlert = AlertConfig(message: ErrorHandler.shared.handleError(error, operation: "Delete event"))
             await MainActor.run {
                 isDeletingEvent = false
             }

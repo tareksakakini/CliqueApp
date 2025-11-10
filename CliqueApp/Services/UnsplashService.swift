@@ -18,6 +18,14 @@ class UnsplashService {
     }
 
     func fetchImageURL(for query: String) async -> String? {
+        // Check network connection before attempting operation
+        do {
+            try ErrorHandler.shared.validateNetworkConnection()
+        } catch {
+            print("Network offline, cannot fetch Unsplash image")
+            return nil
+        }
+        
         guard let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return nil }
         let urlString = "\(baseURL)?query=\(encodedQuery)&client_id=\(accessKey)&per_page=1"
         guard let url = URL(string: urlString) else { return nil }

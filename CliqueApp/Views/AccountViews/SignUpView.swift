@@ -276,21 +276,27 @@ struct SignUpView: View {
                     return
                 }
                 
-                user = await vm.signUpUserAndAddToFireStore(
-                    email: email,
-                    password: password,
-                    fullname: fullname,
-                    username: username,
-                    profilePic: "userDefault",
-                    gender: gender
-                )
-                if let user = user {
-                    vm.signedInUser = user
-                    print("User signed up: \(user.uid)")
-                    goToVerifyView = true
-                } else {
-                    // Check for email already in use (Firebase error message)
-                    alertMessage = "Sign up failed. This email may already be in use. Please use a different email or try signing in."
+                do {
+                    user = try await vm.signUpUserAndAddToFireStore(
+                        email: email,
+                        password: password,
+                        fullname: fullname,
+                        username: username,
+                        profilePic: "userDefault",
+                        gender: gender
+                    )
+                    if let user = user {
+                        vm.signedInUser = user
+                        print("User signed up: \(user.uid)")
+                        goToVerifyView = true
+                    } else {
+                        // Check for email already in use (Firebase error message)
+                        alertMessage = "Sign up failed. This email may already be in use. Please use a different email or try signing in."
+                        showAlert = true
+                        isCreatingAccount = false
+                    }
+                } catch {
+                    alertMessage = ErrorHandler.shared.handleError(error, operation: "Sign up")
                     showAlert = true
                     isCreatingAccount = false
                 }

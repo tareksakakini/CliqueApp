@@ -215,8 +215,8 @@ struct CreateEventView: View {
                                             imageToUse = await downloadAndCropUnsplashImage(from: url)
                                         }
                                         
-                                        await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                                        await vm.getAllEvents()
+                                        try await vm.createEventButtonPressed(eventID: messageEventID, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                                        try await vm.getAllEvents()
                                         
                                         isCreatingEvent = false
                                         
@@ -248,7 +248,7 @@ struct CreateEventView: View {
                                         }
                                     } catch {
                                         isCreatingEvent = false
-                                        alertMessage = "Failed to create event. Please try again."
+                                        alertMessage = ErrorHandler.shared.handleError(error, operation: isNewEvent ? "Create event" : "Update event")
                                         showAlert = true
                                     }
                                 }
@@ -895,8 +895,8 @@ struct CreateEventView: View {
                                 imageToUse = await downloadAndCropUnsplashImage(from: url)
                             }
                             
-                            await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
-                            await vm.getAllEvents()
+                            try await vm.createEventButtonPressed(eventID: temp_uuid, user: user, event: event, selectedImage: imageToUse, isNewEvent: isNewEvent, oldEvent: oldEvent)
+                            try await vm.getAllEvents()
                             
                             isCreatingEvent = false
                             
@@ -929,7 +929,7 @@ struct CreateEventView: View {
                         }
                     } catch {
                         isCreatingEvent = false
-                        alertMessage = "Failed to create event. Please try again."
+                        alertMessage = ErrorHandler.shared.handleError(error, operation: isNewEvent ? "Create event" : "Update event")
                         showAlert = true
                     }
                 }

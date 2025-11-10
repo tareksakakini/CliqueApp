@@ -9,6 +9,8 @@ class DatabaseManager {
     private let db = Firestore.firestore()
     
     func addUserToFirestore(uid: String, email: String, fullname: String, username: String, profilePic: String, gender: String, phoneNumber: String = "") async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
         let userRef = db.collection("users").document(uid)
         
         let userData: [String: Any] = [
@@ -32,6 +34,9 @@ class DatabaseManager {
     }
     
     func getUserFromFirestore(uid: String) async throws -> UserModel {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let userRef = db.collection("users").document(uid)
         
         do {
@@ -47,6 +52,9 @@ class DatabaseManager {
     }
     
     func addEventToFirestore(id: String, title: String, location: String, description: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], attendeesDeclined: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], declinedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let eventRef = db.collection("events").document(id)
         
         let eventData: [String: Any] = [
@@ -81,6 +89,9 @@ class DatabaseManager {
     }
     
     func updateEventInFirestore(id: String, title: String, location: String, description: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], attendeesDeclined: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], declinedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let eventRef = db.collection("events").document(id)
         
         let updatedEventData: [String: Any] = [
@@ -117,6 +128,9 @@ class DatabaseManager {
 
     
     func deleteEventFromFirestore(id: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let eventRef = db.collection("events").document(id)
         
         do {
@@ -130,6 +144,9 @@ class DatabaseManager {
     
     @MainActor
     func getAllEvents() async throws -> [EventModel] {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let eventsRef = db.collection("events")
         
         do {
@@ -147,6 +164,9 @@ class DatabaseManager {
     
     @MainActor
     func getEventById(id: String) async throws -> EventModel? {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let eventRef = db.collection("events").document(id)
         
         do {
@@ -163,6 +183,9 @@ class DatabaseManager {
     }
     
     func getAllUsers() async throws -> [UserModel] {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let usersRef = db.collection("users")
         
         do {
@@ -179,6 +202,9 @@ class DatabaseManager {
     }
     
     func respondInvite(eventId: String, userId: String, action: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let eventRef = db.collection("events").document(eventId)
         
         do {
@@ -258,6 +284,9 @@ class DatabaseManager {
     }
     
     func updateFriends(viewing_user: String, viewed_user: String, action: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let user1Ref = db.collection("friendships").document(viewing_user)
         let user2Ref = db.collection("friendships").document(viewed_user)
         
@@ -296,6 +325,9 @@ class DatabaseManager {
     }
     
     func sendFriendRequest(sender: String, receiver: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let receiverRef = db.collection("friendRequests").document(receiver)
         let senderRef = db.collection("friendRequestsSent").document(sender)
         
@@ -325,6 +357,9 @@ class DatabaseManager {
     }
     
     func removeFriendRequest(sender: String, receiver: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let receiverRef = db.collection("friendRequests").document(receiver)
         let senderRef = db.collection("friendRequestsSent").document(sender)
         
@@ -354,6 +389,9 @@ class DatabaseManager {
     }
     
     func retrieveFriendRequest(user_email: String) async throws -> [String] {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let receiverRef = db.collection("friendRequests").document(user_email)
         
         do {
@@ -369,6 +407,9 @@ class DatabaseManager {
     }
     
     func retrieveFriendRequestSent(user_email: String) async throws -> [String] {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let receiverRef = db.collection("friendRequestsSent").document(user_email)
         
         do {
@@ -384,6 +425,9 @@ class DatabaseManager {
     }
     
     func retrieveFriends(user_email: String) async throws -> [String] {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let receiverRef = db.collection("friendships").document(user_email)
         
         do {
@@ -399,6 +443,9 @@ class DatabaseManager {
     }
     
     func deleteUserAccount(uid: String, email: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let userRef = db.collection("users").document(uid)
         let userFriendRef = db.collection("friendships").document(email)
         let friendRequestRef = db.collection("friendRequests").document(email)
@@ -468,6 +515,9 @@ class DatabaseManager {
     }
     
     func updateUserSubscriptionId(uid: String, subscriptionId: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let userRef = db.collection("users").document(uid)
         
         do {
@@ -480,6 +530,9 @@ class DatabaseManager {
     }
     
     func updateUserFullName(uid: String, fullName: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let userRef = db.collection("users").document(uid)
         
         do {
@@ -492,6 +545,9 @@ class DatabaseManager {
     }
     
     func updateUserUsername(uid: String, username: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let userRef = db.collection("users").document(uid)
         
         do {
@@ -504,6 +560,9 @@ class DatabaseManager {
     }
     
     func updateUserPhoneNumber(uid: String, phoneNumber: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let userRef = db.collection("users").document(uid)
         
         do {
@@ -560,6 +619,9 @@ class DatabaseManager {
     }
     
     func linkPhoneNumberToUser(uid: String, phoneNumber: String) async throws -> [EventModel] {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         // First, update the user's phone number
         try await updateUserPhoneNumber(uid: uid, phoneNumber: phoneNumber)
         
@@ -667,6 +729,9 @@ class DatabaseManager {
     }
     
     func removeUserProfilePic(uid: String) async throws {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let userRef = db.collection("users").document(uid)
         do {
             try await userRef.updateData(["profilePic": "userDefault"])
@@ -678,6 +743,9 @@ class DatabaseManager {
     }
     
     func uploadUserProfilePic(uid: String, image: UIImage) async throws -> String {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             throw NSError(domain: "ImageError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to convert image to data"])
         }
@@ -772,6 +840,9 @@ class DatabaseManager {
     }
     
     func isUsernameTaken(username: String) async throws -> Bool {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         let usersRef = db.collection("users")
         
         do {

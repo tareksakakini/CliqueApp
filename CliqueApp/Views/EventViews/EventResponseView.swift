@@ -24,6 +24,7 @@ struct EventResponseView: View {
     @State var isAcceptingInvite: Bool = false
     @State var isDecliningInvite: Bool = false
     @State var isLeavingEvent: Bool = false
+    @State private var errorAlert: AlertConfig? = nil
     
     
     var body: some View {
@@ -39,6 +40,16 @@ struct EventResponseView: View {
         }
         .onAppear {
             duration = vm.calculateDuration(startDateTime: event.startDateTime, endDateTime: event.endDateTime)
+        }
+        .alert(errorAlert?.title ?? "Error", isPresented: Binding(
+            get: { errorAlert != nil },
+            set: { if !$0 { errorAlert = nil } }
+        )) {
+            Button("OK", role: .cancel) { errorAlert = nil }
+        } message: {
+            if let errorAlert = errorAlert {
+                Text(errorAlert.message)
+            }
         }
     }
 }
@@ -90,10 +101,14 @@ extension EventResponseView {
         Button {
             Task {
                 isAcceptingInvite = true
-                await vm.acceptButtonPressed(user: user, event: event)
-                await vm.getAllEvents()
+                do {
+                    try await vm.acceptButtonPressed(user: user, event: event)
+                    try await vm.getAllEvents()
+                    isPresented.toggle()
+                } catch {
+                    errorAlert = AlertConfig(message: ErrorHandler.shared.handleError(error, operation: "Accept invitation"))
+                }
                 isAcceptingInvite = false
-                isPresented.toggle()
             }
         } label: {
             HStack(spacing: 8) {
@@ -119,10 +134,14 @@ extension EventResponseView {
         Button {
             Task {
                 isDecliningInvite = true
-                await vm.declineButtonPressed(user: user, event: event)
-                await vm.getAllEvents()
+                do {
+                    try await vm.declineButtonPressed(user: user, event: event)
+                    try await vm.getAllEvents()
+                    isPresented.toggle()
+                } catch {
+                    errorAlert = AlertConfig(message: ErrorHandler.shared.handleError(error, operation: "Decline invitation"))
+                }
                 isDecliningInvite = false
-                isPresented.toggle()
             }
             
         } label: {
@@ -160,10 +179,14 @@ extension EventResponseView {
             Button {
                 Task {
                     isLeavingEvent = true
-                    await vm.leaveButtonPressed(user: user, event: event)
-                    await vm.getAllEvents()
+                    do {
+                        try await vm.leaveButtonPressed(user: user, event: event)
+                        try await vm.getAllEvents()
+                        isPresented.toggle()
+                    } catch {
+                        errorAlert = AlertConfig(message: ErrorHandler.shared.handleError(error, operation: "Leave event"))
+                    }
                     isLeavingEvent = false
-                    isPresented.toggle()
                 }
             } label: {
                 HStack(spacing: 8) {

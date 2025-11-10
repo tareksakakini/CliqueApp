@@ -94,7 +94,13 @@ struct MainView: View {
             }
             
             await vm.updateOneSignalSubscriptionId(user: user)
-            await vm.loadProfilePic(imageUrl: user.profilePic)
+            
+            // Load profile pic (non-critical, silent failure is acceptable)
+            do {
+                try await vm.loadProfilePic(imageUrl: user.profilePic)
+            } catch {
+                print("Failed to load profile picture: \(error.localizedDescription)")
+            }
         }
         .onAppear {
             // Change the background color of the TabBar

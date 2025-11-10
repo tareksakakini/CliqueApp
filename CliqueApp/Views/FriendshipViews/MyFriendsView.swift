@@ -111,10 +111,14 @@ struct MyFriendsView: View {
             .padding(.bottom, 40)
         }
         .refreshable {
-            await vm.getAllUsers()
-            await vm.getUserFriends(user_email: user.email)
-            await vm.getUserFriendRequests(user_email: user.email)
-            await vm.getUserFriendRequestsSent(user_email: user.email)
+            do {
+                try await vm.getAllUsers()
+                try await vm.getUserFriends(user_email: user.email)
+                try await vm.getUserFriendRequests(user_email: user.email)
+                try await vm.getUserFriendRequestsSent(user_email: user.email)
+            } catch {
+                print("Failed to refresh friends data: \(error.localizedDescription)")
+            }
         }
     }
     

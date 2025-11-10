@@ -90,6 +90,9 @@ class OpenAIService: ObservableObject {
     }
     
     func sendMessage(_ message: String) async throws -> String {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
         guard !apiKey.isEmpty && apiKey != "YOUR_OPENAI_API_KEY_HERE" else {
             throw OpenAIError.missingAPIKey
         }
