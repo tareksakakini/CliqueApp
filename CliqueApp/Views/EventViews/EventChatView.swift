@@ -186,10 +186,17 @@ private struct EventChatBubble: View {
 struct EventChatPreviewRow: View {
     @ObservedObject var viewModel: EventChatViewModel
     
-    private static let timestampFormatter: DateFormatter = {
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter
+    }()
+    
+    private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
-        formatter.timeStyle = .short
+        formatter.timeStyle = .none
         return formatter
     }()
     
@@ -210,7 +217,14 @@ struct EventChatPreviewRow: View {
     
     private var timestampText: String {
         guard let date = viewModel.summary.lastMessageAt else { return "" }
-        return Self.timestampFormatter.string(from: date)
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return Self.timeFormatter.string(from: date)
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        } else {
+            return Self.dateFormatter.string(from: date)
+        }
     }
     
     var body: some View {
@@ -225,35 +239,37 @@ struct EventChatPreviewRow: View {
                 )
             
             VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text("Event Chat")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.primary)
-                        .lineLimit(1)
-                    
-                    Spacer()
-                    
+                Text("Event Chat")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundColor(.primary)
+                    .lineLimit(1)
+                Text(previewText)
+                    .font(.system(size: 14))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+            
+            Spacer()
+            
+            if !timestampText.isEmpty || viewModel.unreadCountForCurrentUser > 0 {
+                VStack(alignment: .trailing, spacing: 6) {
                     if !timestampText.isEmpty {
                         Text(timestampText)
                             .font(.system(size: 12, weight: .medium))
                             .foregroundColor(.secondary)
                     }
+                    
+                    if viewModel.unreadCountForCurrentUser > 0 {
+                        Text("\(viewModel.unreadCountForCurrentUser)")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.white)
+                            .padding(.vertical, 4)
+                            .padding(.horizontal, 8)
+                            .background(Color(.accent))
+                            .clipShape(Capsule())
+                    }
                 }
-                
-                Text(previewText)
-                    .font(.system(size: 14))
-                    .foregroundColor(.secondary)
-                    .lineLimit(2)
-            }
-            
-            if viewModel.unreadCountForCurrentUser > 0 {
-                Text("\(viewModel.unreadCountForCurrentUser)")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.vertical, 4)
-                    .padding(.horizontal, 8)
-                    .background(Color(.accent))
-                    .clipShape(Capsule())
             }
         }
         .padding(16)
