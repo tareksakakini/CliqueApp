@@ -21,13 +21,11 @@ Collection of all notes:
 
 TODO:
 
-1. [Authentication/Phone Linking - Major] This whole feature needs rethinking. There is no verification for the phone number which is a security risk. Switching to sign up by phone number fixes a lot of this.
-
 9. [New Feature - Major] Add chat feature
 
-3. [Notifications - Medium] I still need to work on making sure I stop receiving notifications on a device I'm logged out of
+1. [Authentication/Phone Linking - Major] This whole feature needs rethinking. There is no verification for the phone number which is a security risk. Switching to sign up by phone number fixes a lot of this.
 
-6. [Notifications - Medium] It would be nice for the click on the notification to lead you to the right place
+3. [Notifications - Medium] I still need to work on making sure I stop receiving notifications on a device I'm logged out of
 
 7. [Error Handling - Medium] This whole section needs rethinking. We have no error handling and we should. 
 
@@ -48,6 +46,7 @@ DONE:
 4. [Phone Invite - Major] Event is created with phone contact even when sending out the message is cancelled
 5. [Time Zone - Medium] I need to check how are we handling time zone differences
 2. [Pictures - Medium] image syncing is not smooth, aspect ratio has issues
+6. [Notifications - Medium] It would be nice for the click on the notification to lead you to the right place
 
 ------------------------------------
 
