@@ -21,15 +21,16 @@ Collection of all notes:
 
 TODO:
 
-9. [New Feature - Major] Add chat feature
-
 1. [Authentication/Phone Linking - Major] This whole feature needs rethinking. There is no verification for the phone number which is a security risk. Switching to sign up by phone number fixes a lot of this.
 
-3. [Notifications - Medium] I still need to work on making sure I stop receiving notifications on a device I'm logged out of
-
-7. [Error Handling - Medium] This whole section needs rethinking. We have no error handling and we should. 
+3. [Notifications - Medium] I still need to work on making sure I stop receiving notifications on a device I'm logged out of 
 
 8. [Realtime updates - Medium] This needs rethinking. Now I mostly have to manually refresh 
+
+20. [Chat - Dynamic spacing that doesn't go above 60%]
+21. [Chat - Add profile picture next to name of sender]
+22. [Chat - Add crown next to host]
+23. [Chat - Investigate rare cases where the message box does not clear]
 
 DONE:
 
@@ -47,6 +48,8 @@ DONE:
 5. [Time Zone - Medium] I need to check how are we handling time zone differences
 2. [Pictures - Medium] image syncing is not smooth, aspect ratio has issues
 6. [Notifications - Medium] It would be nice for the click on the notification to lead you to the right place
+7. [Error Handling - Medium] This whole section needs rethinking. We have no error handling and we should.
+9. [New Feature - Major] Add chat feature
 
 ------------------------------------
 
