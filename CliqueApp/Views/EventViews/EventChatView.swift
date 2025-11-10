@@ -77,7 +77,7 @@ struct EventChatView: View {
     private var messageList: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 12) {
+                LazyVStack(spacing: 0) {
                     if viewModel.messages.isEmpty {
                         VStack(spacing: 8) {
                             Image(systemName: "bubble.left.and.bubble.right.fill")
@@ -91,9 +91,13 @@ struct EventChatView: View {
                         }
                         .padding(.top, 80)
                     } else {
-                        ForEach(viewModel.messages) { message in
+                        ForEach(Array(viewModel.messages.enumerated()), id: \.element.id) { index, message in
+                            let shouldGroup = shouldGroupWithPreviousMessage(at: index)
+                            
                             EventChatBubble(message: message,
-                                            isCurrentUser: viewModel.isCurrentUser(message))
+                                            isCurrentUser: viewModel.isCurrentUser(message),
+                                            showsSenderName: !(shouldGroup && !viewModel.isCurrentUser(message)))
+                            .padding(.top, index == 0 ? 0 : (shouldGroup ? 4 : 12))
                             .id(message.id)
                         }
                     }
@@ -172,6 +176,14 @@ struct EventChatView: View {
     private var trimmedComposerText: String {
         viewModel.composerText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
+    
+    private func shouldGroupWithPreviousMessage(at index: Int) -> Bool {
+        guard index > 0 else { return false }
+        let current = viewModel.messages[index]
+        let previous = viewModel.messages[index - 1]
+        guard current.senderEmail == previous.senderEmail else { return false }
+        return current.createdAt.timeIntervalSince(previous.createdAt) < 120
+    }
 }
 
 // MARK: - Chat Bubble
@@ -179,10 +191,17 @@ struct EventChatView: View {
 private struct EventChatBubble: View {
     let message: EventChatMessage
     let isCurrentUser: Bool
+    let showsSenderName: Bool
+    
+    init(message: EventChatMessage, isCurrentUser: Bool, showsSenderName: Bool = true) {
+        self.message = message
+        self.isCurrentUser = isCurrentUser
+        self.showsSenderName = showsSenderName
+    }
     
     var body: some View {
         VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 4) {
-            if !isCurrentUser {
+            if !isCurrentUser && showsSenderName {
                 Text(message.senderName)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundColor(.secondary)
