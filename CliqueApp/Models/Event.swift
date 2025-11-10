@@ -79,3 +79,34 @@ struct EventModel: Hashable {
         return event
     }
 }
+
+extension EventModel {
+    /// Returns all in-app participant emails that should be part of the chat.
+    var chatParticipantEmails: [String] {
+        var participants = Set<String>()
+        if !host.isEmpty {
+            participants.insert(host)
+        }
+        attendeesAccepted.forEach { email in
+            if !email.isEmpty {
+                participants.insert(email)
+            }
+        }
+        attendeesInvited.forEach { email in
+            if !email.isEmpty {
+                participants.insert(email)
+            }
+        }
+        attendeesDeclined.forEach { email in
+            if !email.isEmpty {
+                participants.insert(email)
+            }
+        }
+        return Array(participants)
+    }
+    
+    /// Indicates whether an email should view the event from the invite tab.
+    func isInviteContext(for email: String) -> Bool {
+        attendeesInvited.contains(email) || attendeesDeclined.contains(email)
+    }
+}

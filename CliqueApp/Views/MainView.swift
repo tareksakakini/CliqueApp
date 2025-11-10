@@ -122,7 +122,10 @@ struct MainView: View {
         .fullScreenCover(item: $deepLinkEvent, onDismiss: {
             deepLinkEvent = nil
         }) { deepLink in
-            EventDetailView(event: deepLink.event, user: user, inviteView: deepLink.inviteView)
+            EventDetailView(event: deepLink.event,
+                            user: user,
+                            inviteView: deepLink.inviteView,
+                            autoOpenChat: deepLink.openChat)
         }
     }
 }
@@ -137,10 +140,13 @@ struct MainView: View {
 private extension MainView {
     func handleRoute(_ destination: NotificationRouter.Destination) {
         switch destination {
-        case .eventDetail(let id, let inviteView, let preferredTab):
+        case .eventDetail(let id, let inviteView, let preferredTab, let openChat):
             NotificationCenter.default.post(name: .dismissPresentedEventDetails, object: nil)
             Task {
-                await presentEventRoute(eventId: id, inviteView: inviteView, preferredTab: preferredTab)
+                await presentEventRoute(eventId: id,
+                                        inviteView: inviteView,
+                                        preferredTab: preferredTab,
+                                        openChat: openChat)
             }
         case .tab(let tab):
             selectedTab = tab.tabIndex
@@ -165,7 +171,8 @@ private extension MainView {
     
     func presentEventRoute(eventId: String,
                            inviteView: Bool,
-                           preferredTab: NotificationRouter.NotificationTab?) async {
+                           preferredTab: NotificationRouter.NotificationTab?,
+                           openChat: Bool) async {
         let targetTab = preferredTab ?? (inviteView ? .invites : .myEvents)
         await MainActor.run {
             selectedTab = targetTab.tabIndex
@@ -176,7 +183,9 @@ private extension MainView {
         
         await MainActor.run {
             if let eventToDisplay = refreshedEvent ?? fallbackEvent {
-                deepLinkEvent = DeepLinkEvent(event: eventToDisplay, inviteView: inviteView)
+                deepLinkEvent = DeepLinkEvent(event: eventToDisplay,
+                                              inviteView: inviteView,
+                                              openChat: openChat)
             } else {
                 print("🔗 Unable to locate event with id \(eventId) for routing")
             }
@@ -189,4 +198,5 @@ private struct DeepLinkEvent: Identifiable, Equatable {
     let id = UUID()
     let event: EventModel
     let inviteView: Bool
+    let openChat: Bool
 }

@@ -15,6 +15,8 @@ struct EventDetailView: View {
     let user: UserModel
     let inviteView: Bool
     
+    @StateObject private var chatViewModel: EventChatViewModel
+    
     @State private var currentEvent: EventModel
     @State private var eventImage: UIImage? = nil
     @State private var showEditView = false
@@ -30,12 +32,16 @@ struct EventDetailView: View {
     @State private var selectedAttendee: UserModel? = nil
     @State private var showAttendeeProfile = false
     @State private var errorAlert: AlertConfig? = nil
+    @State private var isChatActive = false
+    @State private var pendingChatAutoOpen: Bool
     
-    init(event: EventModel, user: UserModel, inviteView: Bool) {
+    init(event: EventModel, user: UserModel, inviteView: Bool, autoOpenChat: Bool = false) {
         self.event = event
         self.user = user
         self.inviteView = inviteView
         self._currentEvent = State(initialValue: event)
+        self._chatViewModel = StateObject(wrappedValue: EventChatViewModel(event: event, currentUser: user))
+        self._pendingChatAutoOpen = State(initialValue: autoOpenChat)
     }
     
     private var isEventPast: Bool {
@@ -102,6 +108,7 @@ struct EventDetailView: View {
                         
                         inviteesCard
                         hostCard
+                        chatEntryPoint
                         
                         if !isEventPast && !isHost {
                             actionButtonsSection
@@ -143,6 +150,18 @@ struct EventDetailView: View {
             if let attendee = selectedAttendee {
                 FriendDetailsView(friend: attendee, viewingUser: user)
             }
+        }
+        .onAppear {
+            chatViewModel.startSummaryListener()
+            if pendingChatAutoOpen {
+                pendingChatAutoOpen = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    isChatActive = true
+                }
+            }
+        }
+        .onDisappear {
+            chatViewModel.stopSummaryListener()
         }
         .alert(errorAlert?.title ?? "Error", isPresented: Binding(
             get: { errorAlert != nil },
@@ -468,6 +487,29 @@ struct EventDetailView: View {
         .background(Color(.systemBackground))
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        .padding(.horizontal, 20)
+        .padding(.top, 16)
+    }
+    
+    // MARK: - Chat Entry Point
+    
+    private var chatEntryPoint: some View {
+        VStack(spacing: 0) {
+            NavigationLink(
+                destination: EventChatView(viewModel: chatViewModel),
+                isActive: $isChatActive
+            ) {
+                EmptyView()
+            }
+            .hidden()
+            
+            Button {
+                isChatActive = true
+            } label: {
+                EventChatPreviewRow(viewModel: chatViewModel)
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
         .padding(.horizontal, 20)
         .padding(.top, 16)
     }
@@ -976,6 +1018,7 @@ struct EventDetailView: View {
         if let refreshedEvent = await vm.refreshEventById(id: event.id) {
             await MainActor.run {
                 currentEvent = refreshedEvent
+                chatViewModel.updateEvent(refreshedEvent)
             }
         }
     }

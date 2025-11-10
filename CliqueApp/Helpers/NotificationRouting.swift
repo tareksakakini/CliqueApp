@@ -19,7 +19,8 @@ enum NotificationRouteBuilder {
     /// Routes directly to an event detail screen.
     static func eventDetail(eventId: String,
                             inviteView: Bool,
-                            preferredTab: NotificationRouter.NotificationTab?) -> [String: Any] {
+                            preferredTab: NotificationRouter.NotificationTab?,
+                            openChat: Bool = false) -> [String: Any] {
         var route: [String: Any] = [
             NotificationRouter.Key.screen: Screen.eventDetail.rawValue,
             NotificationRouter.Key.eventId: eventId,
@@ -27,6 +28,9 @@ enum NotificationRouteBuilder {
         ]
         if let tab = preferredTab {
             route[NotificationRouter.Key.tab] = tab.rawValue
+        }
+        if openChat {
+            route[NotificationRouter.Key.openChat] = openChat
         }
         return route
     }
@@ -54,7 +58,7 @@ enum NotificationRouteBuilder {
 final class NotificationRouter: ObservableObject {
     
     enum Destination: Equatable {
-        case eventDetail(id: String, inviteView: Bool, preferredTab: NotificationTab?)
+        case eventDetail(id: String, inviteView: Bool, preferredTab: NotificationTab?, openChat: Bool)
         case tab(NotificationTab)
         case friends(section: FriendSectionShortcut)
     }
@@ -90,6 +94,7 @@ final class NotificationRouter: ObservableObject {
         static let tab = "tab"
         static let section = "section"
         static let route = "route"
+        static let openChat = "openChat"
     }
     
     private enum Screen: String {
@@ -133,7 +138,8 @@ final class NotificationRouter: ObservableObject {
             }
             let inviteView = (route[Key.inviteView] as? Bool) ?? (route[Key.inviteView] as? NSNumber)?.boolValue ?? false
             let preferredTab = (route[Key.tab] as? String).flatMap(NotificationTab.init(rawValue:))
-            return .eventDetail(id: eventId, inviteView: inviteView, preferredTab: preferredTab)
+            let openChat = (route[Key.openChat] as? Bool) ?? (route[Key.openChat] as? NSNumber)?.boolValue ?? false
+            return .eventDetail(id: eventId, inviteView: inviteView, preferredTab: preferredTab, openChat: openChat)
             
         case Screen.friends.rawValue:
             let section = (route[Key.section] as? String).flatMap(FriendSectionShortcut.init(rawValue:)) ?? .requests
