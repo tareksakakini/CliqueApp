@@ -96,15 +96,16 @@ final class EventChatViewModel: ObservableObject {
         guard !trimmed.isEmpty else { return }
         guard !isSending else { return }
         
+        let messageText = trimmed
         isSending = true
+        composerText = ""
+        
         Task {
             do {
-                try await service.sendMessage(event: event, sender: currentUser, text: trimmed)
-                await MainActor.run {
-                    composerText = ""
-                }
+                try await service.sendMessage(event: event, sender: currentUser, text: messageText)
             } catch {
                 await MainActor.run {
+                    composerText = messageText
                     chatError = AlertConfig(message: ErrorHandler.shared.handleError(error, operation: "Send message"))
                 }
             }

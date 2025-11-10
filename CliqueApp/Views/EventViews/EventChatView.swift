@@ -116,13 +116,22 @@ struct EventChatView: View {
     }
     
     private var composer: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 0) {
             Divider()
-            HStack(spacing: 12) {
+            HStack(alignment: .bottom, spacing: 12) {
                 TextField("Message", text: $viewModel.composerText, axis: .vertical)
-                    .textFieldStyle(.roundedBorder)
                     .focused($isComposerFocused)
                     .lineLimit(1...4)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color(.systemGray6))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                    )
                 
                 Button(action: {
                     viewModel.sendCurrentMessage()
@@ -130,16 +139,32 @@ struct EventChatView: View {
                     Image(systemName: "paperplane.fill")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white)
-                        .padding(10)
-                        .background(viewModel.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color(.systemGray3) : Color(.accent))
-                        .clipShape(Circle())
+                        .padding(12)
+                        .background(
+                            Circle()
+                                .fill(isComposerEmpty ? Color(.systemGray4) : Color(.accent))
+                        )
+                        .shadow(color: .black.opacity(isComposerEmpty ? 0 : 0.15), radius: 4, x: 0, y: 3)
                 }
-                .disabled(viewModel.composerText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(isComposerEmpty)
+                .opacity(isComposerEmpty ? 0.6 : 1)
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 8)
-            .background(Color(.systemBackground))
+            .padding(.vertical, 12)
+            .padding(.bottom, 4)
         }
+        .background(
+            Color(.systemBackground)
+                .ignoresSafeArea(edges: .bottom)
+        )
+    }
+    
+    private var isComposerEmpty: Bool {
+        trimmedComposerText.isEmpty
+    }
+    
+    private var trimmedComposerText: String {
+        viewModel.composerText.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
