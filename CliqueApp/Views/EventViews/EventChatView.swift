@@ -12,6 +12,12 @@ struct EventChatView: View {
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isComposerFocused: Bool
     
+    private enum ScrollTarget: Hashable {
+        case bottom
+    }
+    
+    private let bottomSpacerHeight: CGFloat = 18
+    
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -91,25 +97,25 @@ struct EventChatView: View {
                             .id(message.id)
                         }
                     }
+                    
+                    Color.clear
+                        .frame(height: bottomSpacerHeight)
+                        .id(ScrollTarget.bottom)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 16)
             }
             .background(Color(.systemGroupedBackground))
-            .onChange(of: viewModel.messages) { _, messages in
-                if let lastId = messages.last?.id {
-                    DispatchQueue.main.async {
-                        withAnimation(.easeInOut(duration: 0.25)) {
-                            proxy.scrollTo(lastId, anchor: .bottom)
-                        }
+            .onChange(of: viewModel.messages) { _, _ in
+                DispatchQueue.main.async {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        proxy.scrollTo(ScrollTarget.bottom, anchor: .bottom)
                     }
                 }
             }
             .onAppear {
-                if let lastId = viewModel.messages.last?.id {
-                    DispatchQueue.main.async {
-                        proxy.scrollTo(lastId, anchor: .bottom)
-                    }
+                DispatchQueue.main.async {
+                    proxy.scrollTo(ScrollTarget.bottom, anchor: .bottom)
                 }
             }
         }
