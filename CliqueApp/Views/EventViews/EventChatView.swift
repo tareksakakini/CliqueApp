@@ -252,6 +252,10 @@ struct EventChatPreviewRow: View {
         }
     }
     
+    private var unreadCount: Int {
+        viewModel.unreadCountForCurrentUser
+    }
+    
     var body: some View {
         HStack(spacing: 16) {
             Circle()
@@ -277,25 +281,32 @@ struct EventChatPreviewRow: View {
             
             Spacer()
             
-            if !timestampText.isEmpty || viewModel.unreadCountForCurrentUser > 0 {
-                VStack(alignment: .trailing, spacing: 6) {
-                    if !timestampText.isEmpty {
-                        Text(timestampText)
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    if viewModel.unreadCountForCurrentUser > 0 {
-                        Text("\(viewModel.unreadCountForCurrentUser)")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.white)
-                            .padding(.vertical, 4)
-                            .padding(.horizontal, 8)
-                            .background(Color(.accent))
-                            .clipShape(Capsule())
-                    }
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(timestampText)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .opacity(timestampText.isEmpty ? 0 : 1)
+                
+                Spacer(minLength: 0)
+                
+            Group {
+                if unreadCount > 0 {
+                    Text("\(unreadCount)")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.vertical, 4)
+                        .padding(.horizontal, 8)
+                        .background(Color(.accent))
+                        .clipShape(Capsule())
+                } else {
+                    Capsule()
+                        .fill(Color.clear)
+                        .frame(height: 24)
                 }
             }
+            .offset(y: -4)
+        }
+        .frame(height: 52)
         }
         .padding(16)
         .background(Color(.systemBackground))
