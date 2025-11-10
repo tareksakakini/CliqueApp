@@ -209,22 +209,25 @@ private struct EventChatBubble: View {
             }
             
             HStack {
-                if isCurrentUser { Spacer() }
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(message.text)
-                        .font(.system(size: 16))
-                        .foregroundColor(isCurrentUser ? .white : .primary)
-                    
-                    Text(message.createdAt, style: .time)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundColor(isCurrentUser ? .white.opacity(0.7) : .secondary)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
+                if isCurrentUser { Spacer(minLength: 0) }
+                HStack {
+                    VStack(alignment: .trailing, spacing: 6) {
+                        Text(message.text)
+                            .font(.system(size: 16))
+                            .foregroundColor(isCurrentUser ? .white : .primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                        
+                        Text(message.createdAt, style: .time)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(isCurrentUser ? .white.opacity(0.7) : .secondary)
+                    }
                 }
                 .padding(12)
                 .background(isCurrentUser ? Color(.accent) : Color(.systemBackground))
                 .cornerRadius(18)
                 .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
-                if !isCurrentUser { Spacer() }
+                .frame(maxWidth: UIScreen.main.bounds.width * 0.6, alignment: isCurrentUser ? .trailing : .leading)
+                if !isCurrentUser { Spacer(minLength: 0) }
             }
         }
         .transition(.move(edge: isCurrentUser ? .trailing : .leading).combined(with: .opacity))
