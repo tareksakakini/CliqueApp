@@ -56,15 +56,10 @@ struct EventChatView: View {
             }
             .accessibilityLabel("Back")
             
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Event Chat")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.primary)
-                Text(viewModel.eventTitle)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-            }
+            Text(viewModel.eventTitle)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.primary)
+                .lineLimit(1)
             Spacer()
         }
         .padding(.horizontal, 16)
