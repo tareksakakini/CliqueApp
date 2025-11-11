@@ -318,6 +318,7 @@ struct ModernEventPillView: View {
     @State private var showEventDetail: Bool = false
     @State private var eventImage: UIImage? = nil
     @State private var refreshedEvent: EventModel?
+    @State private var pendingAutoOpenChat: Bool = false
     
     private var isEventPast: Bool {
         event.startDateTime < Date()
@@ -345,28 +346,22 @@ struct ModernEventPillView: View {
         .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6)
         .contentShape(RoundedRectangle(cornerRadius: 20))
         .onTapGesture {
-            Task {
-                // Refresh the event data before showing details
-                if let fresh = await vm.refreshEventById(id: event.id) {
-                    refreshedEvent = fresh
-                } else {
-                    refreshedEvent = event
-                }
-                showEventDetail = true
-            }
+            presentEventDetail(autoOpenChat: false)
         }
         .fullScreenCover(isPresented: $showEventDetail) {
             if let eventToShow = refreshedEvent {
                 EventDetailView(
                     event: eventToShow,
                     user: user,
-                    inviteView: inviteView
+                    inviteView: inviteView,
+                    autoOpenChat: pendingAutoOpenChat
                 )
             } else {
                 EventDetailView(
                     event: event,
                     user: user,
-                    inviteView: inviteView
+                    inviteView: inviteView,
+                    autoOpenChat: pendingAutoOpenChat
                 )
             }
         }
@@ -511,30 +506,37 @@ struct ModernEventPillView: View {
     }
     
     private var unreadBadge: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "bubble.left.and.bubble.right.fill")
-                .font(.system(size: 11, weight: .semibold))
-            Text(unreadCountLabel)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-        }
-        .foregroundColor(.white)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(
-            Capsule(style: .continuous)
-                .fill(
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(.accent),
-                            Color(.accent).opacity(0.85)
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+        Button {
+            presentEventDetail(autoOpenChat: true)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "bubble.left.and.bubble.right.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                Text(unreadCountLabel)
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color(.accent),
+                                Color(.accent).opacity(0.85)
+                            ]),
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
                     )
-                )
-        )
-        .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
-        .opacity(unreadBadgeOpacity)
+            )
+            .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
+            .opacity(unreadBadgeOpacity)
+        }
+        .buttonStyle(.plain)
+        .contentShape(Capsule(style: .continuous))
+        .accessibilityLabel(unreadCount == 0 ? "Open chat" : "Open chat, \(unreadCountLabel) unread messages")
     }
     
     private var socialSection: some View {
@@ -559,6 +561,17 @@ struct ModernEventPillView: View {
     }
     
     
+    
+    private func presentEventDetail(autoOpenChat: Bool) {
+        Task {
+            let freshEvent = await vm.refreshEventById(id: event.id)
+            await MainActor.run {
+                self.refreshedEvent = freshEvent ?? event
+                self.pendingAutoOpenChat = autoOpenChat
+                self.showEventDetail = true
+            }
+        }
+    }
     
     private func loadEventImage(imageUrl: String) async {
         guard !imageUrl.isEmpty, let url = URL(string: imageUrl) else { return }
