@@ -331,16 +331,6 @@ struct ModernEventPillView: View {
         unreadCount > 99 ? "99+" : "\(unreadCount)"
     }
     
-    private var statusBadgeInfo: (text: String, color: Color, icon: String)? {
-        guard inviteView else { return nil }
-        if event.attendeesInvited.contains(user.email) {
-            return ("Pending", .orange, "clock.fill")
-        } else if event.attendeesDeclined.contains(user.email) {
-            return ("Declined", .red, "xmark.circle.fill")
-        }
-        return nil
-    }
-    
     private var unreadBadgeOpacity: Double {
         unreadCount == 0 ? 0.55 : 1.0
     }
@@ -464,8 +454,10 @@ struct ModernEventPillView: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             
-            // Status + unread indicators top right
-            topRightIndicators
+            // Unread indicator top right
+            unreadBadge
+                .transition(.scale.combined(with: .opacity))
+                .animation(.spring(response: 0.35, dampingFraction: 0.75), value: unreadCount)
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
         }
@@ -516,35 +508,6 @@ struct ModernEventPillView: View {
         .background(Color.white.opacity(0.9))
         .cornerRadius(8)
         .shadow(color: .black.opacity(0.15), radius: 3, y: 1)
-    }
-    
-    private var topRightIndicators: some View {
-        VStack(alignment: .trailing, spacing: 8) {
-            if statusBadgeInfo != nil {
-                statusBadge
-            }
-            unreadBadge
-                .transition(.scale.combined(with: .opacity))
-        }
-        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: unreadCount)
-    }
-    
-    @ViewBuilder
-    private var statusBadge: some View {
-        if let status = statusBadgeInfo {
-            HStack(spacing: 4) {
-                Image(systemName: status.icon)
-                    .font(.system(size: 10, weight: .semibold))
-                Text(status.text)
-                    .font(.system(size: 12, weight: .bold))
-            }
-            .foregroundColor(.white)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(status.color.opacity(0.9))
-            .cornerRadius(12)
-            .shadow(color: .black.opacity(0.2), radius: 2)
-        }
     }
     
     private var unreadBadge: some View {

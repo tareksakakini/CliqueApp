@@ -272,11 +272,6 @@ struct EventDetailView: View {
                 .padding(.horizontal, 24)
                 .padding(.bottom, 24)
                 
-                // Status badge
-                statusBadge
-                    .padding(.trailing, 24)
-                    .padding(.top, 20)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             }
             .cornerRadius(16)
             .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
@@ -316,41 +311,6 @@ struct EventDetailView: View {
         .padding(.horizontal, 44)
         .padding(.top, 20)
     }
-    
-    // MARK: - Status Badge
-    
-    @ViewBuilder
-    private var statusBadge: some View {
-        let status: (text: String, color: Color, icon: String)? = {
-            if isHost {
-                return ("Host", Color(.accent), "crown.fill")
-            } else if isAttending {
-                return ("Attending", .green, "checkmark.circle.fill")
-            } else if isInvited && !isEventPast {
-                return ("Invited", .blue, "envelope.fill")
-            } else if isEventPast {
-                return ("Completed", .gray, "clock.fill")
-            }
-            return nil
-        }()
-        
-        if let status {
-            HStack(spacing: 6) {
-                Image(systemName: status.icon)
-                    .font(.system(size: 12, weight: .semibold))
-                Text(status.text)
-                    .font(.system(size: 14, weight: .bold))
-            }
-            .foregroundColor(.white)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(status.color.opacity(0.9))
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
-        }
-    }
-    
-
     
     // MARK: - Location Card
     
