@@ -134,6 +134,7 @@ struct MainView: View {
     MainView(user: UserData.userData[1])
         .environmentObject(ViewModel())
         .environmentObject(NotificationRouter.shared)
+        .environmentObject(EventChatUnreadStore())
     
 }
 

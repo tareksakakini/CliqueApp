@@ -18,6 +18,7 @@ struct CliqueAppApp: App {
     
     @StateObject private var vm = ViewModel()
     @StateObject private var routeManager = NotificationRouter.shared
+    @StateObject private var chatUnreadStore = EventChatUnreadStore()
     @Environment(\.scenePhase) private var scenePhase
     
     var body: some Scene {
@@ -25,6 +26,7 @@ struct CliqueAppApp: App {
             StartingView()
                 .environmentObject(vm)
                 .environmentObject(routeManager)
+                .environmentObject(chatUnreadStore)
                 .accentColor(.green)
                 .preferredColorScheme(FeatureFlags.forceLightMode ? .light : nil)
                 .onChange(of: scenePhase) { oldPhase, newPhase in

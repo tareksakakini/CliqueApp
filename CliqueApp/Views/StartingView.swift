@@ -47,6 +47,7 @@ struct StartingView: View {
 #Preview {
     StartingView()
         .environmentObject(ViewModel())
+        .environmentObject(EventChatUnreadStore())
 }
 
 extension StartingView {

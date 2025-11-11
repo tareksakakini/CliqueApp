@@ -309,6 +309,7 @@ struct MyEventsView: View {
 
 struct ModernEventPillView: View {
     @EnvironmentObject private var vm: ViewModel
+    @EnvironmentObject private var unreadStore: EventChatUnreadStore
     
     let event: EventModel
     let user: UserModel
@@ -320,6 +321,28 @@ struct ModernEventPillView: View {
     
     private var isEventPast: Bool {
         event.startDateTime < Date()
+    }
+    
+    private var unreadCount: Int {
+        unreadStore.unreadCount(for: event.id, userEmail: user.email)
+    }
+    
+    private var unreadCountLabel: String {
+        unreadCount > 99 ? "99+" : "\(unreadCount)"
+    }
+    
+    private var statusBadgeInfo: (text: String, color: Color, icon: String)? {
+        guard inviteView else { return nil }
+        if event.attendeesInvited.contains(user.email) {
+            return ("Pending", .orange, "clock.fill")
+        } else if event.attendeesDeclined.contains(user.email) {
+            return ("Declined", .red, "xmark.circle.fill")
+        }
+        return nil
+    }
+    
+    private var unreadBadgeOpacity: Double {
+        unreadCount == 0 ? 0.55 : 1.0
     }
     
     var body: some View {
@@ -356,6 +379,9 @@ struct ModernEventPillView: View {
                     inviteView: inviteView
                 )
             }
+        }
+        .onAppear {
+            unreadStore.startListening(for: event.id)
         }
         .task(id: event.eventPic) {
             guard !event.eventPic.isEmpty else {
@@ -438,8 +464,8 @@ struct ModernEventPillView: View {
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             
-            // Status badge top right
-            statusBadge
+            // Status + unread indicators top right
+            topRightIndicators
                 .padding(12)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
         }
@@ -492,20 +518,20 @@ struct ModernEventPillView: View {
         .shadow(color: .black.opacity(0.15), radius: 3, y: 1)
     }
     
+    private var topRightIndicators: some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            if statusBadgeInfo != nil {
+                statusBadge
+            }
+            unreadBadge
+                .transition(.scale.combined(with: .opacity))
+        }
+        .animation(.spring(response: 0.35, dampingFraction: 0.75), value: unreadCount)
+    }
+    
     @ViewBuilder
     private var statusBadge: some View {
-        let status: (text: String, color: Color, icon: String)? = {
-            if inviteView {
-                if event.attendeesInvited.contains(user.email) {
-                    return ("Pending", .orange, "clock.fill")
-                } else if event.attendeesDeclined.contains(user.email) {
-                    return ("Declined", .red, "xmark.circle.fill")
-                }
-            }
-            return nil
-        }()
-        
-        if let status {
+        if let status = statusBadgeInfo {
             HStack(spacing: 4) {
                 Image(systemName: status.icon)
                     .font(.system(size: 10, weight: .semibold))
@@ -519,6 +545,33 @@ struct ModernEventPillView: View {
             .cornerRadius(12)
             .shadow(color: .black.opacity(0.2), radius: 2)
         }
+    }
+    
+    private var unreadBadge: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "bubble.left.and.bubble.right.fill")
+                .font(.system(size: 11, weight: .semibold))
+            Text(unreadCountLabel)
+                .font(.system(size: 12, weight: .bold, design: .rounded))
+        }
+        .foregroundColor(.white)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(
+            Capsule(style: .continuous)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(.accent),
+                            Color(.accent).opacity(0.85)
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .shadow(color: .black.opacity(0.2), radius: 3, x: 0, y: 2)
+        .opacity(unreadBadgeOpacity)
     }
     
     private var socialSection: some View {
@@ -565,4 +618,5 @@ struct ModernEventPillView: View {
 #Preview {
     MyEventsView(user: UserData.userData[0], isInviteView: false, selectedTab: .constant(0))
         .environmentObject(ViewModel())
+        .environmentObject(EventChatUnreadStore())
 }
