@@ -26,7 +26,8 @@ func sendPushNotification(notificationText: String,
                           receiverID: String,
                           receiverEmail: String? = nil,
                           badgeCount: Int? = nil,
-                          route: [String: Any]? = nil) {
+                          route: [String: Any]? = nil,
+                          title: String? = nil) {
     guard let config = loadOneSignalConfig() else {
         print("❌ Cannot send notification: OneSignal configuration not loaded")
         return
@@ -44,6 +45,11 @@ func sendPushNotification(notificationText: String,
         "include_player_ids": ["\(receiverID)"],
         "mutable_content": true  // REQUIRED - allows notification service extension to modify badge
     ]
+    
+    // Add custom title if provided
+    if let title = title {
+        payload["headings"] = ["en": title]
+    }
     
     // DO NOT set badge here - let the Notification Service Extension handle it
     // This prevents double-counting issues
@@ -96,14 +102,17 @@ func sendPushNotification(notificationText: String,
 func sendPushNotificationWithBadge(notificationText: String,
                                    receiverID: String,
                                    receiverEmail: String,
-                                   route: [String: Any]? = nil) async {
+                                   route: [String: Any]? = nil,
+                                   title: String? = nil) async {
     let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverEmail)
     sendPushNotification(notificationText: notificationText,
                          receiverID: receiverID,
                          receiverEmail: receiverEmail,
                          badgeCount: badgeCount,
-                         route: route)
+                         route: route,
+                         title: title)
     print("📤 Sent notification to \(receiverEmail)")
+    print("   Title: \(title ?? "Yalla")")
     print("   Text: \(notificationText)")
     print("   Badge will be set to: \(badgeCount)")
     print("   PlayerID: \(receiverID)")

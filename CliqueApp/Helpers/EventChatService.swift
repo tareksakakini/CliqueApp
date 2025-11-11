@@ -175,7 +175,8 @@ final class EventChatService {
             await sendPushNotificationWithBadge(notificationText: "\(sender.fullname): \(snippet)",
                                                 receiverID: user.subscriptionId,
                                                 receiverEmail: user.email,
-                                                route: route)
+                                                route: route,
+                                                title: event.title)
         }
     }
     

@@ -100,7 +100,7 @@ struct EventChatView: View {
                                             showsSenderName: !(shouldGroup && !viewModel.isCurrentUser(message)),
                                             viewModel: vm,
                                             hostEmail: viewModel.event.host)
-                            .padding(.top, index == 0 ? 0 : (shouldGroup ? 4 : 12))
+                            .padding(.top, index == 0 ? 16 : (shouldGroup ? 4 : 12))
                             .id(message.id)
                         }
                     }
