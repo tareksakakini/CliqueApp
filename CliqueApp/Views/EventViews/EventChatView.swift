@@ -98,7 +98,8 @@ struct EventChatView: View {
                             EventChatBubble(message: message,
                                             isCurrentUser: viewModel.isCurrentUser(message),
                                             showsSenderName: !(shouldGroup && !viewModel.isCurrentUser(message)),
-                                            viewModel: vm)
+                                            viewModel: vm,
+                                            hostEmail: viewModel.event.host)
                             .padding(.top, index == 0 ? 0 : (shouldGroup ? 4 : 12))
                             .id(message.id)
                         }
@@ -195,16 +196,22 @@ private struct EventChatBubble: View {
     let isCurrentUser: Bool
     let showsSenderName: Bool
     let viewModel: ViewModel
+    let hostEmail: String
     
-    init(message: EventChatMessage, isCurrentUser: Bool, showsSenderName: Bool = true, viewModel: ViewModel) {
+    init(message: EventChatMessage, isCurrentUser: Bool, showsSenderName: Bool = true, viewModel: ViewModel, hostEmail: String) {
         self.message = message
         self.isCurrentUser = isCurrentUser
         self.showsSenderName = showsSenderName
         self.viewModel = viewModel
+        self.hostEmail = hostEmail
     }
     
     private var senderUser: UserModel? {
         viewModel.getUser(username: message.senderEmail)
+    }
+    
+    private var isHost: Bool {
+        message.senderEmail == hostEmail
     }
     
     var body: some View {
@@ -214,9 +221,16 @@ private struct EventChatBubble: View {
                     if let senderUser = senderUser {
                         ProfilePictureView(user: senderUser, diameter: 20, isPhone: false)
                     }
-                    Text(message.senderName)
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 4) {
+                        Text(message.senderName)
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.secondary)
+                        if isHost {
+                            Text("(host)")
+                                .font(.system(size: 12, weight: .regular))
+                                .foregroundColor(.secondary.opacity(0.8))
+                        }
+                    }
                 }
                 .padding(.leading, 8)
             }
