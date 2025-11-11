@@ -147,7 +147,12 @@ struct EventChatView: View {
                     )
                 
                 Button(action: {
-                    viewModel.sendCurrentMessage()
+                    // Dismiss keyboard first to clear any autocorrect suggestions
+                    isComposerFocused = false
+                    // Small delay to ensure autocorrect is dismissed before sending/clearing
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        viewModel.sendCurrentMessage()
+                    }
                 }) {
                     Image(systemName: "paperplane.fill")
                         .font(.system(size: 18, weight: .semibold))
