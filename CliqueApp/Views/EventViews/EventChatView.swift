@@ -29,10 +29,12 @@ struct EventChatView: View {
         .background(Color(.systemGroupedBackground).ignoresSafeArea())
         .navigationBarHidden(true)
         .onAppear {
+            EventChatActivityTracker.shared.enterChat(eventId: viewModel.event.id)
             viewModel.startMessagesListener()
             viewModel.markChatAsRead()
         }
         .onDisappear {
+            EventChatActivityTracker.shared.leaveChat(eventId: viewModel.event.id)
             viewModel.stopMessagesListener()
         }
         .onChange(of: viewModel.messages.count) { _, _ in

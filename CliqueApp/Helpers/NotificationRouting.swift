@@ -124,6 +124,19 @@ final class NotificationRouter: ObservableObject {
         pendingRoute = nil
     }
     
+    /// Extracts lightweight info about an event-detail route without creating a destination.
+    static func eventDetailRouteInfo(from userInfo: [AnyHashable: Any]) -> (eventId: String, openChat: Bool)? {
+        guard let route = extractRouteDictionary(from: userInfo),
+              let screen = route[Key.screen] as? String,
+              screen == Screen.eventDetail.rawValue,
+              let eventId = route[Key.eventId] as? String,
+              !eventId.isEmpty else {
+            return nil
+        }
+        let openChat = (route[Key.openChat] as? Bool) ?? (route[Key.openChat] as? NSNumber)?.boolValue ?? false
+        return (eventId, openChat)
+    }
+    
     private static func extractDestination(from userInfo: [AnyHashable: Any]) -> Destination? {
         guard let route = extractRouteDictionary(from: userInfo) else {
             return nil

@@ -144,4 +144,22 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         NotificationRouter.shared.handleNotificationPayload(response.notification.request.content.userInfo)
         completionHandler()
     }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        if shouldSuppressForegroundNotification(notification.request.content.userInfo) {
+            completionHandler([])
+        } else {
+            completionHandler([.banner, .sound, .badge])
+        }
+    }
+    
+    private func shouldSuppressForegroundNotification(_ userInfo: [AnyHashable: Any]) -> Bool {
+        guard let routeInfo = NotificationRouter.eventDetailRouteInfo(from: userInfo),
+              routeInfo.openChat else {
+            return false
+        }
+        return EventChatActivityTracker.shared.isChatOpen(for: routeInfo.eventId)
+    }
 }
