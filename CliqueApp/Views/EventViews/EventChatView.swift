@@ -19,6 +19,13 @@ struct EventChatView: View {
     
     private let bottomSpacerHeight: CGFloat = 18
     
+    private static let dayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMM d"
+        formatter.timeZone = TimeZone.autoupdatingCurrent
+        return formatter
+    }()
+    
     var body: some View {
         VStack(spacing: 0) {
             header
@@ -97,12 +104,18 @@ struct EventChatView: View {
                         ForEach(Array(viewModel.messages.enumerated()), id: \.element.id) { index, message in
                             let shouldGroup = shouldGroupWithPreviousMessage(at: index)
                             
+                            if shouldShowDayDivider(at: index) {
+                                ChatDayDivider(label: dayLabel(for: message.createdAt))
+                                    .padding(.top, index == 0 ? 12 : 20)
+                                    .padding(.bottom, 8)
+                            }
+                            
                             EventChatBubble(message: message,
                                             isCurrentUser: viewModel.isCurrentUser(message),
                                             showsSenderName: !(shouldGroup && !viewModel.isCurrentUser(message)),
                                             viewModel: vm,
                                             hostEmail: viewModel.event.host)
-                            .padding(.top, index == 0 ? 16 : (shouldGroup ? 4 : 12))
+                            .padding(.top, shouldGroup ? 4 : 12)
                             .id(message.id)
                         }
                     }
@@ -192,7 +205,53 @@ struct EventChatView: View {
         let current = viewModel.messages[index]
         let previous = viewModel.messages[index - 1]
         guard current.senderEmail == previous.senderEmail else { return false }
+        let calendar = Calendar.current
+        guard calendar.isDate(current.createdAt, inSameDayAs: previous.createdAt) else { return false }
         return current.createdAt.timeIntervalSince(previous.createdAt) < 120
+    }
+    
+    private func shouldShowDayDivider(at index: Int) -> Bool {
+        guard !viewModel.messages.isEmpty else { return false }
+        guard index > 0 else { return true }
+        let calendar = Calendar.current
+        let current = viewModel.messages[index].createdAt
+        let previous = viewModel.messages[index - 1].createdAt
+        return !calendar.isDate(current, inSameDayAs: previous)
+    }
+    
+    private func dayLabel(for date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInYesterday(date) {
+            return "Yesterday"
+        } else {
+            return Self.dayFormatter.string(from: date)
+        }
+    }
+}
+
+// MARK: - Day Divider
+
+private struct ChatDayDivider: View {
+    let label: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            dividerLine
+            Text(label)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 8)
+            dividerLine
+        }
+    }
+    
+    private var dividerLine: some View {
+        Rectangle()
+            .fill(Color.secondary.opacity(0.2))
+            .frame(height: 1)
+            .frame(maxWidth: .infinity)
     }
 }
 
