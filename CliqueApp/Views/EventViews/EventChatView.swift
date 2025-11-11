@@ -9,6 +9,7 @@ import SwiftUI
 
 struct EventChatView: View {
     @ObservedObject var viewModel: EventChatViewModel
+    @EnvironmentObject private var vm: ViewModel
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isComposerFocused: Bool
     
@@ -96,7 +97,8 @@ struct EventChatView: View {
                             
                             EventChatBubble(message: message,
                                             isCurrentUser: viewModel.isCurrentUser(message),
-                                            showsSenderName: !(shouldGroup && !viewModel.isCurrentUser(message)))
+                                            showsSenderName: !(shouldGroup && !viewModel.isCurrentUser(message)),
+                                            viewModel: vm)
                             .padding(.top, index == 0 ? 0 : (shouldGroup ? 4 : 12))
                             .id(message.id)
                         }
@@ -192,26 +194,37 @@ private struct EventChatBubble: View {
     let message: EventChatMessage
     let isCurrentUser: Bool
     let showsSenderName: Bool
+    let viewModel: ViewModel
     
-    init(message: EventChatMessage, isCurrentUser: Bool, showsSenderName: Bool = true) {
+    init(message: EventChatMessage, isCurrentUser: Bool, showsSenderName: Bool = true, viewModel: ViewModel) {
         self.message = message
         self.isCurrentUser = isCurrentUser
         self.showsSenderName = showsSenderName
+        self.viewModel = viewModel
+    }
+    
+    private var senderUser: UserModel? {
+        viewModel.getUser(username: message.senderEmail)
     }
     
     var body: some View {
         VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 4) {
             if !isCurrentUser && showsSenderName {
-                Text(message.senderName)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.secondary)
-                    .padding(isCurrentUser ? .trailing : .leading, 8)
+                HStack(spacing: 6) {
+                    if let senderUser = senderUser {
+                        ProfilePictureView(user: senderUser, diameter: 20, isPhone: false)
+                    }
+                    Text(message.senderName)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.leading, 8)
             }
             
-            HStack {
+            HStack(alignment: .bottom, spacing: 0) {
                 if isCurrentUser { Spacer(minLength: 0) }
                 HStack {
-                    VStack(alignment: .trailing, spacing: 6) {
+                    VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 6) {
                         Text(message.text)
                             .font(.system(size: 16))
                             .foregroundColor(isCurrentUser ? .white : .primary)

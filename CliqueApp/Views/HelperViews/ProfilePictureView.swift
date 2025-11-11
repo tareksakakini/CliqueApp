@@ -28,7 +28,7 @@ struct ProfilePictureView: View {
                 PhoneImage
             }
         }
-        .task {
+        .task(id: user?.profilePic) {
             if let user, !isViewingUser {
                 await loadImage(imageUrl: user.profilePic)
             }
@@ -38,15 +38,10 @@ struct ProfilePictureView: View {
     func loadImage(imageUrl: String) async {
         // Don't attempt to load if URL is empty or the default placeholder
         guard !imageUrl.isEmpty && imageUrl != "userDefault" else { return }
-        guard let url = URL(string: imageUrl) else { return }
         
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let uiImage = UIImage(data: data) {
-                profilePic = uiImage
-            }
-        } catch {
-            print("Error loading image: \(error)")
+        // Use shared image cache to avoid reloading the same image
+        if let cachedImage = await ImageCache.shared.getImage(for: imageUrl) {
+            profilePic = cachedImage
         }
     }
 }
