@@ -19,7 +19,29 @@ class ViewModel: ObservableObject {
     @Published var friendInviteSent: [String]
     @Published var eventRefreshTrigger: Bool
     @Published var userProfilePic: UIImage?
-    @Published var signedInUser: UserModel?
+    @Published var signedInUser: UserModel? {
+        didSet {
+            guard signedInUser?.email != oldValue?.email else { return }
+            
+            stopRealtimeListeners()
+            
+            guard let email = signedInUser?.email, !email.isEmpty else {
+                resetUserScopedData()
+                return
+            }
+            
+            if oldValue != nil {
+                resetUserScopedData()
+            }
+            
+            startRealtimeListeners(for: email)
+        }
+    }
+    
+    private var eventsListener: ListenerRegistration?
+    private var friendsListener: ListenerRegistration?
+    private var friendRequestsListener: ListenerRegistration?
+    private var friendRequestsSentListener: ListenerRegistration?
     
     init() {
         self.users = []
@@ -857,5 +879,81 @@ class ViewModel: ObservableObject {
             return (false, error.localizedDescription, nil)
         }
     }
-
+    
+    // MARK: - Real-time listeners
+    
+    private func startRealtimeListeners(for userEmail: String) {
+        guard !userEmail.isEmpty else { return }
+        
+        let firestoreService = DatabaseManager()
+        
+        eventsListener = firestoreService.listenToAllEvents { [weak self] result in
+            Task { @MainActor in
+                guard let self = self else { return }
+                switch result {
+                case .success(let events):
+                    self.events = events.sorted { $0.startDateTime < $1.startDateTime }
+                case .failure(let error):
+                    print("Failed to listen for events: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        friendsListener = firestoreService.listenToFriends(userEmail: userEmail) { [weak self] result in
+            Task { @MainActor in
+                guard let self = self else { return }
+                switch result {
+                case .success(let friends):
+                    self.friendship = friends
+                case .failure(let error):
+                    print("Failed to listen for friends: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        friendRequestsListener = firestoreService.listenToFriendRequests(userEmail: userEmail) { [weak self] result in
+            Task { @MainActor in
+                guard let self = self else { return }
+                switch result {
+                case .success(let requests):
+                    self.friendInviteReceived = requests
+                case .failure(let error):
+                    print("Failed to listen for friend requests: \(error.localizedDescription)")
+                }
+            }
+        }
+        
+        friendRequestsSentListener = firestoreService.listenToFriendRequestsSent(userEmail: userEmail) { [weak self] result in
+            Task { @MainActor in
+                guard let self = self else { return }
+                switch result {
+                case .success(let requests):
+                    self.friendInviteSent = requests
+                case .failure(let error):
+                    print("Failed to listen for sent friend requests: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+    
+    private func stopRealtimeListeners() {
+        eventsListener?.remove()
+        eventsListener = nil
+        
+        friendsListener?.remove()
+        friendsListener = nil
+        
+        friendRequestsListener?.remove()
+        friendRequestsListener = nil
+        
+        friendRequestsSentListener?.remove()
+        friendRequestsSentListener = nil
+    }
+    
+    private func resetUserScopedData() {
+        events = []
+        friendship = []
+        friendInviteReceived = []
+        friendInviteSent = []
+    }
 }

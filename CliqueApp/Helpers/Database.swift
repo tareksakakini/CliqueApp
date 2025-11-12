@@ -201,6 +201,69 @@ class DatabaseManager {
         }
     }
     
+    // MARK: - Real-time Listeners
+    
+    func listenToAllEvents(handler: @escaping (Result<[EventModel], Error>) -> Void) -> ListenerRegistration {
+        db.collection("events")
+            .addSnapshotListener { snapshot, error in
+                if let error = error {
+                    handler(.failure(error))
+                    return
+                }
+                
+                let events = snapshot?.documents.compactMap { document in
+                    EventModel().initFromFirestore(eventData: document.data())
+                } ?? []
+                
+                handler(.success(events))
+            }
+    }
+    
+    func listenToFriends(userEmail: String,
+                         handler: @escaping (Result<[String], Error>) -> Void) -> ListenerRegistration {
+        db.collection("friendships")
+            .document(userEmail)
+            .addSnapshotListener { snapshot, error in
+                if let error = error {
+                    handler(.failure(error))
+                    return
+                }
+                
+                let friends = snapshot?.data()?["friends"] as? [String] ?? []
+                handler(.success(friends))
+            }
+    }
+    
+    func listenToFriendRequests(userEmail: String,
+                                handler: @escaping (Result<[String], Error>) -> Void) -> ListenerRegistration {
+        db.collection("friendRequests")
+            .document(userEmail)
+            .addSnapshotListener { snapshot, error in
+                if let error = error {
+                    handler(.failure(error))
+                    return
+                }
+                
+                let requests = snapshot?.data()?["requests"] as? [String] ?? []
+                handler(.success(requests))
+            }
+    }
+    
+    func listenToFriendRequestsSent(userEmail: String,
+                                    handler: @escaping (Result<[String], Error>) -> Void) -> ListenerRegistration {
+        db.collection("friendRequestsSent")
+            .document(userEmail)
+            .addSnapshotListener { snapshot, error in
+                if let error = error {
+                    handler(.failure(error))
+                    return
+                }
+                
+                let requests = snapshot?.data()?["requests"] as? [String] ?? []
+                handler(.success(requests))
+            }
+    }
+    
     func respondInvite(eventId: String, userId: String, action: String) async throws {
         // Check network connection before attempting operation
         try ErrorHandler.shared.validateNetworkConnection()
