@@ -135,7 +135,7 @@ struct EventDetailView: View {
         .fullScreenCover(isPresented: $showEditView, onDismiss: {
             Task {
                 await refreshEventData()
-                await loadEventImage()
+                await loadEventImage(forceRefresh: true)
             }
         }) {
             CreateEventView(
@@ -983,19 +983,19 @@ struct EventDetailView: View {
         }
     }
     
-    private func loadEventImage() async {
-        guard !currentEvent.eventPic.isEmpty,
-              let url = URL(string: currentEvent.eventPic) else { return }
-        
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let image = UIImage(data: data) {
-                await MainActor.run {
-                    eventImage = image
-                }
+    private func loadEventImage(forceRefresh: Bool = false) async {
+        guard !currentEvent.eventPic.isEmpty else {
+            await MainActor.run {
+                eventImage = nil
             }
-        } catch {
-            print("Error loading image: \(error)")
+            return
+        }
+        
+        if let image = await EventImageCache.shared.loadImage(from: currentEvent.eventPic,
+                                                              forceRefresh: forceRefresh) {
+            await MainActor.run {
+                eventImage = image
+            }
         }
     }
 }

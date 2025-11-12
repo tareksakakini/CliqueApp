@@ -53,13 +53,17 @@ struct EventPillView: View {
     }
     
     func loadEventImage(imageUrl: String) async {
-        guard let url = URL(string: imageUrl) else { return }
+        guard !imageUrl.isEmpty else {
+            await MainActor.run {
+                eventImage = nil
+            }
+            return
+        }
         
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            eventImage = UIImage(data: data) 
-        } catch {
-            print("Error loading image: \(error)")
+        if let image = await EventImageCache.shared.loadImage(from: imageUrl) {
+            await MainActor.run {
+                eventImage = image
+            }
         }
     }
 }

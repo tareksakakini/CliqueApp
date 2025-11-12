@@ -375,10 +375,6 @@ struct ModernEventPillView: View {
                 }
                 return
             }
-            // Reset cached image so the UI shows the new photo once it arrives.
-            await MainActor.run {
-                eventImage = nil
-            }
             await loadEventImage(imageUrl: event.eventPic)
         }
         .onReceive(NotificationCenter.default.publisher(for: .dismissPresentedEventDetails)) { _ in
@@ -574,17 +570,17 @@ struct ModernEventPillView: View {
     }
     
     private func loadEventImage(imageUrl: String) async {
-        guard !imageUrl.isEmpty, let url = URL(string: imageUrl) else { return }
-        
-        do {
-            let (data, _) = try await URLSession.shared.data(from: url)
-            if let image = UIImage(data: data) {
-                await MainActor.run {
-                    eventImage = image
-                }
+        guard !imageUrl.isEmpty else {
+            await MainActor.run {
+                eventImage = nil
             }
-        } catch {
-            print("Error loading image: \(error)")
+            return
+        }
+        
+        if let image = await EventImageCache.shared.loadImage(from: imageUrl) {
+            await MainActor.run {
+                eventImage = image
+            }
         }
     }
 }
