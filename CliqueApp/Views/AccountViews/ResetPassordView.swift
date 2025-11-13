@@ -12,9 +12,20 @@ struct ResetPassordView: View {
     @EnvironmentObject private var ud: ViewModel
     @Environment(\.dismiss) private var dismiss
     
-    @State var username: String = ""
-    @State var confirmationMessage: String = " "
-    @State var isLoading: Bool = false
+    @State private var phoneNumber: String = ""
+    @State private var verificationCode: String = ""
+    @State private var newPassword: String = ""
+    @State private var confirmPassword: String = ""
+    @State private var verificationID: String? = nil
+    @State private var confirmationMessage: String = " "
+    @State private var isLoading: Bool = false
+    @State private var isSendingCode: Bool = false
+    @State private var codeStatusMessage: String = ""
+    @State private var codeStatusIsError: Bool = false
+    @State private var isCodeSent: Bool = false
+    @State private var isNewPasswordVisible: Bool = false
+    @State private var isConfirmPasswordVisible: Bool = false
+    @State private var resetWasSuccessful: Bool = false
     
     var body: some View {
         mainContent
@@ -35,6 +46,13 @@ struct ResetPassordView: View {
                         .foregroundColor(.primary)
                     }
                 }
+            }
+            .onChange(of: phoneNumber) { _, _ in
+                verificationID = nil
+                verificationCode = ""
+                isCodeSent = false
+                codeStatusMessage = ""
+                codeStatusIsError = false
             }
     }
     
@@ -73,7 +91,7 @@ struct ResetPassordView: View {
                 .font(.system(size: 32, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
             
-            Text("Enter your email address and we'll send you a link to reset your password")
+            Text("Enter your phone number and we'll text you a verification code to reset your password")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -85,7 +103,54 @@ struct ResetPassordView: View {
     
     private var formCard: some View {
         VStack(spacing: 24) {
-            emailField
+            phoneField
+            
+            sendCodeButton
+            
+            if isCodeSent {
+                ModernTextField(
+                    title: "Verification Code",
+                    text: $verificationCode,
+                    placeholder: "Enter the 6-digit code",
+                    icon: "number.square.fill",
+                    keyboardType: .numberPad
+                )
+            }
+            
+            if !codeStatusMessage.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: codeStatusIsError ? "xmark.octagon.fill" : "checkmark.circle.fill")
+                        .foregroundColor(codeStatusIsError ? .red : .green)
+                    Text(codeStatusMessage)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(codeStatusIsError ? .red : .green)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(codeStatusIsError ? Color.red.opacity(0.08) : Color.green.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(codeStatusIsError ? Color.red.opacity(0.3) : Color.green.opacity(0.3), lineWidth: 1)
+                        )
+                )
+            }
+            
+            ModernPasswordField(
+                title: "New Password",
+                text: $newPassword,
+                placeholder: "Enter your new password",
+                isVisible: $isNewPasswordVisible
+            )
+            
+            ModernPasswordField(
+                title: "Confirm New Password",
+                text: $confirmPassword,
+                placeholder: "Confirm your new password",
+                isVisible: $isConfirmPasswordVisible
+            )
             
             if !confirmationMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 confirmationMessageView
@@ -108,25 +173,56 @@ struct ResetPassordView: View {
         .padding(.bottom, 40)
     }
     
-    private var emailField: some View {
+    private var phoneField: some View {
         ModernTextField(
-            title: "Email Address",
-            text: $username,
-            placeholder: "Enter your email address",
-            icon: "envelope.fill",
-            keyboardType: .emailAddress
+            title: "Phone Number",
+            text: $phoneNumber,
+            placeholder: "Enter your mobile number",
+            icon: "phone.fill",
+            keyboardType: .phonePad
         )
+    }
+    
+    private var sendCodeButton: some View {
+        Button {
+            requestResetCode()
+        } label: {
+            HStack {
+                if isSendingCode {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .tint(.white)
+                } else {
+                    Image(systemName: "message.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                
+                Text(isSendingCode ? "Sending..." : (isCodeSent ? "Resend Code" : "Send Code"))
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(.accent))
+            )
+            .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+        }
+        .disabled(isSendingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .opacity((isSendingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isSendingCode)
     }
     
     private var confirmationMessageView: some View {
         HStack {
-            Image(systemName: "checkmark.circle.fill")
+            Image(systemName: resetWasSuccessful ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.green)
+                .foregroundColor(resetWasSuccessful ? .green : .orange)
             
             Text(confirmationMessage)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundColor(.green)
+                .foregroundColor(resetWasSuccessful ? .green : .orange)
             
             Spacer()
         }
@@ -134,12 +230,39 @@ struct ResetPassordView: View {
         .padding(.vertical, 12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.green.opacity(0.1))
+                .fill((resetWasSuccessful ? Color.green : Color.orange).opacity(0.1))
                 .overlay(
                     RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.green.opacity(0.3), lineWidth: 1)
+                        .stroke((resetWasSuccessful ? Color.green : Color.orange).opacity(0.3), lineWidth: 1)
                 )
         )
+    }
+    
+    private func requestResetCode() {
+        let trimmedPhone = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard PhoneNumberFormatter.canonical(trimmedPhone).count >= 10 else {
+            codeStatusMessage = "Please enter a valid phone number."
+            codeStatusIsError = true
+            return
+        }
+        
+        isSendingCode = true
+        codeStatusMessage = ""
+        codeStatusIsError = false
+        
+        Task {
+            do {
+                let verification = try await ud.requestPhoneVerificationCode(phoneNumber: trimmedPhone)
+                verificationID = verification
+                isCodeSent = true
+                codeStatusMessage = "Verification code sent! Enter it above."
+                codeStatusIsError = false
+            } catch {
+                codeStatusMessage = ErrorHandler.shared.handleError(error, operation: "Send code")
+                codeStatusIsError = true
+            }
+            isSendingCode = false
+        }
     }
     
     private var resetButton: some View {
@@ -147,13 +270,27 @@ struct ResetPassordView: View {
             isLoading = true
             confirmationMessage = " "
             Task {
-                do {
-                    try await AuthManager.shared.sendPasswordReset(email: username)
-                    confirmationMessage = "Reset password email sent successfully"
-                } catch {
-                    confirmationMessage = "Failed to send reset email. Please check your email address."
-                    print("Failed to send password reset email: \(error.localizedDescription)")
+                guard let verificationID = verificationID, !verificationCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    confirmationMessage = "Enter the verification code we texted you."
+                    isLoading = false
+                    return
                 }
+                
+                guard newPassword.count >= 6 else {
+                    confirmationMessage = "New password must be at least 6 characters."
+                    isLoading = false
+                    return
+                }
+                
+                guard newPassword == confirmPassword else {
+                    confirmationMessage = "Passwords do not match."
+                    isLoading = false
+                    return
+                }
+                
+                let result = await ud.resetPasswordWithPhone(newPassword: newPassword, verificationID: verificationID, smsCode: verificationCode)
+                resetWasSuccessful = result.success
+                confirmationMessage = result.success ? "Password updated! You can sign in with your new password." : (result.errorMessage ?? "Failed to reset password.")
                 isLoading = false
             }
         } label: {
@@ -167,7 +304,7 @@ struct ResetPassordView: View {
                         .font(.system(size: 18, weight: .semibold))
                 }
                 
-                Text(isLoading ? "Sending..." : "Send Reset Email")
+                Text(isLoading ? "Resetting..." : "Reset Password")
                     .font(.system(size: 18, weight: .semibold))
             }
             .foregroundColor(.white)
@@ -183,10 +320,10 @@ struct ResetPassordView: View {
             .cornerRadius(16)
             .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
         }
-        .disabled(isLoading || username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        .opacity((isLoading || username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
+        .disabled(isLoading || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .opacity((isLoading || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isLoading)
-        .animation(.easeInOut(duration: 0.2), value: username.isEmpty)
+        .animation(.easeInOut(duration: 0.2), value: phoneNumber.isEmpty)
     }
 }
 

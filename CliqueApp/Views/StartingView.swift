@@ -12,7 +12,6 @@ struct StartingView: View {
     
     @State private var signedInUser: UserModel? = nil
     @State private var isLoading: Bool = true
-    @State private var isEmailVerified: Bool = false
     @State private var logoScale: CGFloat = 1.0
     
     var body: some View {
@@ -20,7 +19,7 @@ struct StartingView: View {
             
             if isLoading {
                 LoadingView
-            } else if let user = signedInUser, isEmailVerified {
+            } else if let user = signedInUser {
                 MainView(user: user)
             } else {
                 LandingView
@@ -30,10 +29,9 @@ struct StartingView: View {
         .navigationBarBackButtonHidden(true)
         .task {
             signedInUser = await vm.getSignedInUser()
-            isEmailVerified = await AuthManager.shared.getEmailVerified()
             
             // If user is already signed in, ensure OneSignal is properly configured
-            if let user = signedInUser, isEmailVerified {
+            if let user = signedInUser {
                 if !isOneSignalConfiguredForUser(expectedUserID: user.uid) {
                     await setupOneSignalForUser(userID: user.uid)
                 }

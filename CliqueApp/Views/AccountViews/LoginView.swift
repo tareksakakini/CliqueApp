@@ -13,12 +13,11 @@ struct LoginView: View {
     @Environment(\.dismiss) private var dismiss
     
     @State var user: UserModel? = nil
-    @State var email: String = ""
+    @State var phoneNumber: String = ""
     @State var password: String = ""
     @State var showWrongMessage: Bool = false
     @State var goToNextScreen: Bool = false
     @State var isPasswordVisible = false
-    @State var isVerified = false
     @State var wrongMessage: String = " "
     @State var isLoading: Bool = false
     
@@ -44,15 +43,11 @@ struct LoginView: View {
             }
             .navigationDestination(isPresented: $goToNextScreen) {
                 if let user {
-                    if isVerified {
-                        MainView(user: user)
-                    } else {
-                        VerifyEmailView(user: user)
-                    }
+                    MainView(user: user)
                 }
             }
             .onAppear {
-                email = ""
+                phoneNumber = ""
                 password = ""
                 wrongMessage = " "
                 isLoading = false
@@ -134,11 +129,11 @@ struct LoginView: View {
     private var formFields: some View {
         VStack(spacing: 20) {
             ModernTextField(
-                title: "Email",
-                text: $email,
-                placeholder: "Enter your email address",
-                icon: "envelope.fill",
-                keyboardType: .emailAddress
+                title: "Phone Number",
+                text: $phoneNumber,
+                placeholder: "Enter your mobile number",
+                icon: "phone.fill",
+                keyboardType: .phonePad
             )
             
             ModernPasswordField(
@@ -217,14 +212,12 @@ struct LoginView: View {
             wrongMessage = " "
             Task {
                 do {
-                    user = try await vm.signInUser(email: email, password: password)
+                    user = try await vm.signInUser(phoneNumber: phoneNumber, password: password)
                     if user != nil {
                         vm.signedInUser = user
-                        isVerified = await AuthManager.shared.getEmailVerified()
-                        // Always navigate to next screen for successful login
                         goToNextScreen = true
                     } else {
-                        wrongMessage = "Email or password is incorrect"
+                        wrongMessage = "Phone number or password is incorrect"
                         isLoading = false
                     }
                 } catch {
@@ -259,10 +252,10 @@ struct LoginView: View {
             .cornerRadius(16)
             .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
         }
-        .disabled(isLoading || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
-        .opacity((isLoading || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty) ? 0.6 : 1.0)
+        .disabled(isLoading || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
+        .opacity((isLoading || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty) ? 0.6 : 1.0)
         .animation(.easeInOut(duration: 0.2), value: isLoading)
-        .animation(.easeInOut(duration: 0.2), value: email.isEmpty)
+        .animation(.easeInOut(duration: 0.2), value: phoneNumber.isEmpty)
         .animation(.easeInOut(duration: 0.2), value: password.isEmpty)
     }
 }
@@ -273,4 +266,3 @@ struct LoginView: View {
             .environmentObject(ViewModel())
     }
 }
-

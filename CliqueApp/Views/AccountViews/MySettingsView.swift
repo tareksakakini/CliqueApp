@@ -391,35 +391,6 @@ struct MySettingsView: View {
                     .fill(Color.black.opacity(0.05))
                     .frame(height: 1)
                 
-                // Email row
-                HStack(spacing: 16) {
-                    Circle()
-                        .fill(Color.black.opacity(0.05))
-                        .frame(width: 40, height: 40)
-                        .overlay(
-                            Image(systemName: "envelope")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.black.opacity(0.7))
-                        )
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Email")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.black.opacity(0.5))
-                            .textCase(.uppercase)
-                            .tracking(0.5)
-                        Text(user.email)
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                    Spacer()
-                }
-                
-                Rectangle()
-                    .fill(Color.black.opacity(0.05))
-                    .frame(height: 1)
-                
                 // Phone Number row
                 HStack(spacing: 16) {
                     Circle()

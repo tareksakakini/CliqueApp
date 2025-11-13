@@ -277,18 +277,21 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func signUpUserAndAddToFireStore(email: String, password: String, fullname: String, username: String, profilePic: String, gender: String, phoneNumber: String = "") async throws -> UserModel? {
+    func signUpUserAndAddToFireStore(phoneNumber: String, password: String, verificationID: String, smsCode: String, fullname: String, username: String, profilePic: String, gender: String) async throws -> UserModel? {
         do {
-            // Check network connection before attempting operation
             try ErrorHandler.shared.validateNetworkConnection()
             
-            let signup_user = try await AuthManager.shared.signUp(email: email, password: password)
+            let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+            let normalizedPhone = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
+            let signupUser = try await AuthManager.shared.signUp(phoneNumber: normalizedPhone, password: password, verificationID: verificationID, smsCode: smsCode)
             let firestoreService = DatabaseManager()
-            try await firestoreService.addUserToFirestore(uid: signup_user.uid, email: email, fullname: fullname, username: username, profilePic: "userDefault", gender: gender, phoneNumber: phoneNumber)
-            let user = try await firestoreService.getUserFromFirestore(uid: signup_user.uid)
+            try await firestoreService.addUserToFirestore(uid: signupUser.uid, contactHandle: normalizedPhone, fullname: fullname, username: username, profilePic: profilePic, gender: gender, phoneNumber: normalizedPhone)
+            let user = try await firestoreService.getUserFromFirestore(uid: signupUser.uid)
             
-            // Set up OneSignal for the new user
+            self.signedInUser = user
+            
             await setupOneSignalForUser(userID: user.uid)
+            _ = await linkPhoneNumberToUser(phoneNumber: normalizedPhone)
             
             return user
         } catch {
@@ -308,12 +311,30 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func signInUser(email: String, password: String) async throws -> UserModel? {
+    func requestPhoneVerificationCode(phoneNumber: String) async throws -> String {
+        try ErrorHandler.shared.validateNetworkConnection()
+        return try await AuthManager.shared.sendVerificationCode(to: phoneNumber)
+    }
+    
+    func resetPasswordWithPhone(newPassword: String, verificationID: String, smsCode: String) async -> (success: Bool, errorMessage: String?) {
+        do {
+            try ErrorHandler.shared.validateNetworkConnection()
+            try await AuthManager.shared.resetPassword(newPassword: newPassword, verificationID: verificationID, smsCode: smsCode)
+            return (true, nil)
+        } catch {
+            let message = ErrorHandler.shared.handleError(error, operation: "Reset password")
+            return (false, message)
+        }
+    }
+    
+    func signInUser(phoneNumber: String, password: String) async throws -> UserModel? {
         do {
             // Check network connection before attempting operation
             try ErrorHandler.shared.validateNetworkConnection()
             
-            let signedInUser = try await AuthManager.shared.signIn(email: email, password: password)
+            let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+            let normalizedPhone = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
+            let signedInUser = try await AuthManager.shared.signIn(phoneNumber: normalizedPhone, password: password)
             let firestoreService = DatabaseManager()
             let user = try await firestoreService.getUserFromFirestore(uid: signedInUser.uid)
             
@@ -643,14 +664,16 @@ class ViewModel: ObservableObject {
         guard let user = signedInUser else {
             return (false, 0, "No user is currently signed in")
         }
+        let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+        let phoneToLink = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
         
         do {
             let firestoreService = DatabaseManager()
-            let linkedEvents = try await firestoreService.linkPhoneNumberToUser(uid: user.uid, phoneNumber: phoneNumber)
+            let linkedEvents = try await firestoreService.linkPhoneNumberToUser(uid: user.uid, phoneNumber: phoneToLink)
             
             // Update the local user object
             DispatchQueue.main.async {
-                self.signedInUser?.phoneNumber = phoneNumber
+                self.signedInUser?.phoneNumber = phoneToLink
             }
             
             // Refresh events to show updated information
@@ -683,70 +706,6 @@ class ViewModel: ObservableObject {
         let minutes = totalMinutes % 60
 
         return (days, hours, minutes)
-    }
-    
-    func checkEmailVerificationStatus() async {
-        do {
-            // Reload the current Firebase Auth user to get latest verification status
-            try await Auth.auth().currentUser?.reload()
-            
-            // Update the signedInUser with latest verification status
-            if let currentUser = Auth.auth().currentUser {
-                let firestoreService = DatabaseManager()
-                let updatedUser = try await firestoreService.getUserFromFirestore(uid: currentUser.uid)
-                var userWithVerification = updatedUser
-                userWithVerification.isEmailVerified = currentUser.isEmailVerified
-                self.signedInUser = userWithVerification
-            }
-        } catch {
-            print("Failed to check email verification status: \(error.localizedDescription)")
-        }
-    }
-    
-    func resendVerificationEmail() async -> (success: Bool, errorMessage: String?) {
-        do {
-            guard let currentUser = Auth.auth().currentUser else {
-                print("No current user found - user may not be signed in")
-                return (false, "Please sign in again to resend verification email.")
-            }
-            
-            // Check if user is already verified
-            try await currentUser.reload()
-            if currentUser.isEmailVerified {
-                print("User email is already verified")
-                return (true, nil)
-            }
-            
-            print("Attempting to send verification email to: \(currentUser.email ?? "unknown")")
-            try await currentUser.sendEmailVerification()
-            print("Verification email sent successfully to: \(currentUser.email ?? "unknown")")
-            return (true, nil)
-        } catch let error as NSError {
-            print("Failed to resend verification email - Error code: \(error.code)")
-            print("Error description: \(error.localizedDescription)")
-            print("Error domain: \(error.domain)")
-            
-            // Check for specific Firebase Auth errors
-            if error.domain == "FIRAuthErrorDomain" {
-                switch error.code {
-                case 17999: // FIRAuthErrorCodeTooManyRequests
-                    print("Too many requests - user should wait before trying again")
-                    return (false, "Too many requests. Please wait a few minutes before trying again.")
-                case 17011: // FIRAuthErrorCodeUserNotFound
-                    print("User not found - may need to sign in again")
-                    return (false, "User session expired. Please sign in again.")
-                case 17020: // FIRAuthErrorCodeNetworkError
-                    print("Network error - check internet connection")
-                    return (false, "Network error. Please check your internet connection and try again.")
-                default:
-                    print("Other Firebase Auth error: \(error.code)")
-                    return (false, "Unable to send email right now. Please wait a bit and try again.")
-                }
-            }
-            
-            // Generic error message for unknown errors
-            return (false, "Unable to send email right now. Please wait a bit and try again.")
-        }
     }
     
     func signoutButtonPressed() async {

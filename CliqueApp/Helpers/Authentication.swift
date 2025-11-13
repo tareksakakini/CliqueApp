@@ -6,68 +6,85 @@ class AuthManager {
     
     private init() {}
     
-    // Signs up a new user with email and password
-    func signUp(email: String, password: String) async throws -> User {
+    // MARK: - SMS Verification
+    
+    func sendVerificationCode(to phoneNumber: String) async throws -> String {
+        let formattedNumber = PhoneNumberFormatter.e164(phoneNumber)
+        guard !formattedNumber.isEmpty else {
+            throw ErrorHandler.AppError.invalidData
+        }
+        
+        return try await withCheckedThrowingContinuation { continuation in
+            PhoneAuthProvider.provider().verifyPhoneNumber(formattedNumber, uiDelegate: nil) { verificationID, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                } else if let verificationID {
+                    continuation.resume(returning: verificationID)
+                } else {
+                    continuation.resume(throwing: ErrorHandler.AppError.operationFailed("Send verification code"))
+                }
+            }
+        }
+    }
+    
+    // MARK: - Authentication
+    
+    func signUp(phoneNumber: String, password: String, verificationID: String, smsCode: String) async throws -> User {
+        let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+        guard !canonicalPhone.isEmpty else {
+            throw ErrorHandler.AppError.invalidData
+        }
+        
+        let phoneCredential = PhoneAuthProvider.provider().credential(withVerificationID: verificationID, verificationCode: smsCode)
+        let phoneSignInResult = try await Auth.auth().signIn(with: phoneCredential)
+        
+        let pseudoEmail = PhoneNumberFormatter.pseudoEmail(for: canonicalPhone)
+        let passwordCredential = EmailAuthProvider.credential(withEmail: pseudoEmail, password: password)
+        
         do {
-            let authResult = try await Auth.auth().createUser(withEmail: email, password: password)
-            try await authResult.user.sendEmailVerification()
-            return authResult.user
+            let linkedResult = try await phoneSignInResult.user.link(with: passwordCredential)
+            return linkedResult.user
+        } catch let error as NSError {
+            if error.code == AuthErrorCode.emailAlreadyInUse.rawValue ||
+                error.code == AuthErrorCode.credentialAlreadyInUse.rawValue {
+                try? signOut()
+                throw ErrorHandler.AppError.authenticationFailed("An account with this phone number already exists. Please sign in instead.")
+            }
+            throw error
+        }
+    }
+    
+    func signIn(phoneNumber: String, password: String) async throws -> User {
+        let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+        let pseudoEmail = PhoneNumberFormatter.pseudoEmail(for: canonicalPhone)
+        let authResult = try await Auth.auth().signIn(withEmail: pseudoEmail, password: password)
+        return authResult.user
+    }
+    
+    func resetPassword(newPassword: String, verificationID: String, smsCode: String) async throws {
+        let phoneCredential = PhoneAuthProvider.provider().credential(withVerificationID: verificationID, verificationCode: smsCode)
+        let phoneSignInResult = try await Auth.auth().signIn(with: phoneCredential)
+        
+        do {
+            try await phoneSignInResult.user.updatePassword(to: newPassword)
+            try signOut()
         } catch {
             throw error
         }
     }
     
-    // Signs in an existing user with email and password
-    func signIn(email: String, password: String) async throws -> User {
-        do {
-            let authResult = try await Auth.auth().signIn(withEmail: email, password: password)
-            return authResult.user
-        } catch {
-            throw error
-        }
-    }
+    // MARK: - Session
     
-    // Signs out the currently logged-in user
     func signOut() throws {
-        do {
-            try Auth.auth().signOut()
-        } catch {
-            throw error
-        }
-    }
-    
-    func sendPasswordReset(email: String) async throws {
-        do {
-            try await Auth.auth().sendPasswordReset(withEmail: email)
-            print("Password reset email sent successfully.")
-        } catch {
-            throw error
-        }
+        try Auth.auth().signOut()
     }
     
     func getSignedInUserID() async -> String? {
-        let signedInUser = Auth.auth().currentUser
-        if let signedInUser = signedInUser {
-            return signedInUser.uid
-        } else {
-            return nil
-        }
+        Auth.auth().currentUser?.uid
     }
     
-    func getEmailVerified() async -> Bool {
-        guard let user = Auth.auth().currentUser else { return false }
-        
-        do {
-            try await user.reload() // Refresh user data from Firebase
-            print("User Email Verified Status: \(user.isEmailVerified)")
-            return user.isEmailVerified
-        } catch {
-            print("Error reloading user: \(error.localizedDescription)")
-            return false
-        }
-    }
+    // MARK: - Password Management
     
-    // Changes the password for the currently authenticated user
     func changePassword(currentPassword: String, newPassword: String) async throws {
         guard let user = Auth.auth().currentUser else {
             throw NSError(domain: "AuthError", code: 0, userInfo: [NSLocalizedDescriptionKey: "No user is currently signed in"])
@@ -77,21 +94,15 @@ class AuthManager {
             throw NSError(domain: "AuthError", code: 0, userInfo: [NSLocalizedDescriptionKey: "User email not available"])
         }
         
-        // Re-authenticate the user with their current password
         let credential = EmailAuthProvider.credential(withEmail: email, password: currentPassword)
         
         do {
-            // First, re-authenticate the user
             try await user.reauthenticate(with: credential)
-            
-            // Then, update the password
             try await user.updatePassword(to: newPassword)
-            
             print("Password changed successfully")
         } catch {
             print("Error changing password: \(error.localizedDescription)")
             throw error
         }
     }
-
 }

@@ -16,11 +16,17 @@ struct SignUpView: View {
     @State var fullname: String = ""
     @State var username: String = ""
     @State var gender: String = "Male"
-    @State var email: String = ""
+    @State var phoneNumber: String = ""
+    @State var verificationCode: String = ""
+    @State private var verificationID: String? = nil
+    @State private var isSendingCode: Bool = false
+    @State private var isCodeSent: Bool = false
+    @State private var codeStatusMessage: String = ""
+    @State private var codeStatusIsError: Bool = false
     @State var password: String = ""
     @State var isAgeChecked: Bool = false
     @State var isAgreePolicy: Bool = false
-    @State var goToVerifyView: Bool = false
+    @State var goToMainView: Bool = false
     @State var isPasswordVisible: Bool = false
     @State private var isCheckingUsername = false
     @State private var isUsernameTaken: Bool? = nil
@@ -51,10 +57,17 @@ struct SignUpView: View {
                     }
                 }
             }
-            .navigationDestination(isPresented: $goToVerifyView) {
+            .navigationDestination(isPresented: $goToMainView) {
                 if let user = user {
-                    VerifyEmailView(user: user)
+                    MainView(user: user)
                 }
+            }
+            .onChange(of: phoneNumber) { _, _ in
+                verificationID = nil
+                verificationCode = ""
+                isCodeSent = false
+                codeStatusMessage = ""
+                codeStatusIsError = false
             }
     }
     
@@ -176,12 +189,45 @@ struct SignUpView: View {
             ModernGenderPicker(selection: $gender)
             
             ModernTextField(
-                title: "Email",
-                text: $email,
-                placeholder: "Enter your email address",
-                icon: "envelope.fill",
-                keyboardType: .emailAddress
+                title: "Phone Number",
+                text: $phoneNumber,
+                placeholder: "Enter your mobile number",
+                icon: "phone.fill",
+                keyboardType: .phonePad
             )
+            
+            sendCodeButton
+            
+            if isCodeSent {
+                ModernTextField(
+                    title: "Verification Code",
+                    text: $verificationCode,
+                    placeholder: "Enter the 6-digit code",
+                    icon: "number.square.fill",
+                    keyboardType: .numberPad
+                )
+            }
+            
+            if !codeStatusMessage.isEmpty {
+                HStack(spacing: 8) {
+                    Image(systemName: codeStatusIsError ? "xmark.octagon.fill" : "checkmark.circle.fill")
+                        .foregroundColor(codeStatusIsError ? .red : .green)
+                    Text(codeStatusMessage)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(codeStatusIsError ? .red : .green)
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(codeStatusIsError ? Color.red.opacity(0.08) : Color.green.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(codeStatusIsError ? Color.red.opacity(0.3) : Color.green.opacity(0.3), lineWidth: 1)
+                        )
+                )
+            }
             
             ModernPasswordField(
                 title: "Password",
@@ -190,6 +236,38 @@ struct SignUpView: View {
                 isVisible: $isPasswordVisible
             )
         }
+    }
+    
+    private var sendCodeButton: some View {
+        Button {
+            requestVerificationCode()
+        } label: {
+            HStack {
+                if isSendingCode {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                        .tint(.white)
+                } else {
+                    Image(systemName: isCodeSent ? "paperplane.fill" : "paperplane")
+                        .font(.system(size: 16, weight: .semibold))
+                }
+                
+                Text(isSendingCode ? "Sending..." : (isCodeSent ? "Resend Code" : "Send Code"))
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(.accent))
+            )
+            .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
+        }
+        .disabled(isSendingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .opacity((isSendingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isSendingCode)
+        .animation(.easeInOut(duration: 0.2), value: phoneNumber)
     }
     
     private var checkboxSection: some View {
@@ -241,9 +319,10 @@ struct SignUpView: View {
                     isCreatingAccount = false
                     return
                 }
-                // Email format validation
-                if !isValidEmail(email) {
-                    alertMessage = "Please enter a valid email address."
+                // Phone validation
+                let trimmedPhone = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !isValidPhoneNumber(trimmedPhone) {
+                    alertMessage = "Please enter a valid phone number."
                     showAlert = true
                     isCreatingAccount = false
                     return
@@ -275,11 +354,19 @@ struct SignUpView: View {
                     isCreatingAccount = false
                     return
                 }
+                guard let verificationID = verificationID, !verificationCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    alertMessage = "Enter the verification code we texted you."
+                    showAlert = true
+                    isCreatingAccount = false
+                    return
+                }
                 
                 do {
                     user = try await vm.signUpUserAndAddToFireStore(
-                        email: email,
+                        phoneNumber: trimmedPhone,
                         password: password,
+                        verificationID: verificationID,
+                        smsCode: verificationCode,
                         fullname: fullname,
                         username: username,
                         profilePic: "userDefault",
@@ -287,11 +374,9 @@ struct SignUpView: View {
                     )
                     if let user = user {
                         vm.signedInUser = user
-                        print("User signed up: \(user.uid)")
-                        goToVerifyView = true
+                        goToMainView = true
                     } else {
-                        // Check for email already in use (Firebase error message)
-                        alertMessage = "Sign up failed. This email may already be in use. Please use a different email or try signing in."
+                        alertMessage = "Sign up failed. Please try again."
                         showAlert = true
                         isCreatingAccount = false
                     }
@@ -339,11 +424,36 @@ struct SignUpView: View {
         }
     }
     
-    // Helper for email validation
-    private func isValidEmail(_ email: String) -> Bool {
-        let emailRegEx = "[A-Z0-9a-z._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}"
-        let emailPred = NSPredicate(format:"SELF MATCHES %@", emailRegEx)
-        return emailPred.evaluate(with: email)
+    // Helper for phone validation
+    private func requestVerificationCode() {
+        let trimmedPhone = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard isValidPhoneNumber(trimmedPhone) else {
+            alertMessage = "Please enter a valid phone number before requesting a code."
+            showAlert = true
+            return
+        }
+        
+        isSendingCode = true
+        codeStatusMessage = ""
+        codeStatusIsError = false
+        
+        Task {
+            do {
+                let verification = try await vm.requestPhoneVerificationCode(phoneNumber: trimmedPhone)
+                verificationID = verification
+                isCodeSent = true
+                codeStatusMessage = "Verification code sent! Enter it below."
+                codeStatusIsError = false
+            } catch {
+                codeStatusMessage = ErrorHandler.shared.handleError(error, operation: "Send code")
+                codeStatusIsError = true
+            }
+            isSendingCode = false
+        }
+    }
+    
+    private func isValidPhoneNumber(_ phone: String) -> Bool {
+        PhoneNumberFormatter.canonical(phone).count >= 10
     }
 }
 

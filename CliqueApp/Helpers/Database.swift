@@ -8,20 +8,23 @@ import FirebaseStorage
 class DatabaseManager {
     private let db = Firestore.firestore()
     
-    func addUserToFirestore(uid: String, email: String, fullname: String, username: String, profilePic: String, gender: String, phoneNumber: String = "") async throws {
+    func addUserToFirestore(uid: String, contactHandle: String, fullname: String, username: String, profilePic: String, gender: String, phoneNumber: String = "") async throws {
         // Check network connection before attempting operation
         try ErrorHandler.shared.validateNetworkConnection()
         let userRef = db.collection("users").document(uid)
+        let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber.isEmpty ? contactHandle : phoneNumber)
+        let storedPhoneNumber = canonicalPhone.isEmpty ? PhoneNumberFormatter.canonical(phoneNumber) : canonicalPhone
+        let storedHandle = canonicalPhone.isEmpty ? contactHandle : canonicalPhone
         
         let userData: [String: Any] = [
             "uid": uid,
-            "email": email,
+            "email": storedHandle,
             "createdAt": Date(),
             "fullname": fullname,
             "username": username,
             "profilePic": profilePic,
             "gender": gender,
-            "phoneNumber": phoneNumber
+            "phoneNumber": storedPhoneNumber
         ]
         
         do {
@@ -627,58 +630,15 @@ class DatabaseManager {
         try ErrorHandler.shared.validateNetworkConnection()
         
         let userRef = db.collection("users").document(uid)
+        let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
         
         do {
-            try await userRef.updateData(["phoneNumber": phoneNumber])
+            try await userRef.updateData(["phoneNumber": canonicalPhone])
             print("Phone number updated successfully!")
         } catch {
             print("Error updating phone number: \(error.localizedDescription)")
             throw error
         }
-    }
-    
-    // Enhanced phone number matching function
-    private func normalizePhoneNumber(_ phone: String) -> String {
-        if phone.isEmpty { return "" }
-        
-        // Remove all non-digits
-        let digitsOnly = phone.replacingOccurrences(of: "[^0-9]", with: "", options: .regularExpression)
-        
-        // Handle US numbers specifically (assuming most numbers are US-based)
-        // If it's 11 digits and starts with 1, remove the 1 (US country code)
-        if digitsOnly.count == 11 && digitsOnly.hasPrefix("1") {
-            return String(digitsOnly.dropFirst())
-        }
-        
-        // If it's 10 digits, assume it's a US number without country code
-        if digitsOnly.count == 10 {
-            return digitsOnly
-        }
-        
-        // For other lengths, return as-is (could be international)
-        return digitsOnly
-    }
-    
-    private func phoneNumbersMatch(_ phone1: String, _ phone2: String) -> Bool {
-        let norm1 = normalizePhoneNumber(phone1)
-        let norm2 = normalizePhoneNumber(phone2)
-        
-        // Direct match after normalization
-        if norm1 == norm2 { return true }
-        
-        // If one number is longer, check if the shorter one is a suffix of the longer one
-        // This handles cases like "2176210670" vs "+12176210670"
-        if norm1.count != norm2.count {
-            let longer = norm1.count > norm2.count ? norm1 : norm2
-            let shorter = norm1.count > norm2.count ? norm2 : norm1
-            
-            // Check if the shorter number matches the end of the longer number
-            if longer.hasSuffix(shorter) && shorter.count >= 10 {
-                return true
-            }
-        }
-        
-        return false
     }
     
     func linkPhoneNumberToUser(uid: String, phoneNumber: String) async throws -> [EventModel] {
@@ -706,9 +666,9 @@ class DatabaseManager {
             let rsvps = eventData["rsvps"] as? [String: Bool] ?? [:]
             
             // Check invited phone numbers
-            if let matchingPhone = event.invitedPhoneNumbers.first(where: { phoneNumbersMatch($0, phoneNumber) }) {
+            if let matchingPhone = event.invitedPhoneNumbers.first(where: { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }) {
                 // Remove from phone invitations and add to regular invitations
-                updatedEvent.invitedPhoneNumbers.removeAll { phoneNumbersMatch($0, phoneNumber) }
+                updatedEvent.invitedPhoneNumbers.removeAll { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }
                 if !updatedEvent.attendeesInvited.contains(user.email) {
                     updatedEvent.attendeesInvited.append(user.email)
                 }
@@ -717,9 +677,9 @@ class DatabaseManager {
             }
             
             // Check accepted phone numbers
-            if let matchingPhone = event.acceptedPhoneNumbers.first(where: { phoneNumbersMatch($0, phoneNumber) }) {
+            if let matchingPhone = event.acceptedPhoneNumbers.first(where: { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }) {
                 // Remove from phone acceptances and add to regular acceptances
-                updatedEvent.acceptedPhoneNumbers.removeAll { phoneNumbersMatch($0, phoneNumber) }
+                updatedEvent.acceptedPhoneNumbers.removeAll { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }
                 if !updatedEvent.attendeesAccepted.contains(user.email) {
                     updatedEvent.attendeesAccepted.append(user.email)
                 }
@@ -728,9 +688,9 @@ class DatabaseManager {
             }
             
             // Check declined phone numbers
-            if let matchingPhone = event.declinedPhoneNumbers.first(where: { phoneNumbersMatch($0, phoneNumber) }) {
+            if let matchingPhone = event.declinedPhoneNumbers.first(where: { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }) {
                 // Remove from phone declines and add to regular declines
-                updatedEvent.declinedPhoneNumbers.removeAll { phoneNumbersMatch($0, phoneNumber) }
+                updatedEvent.declinedPhoneNumbers.removeAll { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }
                 if !updatedEvent.attendeesDeclined.contains(user.email) {
                     updatedEvent.attendeesDeclined.append(user.email)
                 }
@@ -740,7 +700,7 @@ class DatabaseManager {
             
             // Check for phone numbers in rsvps field (legacy support and web app responses)
             for (rsvpPhone, isAccepted) in rsvps {
-                if phoneNumbersMatch(rsvpPhone, phoneNumber) {
+                if PhoneNumberFormatter.numbersMatch(rsvpPhone, phoneNumber) {
                     if isAccepted {
                         // This phone number has accepted the invitation via rsvps
                         if !updatedEvent.attendeesAccepted.contains(user.email) {
