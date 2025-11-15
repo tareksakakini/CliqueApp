@@ -25,7 +25,6 @@ struct MySettingsView: View {
     @State private var isDeletingAccount = false
     @State private var deleteResult: (success: Bool, message: String)? = nil
     @State private var showDeleteResult = false
-    @State private var showChangePassword = false
     @State private var isUploadingImage = false
     @State private var uploadResult: (success: Bool, message: String)? = nil
     @State private var showUploadResult = false
@@ -48,6 +47,9 @@ struct MySettingsView: View {
     @State private var showImageCrop = false
     @State private var showPhoneLinkSheet = false
     @State private var isSigningOut = false
+    @State private var showReauthAlert = false
+    @State private var showReauthFlow = false
+    @State private var pendingDeletion = false
     
     var body: some View {
         mainContent
@@ -558,28 +560,6 @@ struct MySettingsView: View {
     
     private var actionButtons: some View {
         VStack(spacing: 16) {
-            // Change Password Button
-            Button(action: {
-                showChangePassword = true
-            }) {
-                HStack(spacing: 12) {
-                    Image(systemName: "key")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.black.opacity(0.7))
-                    Text("Change Password")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.black.opacity(0.3))
-                }
-                .padding(20)
-                .background(Color.white)
-                .cornerRadius(16)
-                .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
-            }
-            
             // Sign Out Button
             Button(action: {
                 showSignOutConfirmation = true
@@ -643,10 +623,6 @@ struct MySettingsView: View {
             .disabled(isDeletingAccount)
         }
         .padding(.horizontal, 20)
-        .sheet(isPresented: $showChangePassword) {
-            ChangePasswordView()
-                .environmentObject(vm)
-        }
         .confirmationDialog(
             "Sign Out",
             isPresented: $showSignOutConfirmation,
@@ -677,32 +653,38 @@ struct MySettingsView: View {
             titleVisibility: .visible
         ) {
             Button("Delete Account", role: .destructive) {
-                isDeletingAccount = true
-                Task {
-                    do {
-                        // Clear OneSignal association before deleting account
-                        await clearOneSignalForUser()
-                        
-                        let databaseManager = DatabaseManager()
-                        try await databaseManager.deleteUserAccount(uid: user.uid, email: user.email)
-                        deleteResult = (success: true, message: "Account deleted successfully")
-                        goToAccountDeletedScreen = true
-                    } catch {
-                        deleteResult = (success: false, message: "Failed to delete account")
-                        print("Failed to delete user account from database")
-                    }
-                    isDeletingAccount = false
-                    showDeleteResult = true
-                    
-                    // Auto-hide the message after a few seconds
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
-                        showDeleteResult = false
-                    }
-                }
+                attemptAccountDeletion()
             }
             Button("Cancel", role: .cancel) { }
         } message: {
             Text("This action cannot be undone. Your account and all associated data will be permanently deleted.")
+        }
+        .alert("Re-authentication Required", isPresented: $showReauthAlert) {
+            Button("Re-authenticate") {
+                showReauthFlow = true
+            }
+            Button("Cancel", role: .cancel) {
+                pendingDeletion = false
+            }
+        } message: {
+            Text("For security reasons, you need to verify your identity before deleting your account. This only takes a moment.")
+        }
+        .sheet(isPresented: $showReauthFlow) {
+            ReAuthenticationView(
+                phoneNumber: user.phoneNumber,
+                onSuccess: {
+                    showReauthFlow = false
+                    // Retry deletion after successful re-authentication
+                    if pendingDeletion {
+                        attemptAccountDeletion()
+                    }
+                },
+                onCancel: {
+                    showReauthFlow = false
+                    pendingDeletion = false
+                }
+            )
+            .environmentObject(vm)
         }
         .confirmationDialog(
             "Profile Picture",
@@ -836,6 +818,42 @@ struct MySettingsView: View {
     
     // MARK: - Helper Methods
     
+    private func attemptAccountDeletion() {
+        isDeletingAccount = true
+        pendingDeletion = true
+        
+        Task {
+            do {
+                // Clear OneSignal association before deleting account
+                await clearOneSignalForUser()
+                
+                let databaseManager = DatabaseManager()
+                try await databaseManager.deleteUserAccount(uid: user.uid, email: user.email)
+                deleteResult = (success: true, message: "Account deleted successfully")
+                goToAccountDeletedScreen = true
+                pendingDeletion = false
+            } catch let error as NSError {
+                // Check if this is a "requires recent authentication" error
+                if error.domain == "FIRAuthErrorDomain" && error.code == 17014 {
+                    // Show re-authentication alert
+                    showReauthAlert = true
+                } else {
+                    // Other errors
+                    deleteResult = (success: false, message: ErrorHandler.shared.handleError(error, operation: "Delete account"))
+                    print("Failed to delete user account: \(error.localizedDescription)")
+                    pendingDeletion = false
+                    showDeleteResult = true
+                    
+                    // Auto-hide the message after a few seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 4.0) {
+                        showDeleteResult = false
+                    }
+                }
+            }
+            isDeletingAccount = false
+        }
+    }
+    
     private func uploadProfileImage(_ uiImage: UIImage) async {
         isUploadingImage = true
         showUploadResult = false
@@ -944,197 +962,6 @@ struct MySettingsView: View {
 }
 
 // MARK: - Supporting Views
-
-struct ChangePasswordView: View {
-    @EnvironmentObject private var vm: ViewModel
-    @Environment(\.dismiss) private var dismiss
-    
-    @State private var currentPassword = ""
-    @State private var newPassword = ""
-    @State private var confirmPassword = ""
-    @State private var isCurrentPasswordVisible = false
-    @State private var isNewPasswordVisible = false
-    @State private var isConfirmPasswordVisible = false
-    @State private var isChangingPassword = false
-    @State private var showAlert = false
-    @State private var alertMessage = ""
-    
-    var body: some View {
-        NavigationView {
-            ZStack {
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(.systemGray5),
-                        Color(.systemGray4).opacity(0.3),
-                        Color(.systemGray5).opacity(0.8)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                
-                VStack(spacing: 24) {
-                    headerSection
-                    
-                    formCard
-                    
-                    Spacer()
-                }
-                .padding(.horizontal, 20)
-            }
-            .navigationTitle("Change Password")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-    
-    private var headerSection: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "key.fill")
-                .font(.system(size: 60, weight: .medium))
-                .foregroundColor(.accent)
-                .padding(.bottom, 10)
-            
-            Text("Change Password")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(.primary)
-            
-            Text("Enter your current password and choose a new one")
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 16)
-        }
-        .padding(.top, 20)
-    }
-    
-    private var formCard: some View {
-        VStack(spacing: 24) {
-            VStack(spacing: 20) {
-                ModernPasswordField(
-                    title: "Current Password",
-                    text: $currentPassword,
-                    placeholder: "Enter your current password",
-                    isVisible: $isCurrentPasswordVisible
-                )
-                
-                ModernPasswordField(
-                    title: "New Password",
-                    text: $newPassword,
-                    placeholder: "Enter your new password",
-                    isVisible: $isNewPasswordVisible
-                )
-                
-                ModernPasswordField(
-                    title: "Confirm New Password",
-                    text: $confirmPassword,
-                    placeholder: "Confirm your new password",
-                    isVisible: $isConfirmPasswordVisible
-                )
-            }
-            
-            changePasswordButton
-        }
-        .padding(24)
-        .background(
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color(.systemBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24)
-                        .stroke(Color(.accent).opacity(0.1), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 8)
-                .shadow(color: Color(.accent).opacity(0.1), radius: 24, x: 0, y: 12)
-        )
-    }
-    
-    private var changePasswordButton: some View {
-        Button {
-            // Validate passwords
-            if currentPassword.isEmpty {
-                alertMessage = "Please enter your current password."
-                showAlert = true
-                return
-            }
-            
-            if newPassword.count < 6 {
-                alertMessage = "New password must be at least 6 characters."
-                showAlert = true
-                return
-            }
-            
-            if newPassword != confirmPassword {
-                alertMessage = "New passwords do not match."
-                showAlert = true
-                return
-            }
-            
-            isChangingPassword = true
-            
-            Task {
-                let result = await vm.changePassword(currentPassword: currentPassword, newPassword: newPassword)
-                
-                DispatchQueue.main.async {
-                    self.isChangingPassword = false
-                    
-                    if result.success {
-                        self.alertMessage = "Password changed successfully!"
-                        self.currentPassword = ""
-                        self.newPassword = ""
-                        self.confirmPassword = ""
-                    } else {
-                        self.alertMessage = result.errorMessage ?? "Failed to change password"
-                    }
-                    
-                    self.showAlert = true
-                }
-            }
-        } label: {
-            HStack {
-                if isChangingPassword {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                        .foregroundColor(.white)
-                } else {
-                    Image(systemName: "key.fill")
-                        .font(.system(size: 18, weight: .semibold))
-                }
-                
-                Text(isChangingPassword ? "Changing Password..." : "Change Password")
-                    .font(.system(size: 18, weight: .semibold))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [Color(.accent), Color(.accent).opacity(0.8)]),
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .cornerRadius(16)
-            .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
-        }
-        .disabled(isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty)
-        .opacity((isChangingPassword || currentPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) ? 0.6 : 1.0)
-        .animation(.easeInOut(duration: 0.2), value: isChangingPassword)
-        .alert(isPresented: $showAlert) {
-            Alert(title: Text("Password Change"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-        }
-    }
-}
 
 struct PhoneLinkingSheet: View {
     @EnvironmentObject private var vm: ViewModel

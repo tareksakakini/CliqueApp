@@ -12,30 +12,11 @@ struct SignUpView: View {
     @EnvironmentObject private var vm: ViewModel
     @Environment(\.dismiss) private var dismiss
     
-    @State var user: UserModel? = nil
-    @State var fullname: String = ""
-    @State var username: String = ""
-    @State var gender: String = "Male"
-    @State var phoneNumber: String = ""
-    @State var verificationCode: String = ""
+    @State private var phoneNumber: String = ""
     @State private var verificationID: String? = nil
     @State private var isSendingCode: Bool = false
-    @State private var isCodeSent: Bool = false
-    @State private var codeStatusMessage: String = ""
-    @State private var codeStatusIsError: Bool = false
-    @State var password: String = ""
-    @State var isAgeChecked: Bool = false
-    @State var isAgreePolicy: Bool = false
-    @State var goToMainView: Bool = false
-    @State var isPasswordVisible: Bool = false
-    @State private var isCheckingUsername = false
-    @State private var isUsernameTaken: Bool? = nil
-    @FocusState private var usernameFieldIsFocused: Bool
-    @State private var showAlert = false
-    @State private var alertMessage = ""
-    @State private var isCreatingAccount = false
-    
-    let genderOptions = ["Male", "Female", "Other"]
+    @State private var errorMessage: String = " "
+    @State private var goToVerificationScreen: Bool = false
     
     var body: some View {
         mainContent
@@ -57,17 +38,19 @@ struct SignUpView: View {
                     }
                 }
             }
-            .navigationDestination(isPresented: $goToMainView) {
-                if let user = user {
-                    MainView(user: user)
+            .navigationDestination(isPresented: $goToVerificationScreen) {
+                if let verificationID = verificationID {
+                    VerificationCodeView(
+                        phoneNumber: phoneNumber,
+                        verificationID: verificationID,
+                        isSignUp: true
+                    )
                 }
             }
-            .onChange(of: phoneNumber) { _, _ in
+            .onAppear {
+                phoneNumber = ""
+                errorMessage = " "
                 verificationID = nil
-                verificationCode = ""
-                isCodeSent = false
-                codeStatusMessage = ""
-                codeStatusIsError = false
             }
     }
     
@@ -106,7 +89,7 @@ struct SignUpView: View {
                 .font(.system(size: 32, weight: .bold, design: .rounded))
                 .foregroundColor(.primary)
             
-            Text("Join the community and plan amazing outings")
+            Text("Enter your phone number to get started")
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
@@ -118,11 +101,15 @@ struct SignUpView: View {
     
     private var formCard: some View {
         VStack(spacing: 24) {
-            formFields
+            phoneNumberField
             
-            checkboxSection
+            if !errorMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                errorMessageView
+            }
             
-            createAccountButton
+            accountManagement
+            
+            continueButton
         }
         .padding(24)
         .background(
@@ -139,264 +126,95 @@ struct SignUpView: View {
         .padding(.bottom, 40)
     }
     
-    private var formFields: some View {
-        VStack(spacing: 20) {
-            ModernTextField(
-                title: "Full Name",
-                text: $fullname,
-                placeholder: "Enter your full name",
-                icon: "textformat"
-            )
+    private var phoneNumberField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Phone Number")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.primary)
             
-            ModernUsernameField(
-                title: "Username",
-                text: $username,
-                placeholder: "Choose a unique username",
-                isChecking: $isCheckingUsername,
-                isAvailable: Binding(
-                    get: { 
-                        guard let taken = isUsernameTaken else { return nil }
-                        return !taken  // Invert: if taken=false, then available=true
-                    },
-                    set: { newValue in
-                        guard let available = newValue else { 
-                            isUsernameTaken = nil
-                            return 
-                        }
-                        isUsernameTaken = !available  // Invert: if available=true, then taken=false
-                    }
-                ),
-                isFocused: $usernameFieldIsFocused,
-                onUsernameChange: { newValue in
-                    isUsernameTaken = nil
-                    if newValue.isEmpty { return }
-                    isCheckingUsername = true
-                    let currentUsername = newValue
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        if username == currentUsername {
-                            Task {
-                                let taken = await vm.isUsernameTaken(currentUsername)
-                                DispatchQueue.main.async {
-                                    isUsernameTaken = taken
-                                    isCheckingUsername = false
-                                }
-                            }
-                        }
-                    }
-                }
-            )
-            
-            ModernGenderPicker(selection: $gender)
-            
-            ModernTextField(
-                title: "Phone Number",
-                text: $phoneNumber,
-                placeholder: "Enter your mobile number",
-                icon: "phone.fill",
-                keyboardType: .phonePad
-            )
-            
-            sendCodeButton
-            
-            if isCodeSent {
-                ModernTextField(
-                    title: "Verification Code",
-                    text: $verificationCode,
-                    placeholder: "Enter the 6-digit code",
-                    icon: "number.square.fill",
-                    keyboardType: .numberPad
-                )
+            HStack {
+                Image(systemName: "phone.fill")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 20)
+                
+                TextField("Enter your mobile number", text: $phoneNumber)
+                    .font(.system(size: 16, weight: .medium))
+                    .textInputAutocapitalization(.never)
+                    .disableAutocorrection(true)
+                    .keyboardType(.phonePad)
             }
-            
-            if !codeStatusMessage.isEmpty {
-                HStack(spacing: 8) {
-                    Image(systemName: codeStatusIsError ? "xmark.octagon.fill" : "checkmark.circle.fill")
-                        .foregroundColor(codeStatusIsError ? .red : .green)
-                    Text(codeStatusMessage)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(codeStatusIsError ? .red : .green)
-                    Spacer()
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(codeStatusIsError ? Color.red.opacity(0.08) : Color.green.opacity(0.1))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(codeStatusIsError ? Color.red.opacity(0.3) : Color.green.opacity(0.3), lineWidth: 1)
-                        )
-                )
-            }
-            
-            ModernPasswordField(
-                title: "Password",
-                text: $password,
-                placeholder: "Create a secure password",
-                isVisible: $isPasswordVisible
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.systemGray4), lineWidth: 1)
+                    )
             )
         }
     }
     
-    private var sendCodeButton: some View {
+    private var errorMessageView: some View {
+        HStack {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.red)
+            
+            Text(errorMessage)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.red)
+            
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.red.opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.red.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
+    private var accountManagement: some View {
+        HStack {
+            Text("Already have an account?")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
+            
+            Button {
+                dismiss()
+            } label: {
+                Text("Sign In")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.blue)
+            }
+            
+            Spacer()
+        }
+        .padding(.horizontal, 4)
+    }
+    
+    private var continueButton: some View {
         Button {
-            requestVerificationCode()
+            sendCodeAndNavigate()
         } label: {
             HStack {
                 if isSendingCode {
                     ProgressView()
                         .scaleEffect(0.8)
-                        .tint(.white)
-                } else {
-                    Image(systemName: isCodeSent ? "paperplane.fill" : "paperplane")
-                        .font(.system(size: 16, weight: .semibold))
-                }
-                
-                Text(isSendingCode ? "Sending..." : (isCodeSent ? "Resend Code" : "Send Code"))
-                    .font(.system(size: 16, weight: .semibold))
-            }
-            .foregroundColor(.white)
-            .frame(maxWidth: .infinity)
-            .frame(height: 48)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color(.accent))
-            )
-            .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
-        }
-        .disabled(isSendingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        .opacity((isSendingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
-        .animation(.easeInOut(duration: 0.2), value: isSendingCode)
-        .animation(.easeInOut(duration: 0.2), value: phoneNumber)
-    }
-    
-    private var checkboxSection: some View {
-        VStack(spacing: 16) {
-            ModernCheckbox(
-                isChecked: $isAgeChecked,
-                text: "I am 16 years or older"
-            )
-            
-            HStack(spacing: 12) {
-                ModernCheckbox(
-                    isChecked: $isAgreePolicy,
-                    text: ""
-                )
-                
-                HStack(spacing: 4) {
-                    Text("I agree to the")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundColor(.primary)
-                    
-                    NavigationLink(destination: PrivacyPolicyView()) {
-                        Text("Privacy Policy")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.blue)
-                    }
-                }
-                
-                Spacer()
-            }
-        }
-        .padding(.horizontal, 4)
-    }
-    
-    private var createAccountButton: some View {
-        Button {
-            isCreatingAccount = true
-            Task {
-                // Full name validation
-                if fullname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    alertMessage = "Full name cannot be empty."
-                    showAlert = true
-                    isCreatingAccount = false
-                    return
-                }
-                // Username validation
-                if username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    alertMessage = "Username cannot be empty."
-                    showAlert = true
-                    isCreatingAccount = false
-                    return
-                }
-                // Phone validation
-                let trimmedPhone = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !isValidPhoneNumber(trimmedPhone) {
-                    alertMessage = "Please enter a valid phone number."
-                    showAlert = true
-                    isCreatingAccount = false
-                    return
-                }
-                // Password length validation
-                if password.count < 6 {
-                    alertMessage = "Password must be at least 6 characters."
-                    showAlert = true
-                    isCreatingAccount = false
-                    return
-                }
-                // Username availability check
-                if isUsernameTaken == true {
-                    alertMessage = "Username is already taken. Please choose a different username."
-                    showAlert = true
-                    isCreatingAccount = false
-                    return
-                }
-                // Age and policy agreement validation
-                if !isAgeChecked {
-                    alertMessage = "You must confirm that you are 16 years or older."
-                    showAlert = true
-                    isCreatingAccount = false
-                    return
-                }
-                if !isAgreePolicy {
-                    alertMessage = "You must agree to the Privacy Policy."
-                    showAlert = true
-                    isCreatingAccount = false
-                    return
-                }
-                guard let verificationID = verificationID, !verificationCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                    alertMessage = "Enter the verification code we texted you."
-                    showAlert = true
-                    isCreatingAccount = false
-                    return
-                }
-                
-                do {
-                    user = try await vm.signUpUserAndAddToFireStore(
-                        phoneNumber: trimmedPhone,
-                        password: password,
-                        verificationID: verificationID,
-                        smsCode: verificationCode,
-                        fullname: fullname,
-                        username: username,
-                        profilePic: "userDefault",
-                        gender: gender
-                    )
-                    if let user = user {
-                        vm.signedInUser = user
-                        goToMainView = true
-                    } else {
-                        alertMessage = "Sign up failed. Please try again."
-                        showAlert = true
-                        isCreatingAccount = false
-                    }
-                } catch {
-                    alertMessage = ErrorHandler.shared.handleError(error, operation: "Sign up")
-                    showAlert = true
-                    isCreatingAccount = false
-                }
-            }
-        } label: {
-            HStack {
-                if isCreatingAccount {
-                    ProgressView()
-                        .scaleEffect(0.8)
                         .foregroundColor(.white)
                 } else {
-                    Image(systemName: "person.badge.plus")
+                    Image(systemName: "arrow.right.circle.fill")
                         .font(.system(size: 18, weight: .semibold))
                 }
-                Text(isCreatingAccount ? "Creating Account..." : "Create Account")
+                
+                Text(isSendingCode ? "Sending Code..." : "Continue")
                     .font(.system(size: 18, weight: .semibold))
             }
             .foregroundColor(.white)
@@ -412,48 +230,33 @@ struct SignUpView: View {
             .cornerRadius(16)
             .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
         }
-        .disabled(!isAgeChecked || !isAgreePolicy || isUsernameTaken == true || isCheckingUsername || isCreatingAccount)
-        .opacity((!isAgeChecked || !isAgreePolicy || isUsernameTaken == true || isCheckingUsername || isCreatingAccount) ? 0.6 : 1.0)
-        .animation(.easeInOut(duration: 0.2), value: isAgeChecked)
-        .animation(.easeInOut(duration: 0.2), value: isAgreePolicy)
-        .animation(.easeInOut(duration: 0.2), value: isUsernameTaken)
-        .animation(.easeInOut(duration: 0.2), value: isCheckingUsername)
-        .animation(.easeInOut(duration: 0.2), value: isCreatingAccount)
-        .alert(isPresented: $showAlert) {
-            Alert(title: Text("Sign Up Error"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-        }
+        .disabled(isSendingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .opacity((isSendingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isSendingCode)
+        .animation(.easeInOut(duration: 0.2), value: phoneNumber.isEmpty)
     }
     
-    // Helper for phone validation
-    private func requestVerificationCode() {
+    private func sendCodeAndNavigate() {
         let trimmedPhone = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard isValidPhoneNumber(trimmedPhone) else {
-            alertMessage = "Please enter a valid phone number before requesting a code."
-            showAlert = true
+        guard PhoneNumberFormatter.canonical(trimmedPhone).count >= 10 else {
+            errorMessage = "Please enter a valid phone number."
             return
         }
         
         isSendingCode = true
-        codeStatusMessage = ""
-        codeStatusIsError = false
+        errorMessage = " "
         
         Task {
             do {
                 let verification = try await vm.requestPhoneVerificationCode(phoneNumber: trimmedPhone)
                 verificationID = verification
-                isCodeSent = true
-                codeStatusMessage = "Verification code sent! Enter it below."
-                codeStatusIsError = false
+                isSendingCode = false
+                goToVerificationScreen = true
             } catch {
-                codeStatusMessage = ErrorHandler.shared.handleError(error, operation: "Send code")
-                codeStatusIsError = true
+                errorMessage = ErrorHandler.shared.handleError(error, operation: "Send code")
+                isSendingCode = false
             }
-            isSendingCode = false
         }
-    }
-    
-    private func isValidPhoneNumber(_ phone: String) -> Bool {
-        PhoneNumberFormatter.canonical(phone).count >= 10
     }
 }
 

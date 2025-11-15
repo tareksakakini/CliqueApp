@@ -12,14 +12,11 @@ struct LoginView: View {
     @EnvironmentObject private var vm: ViewModel
     @Environment(\.dismiss) private var dismiss
     
-    @State var user: UserModel? = nil
     @State var phoneNumber: String = ""
-    @State var password: String = ""
-    @State var showWrongMessage: Bool = false
-    @State var goToNextScreen: Bool = false
-    @State var isPasswordVisible = false
-    @State var wrongMessage: String = " "
-    @State var isLoading: Bool = false
+    @State private var verificationID: String? = nil
+    @State private var isSendingCode: Bool = false
+    @State private var errorMessage: String = " "
+    @State private var goToVerificationScreen: Bool = false
     
     var body: some View {
         mainContent
@@ -41,16 +38,19 @@ struct LoginView: View {
                     }
                 }
             }
-            .navigationDestination(isPresented: $goToNextScreen) {
-                if let user {
-                    MainView(user: user)
+            .navigationDestination(isPresented: $goToVerificationScreen) {
+                if let verificationID = verificationID {
+                    VerificationCodeView(
+                        phoneNumber: phoneNumber,
+                        verificationID: verificationID,
+                        isSignUp: false
+                    )
                 }
             }
             .onAppear {
                 phoneNumber = ""
-                password = ""
-                wrongMessage = " "
-                isLoading = false
+                errorMessage = " "
+                verificationID = nil
             }
     }
     
@@ -101,15 +101,15 @@ struct LoginView: View {
     
     private var formCard: some View {
         VStack(spacing: 24) {
-            formFields
+            phoneNumberField
             
-            if !wrongMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                errorMessage
+            if !errorMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                errorMessageView
             }
             
             accountManagement
             
-            signInButton
+            continueButton
         }
         .padding(24)
         .background(
@@ -126,32 +126,44 @@ struct LoginView: View {
         .padding(.bottom, 40)
     }
     
-    private var formFields: some View {
-        VStack(spacing: 20) {
-            ModernTextField(
-                title: "Phone Number",
-                text: $phoneNumber,
-                placeholder: "Enter your mobile number",
-                icon: "phone.fill",
-                keyboardType: .phonePad
-            )
+    private var phoneNumberField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Phone Number")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.primary)
             
-            ModernPasswordField(
-                title: "Password",
-                text: $password,
-                placeholder: "Enter your password",
-                isVisible: $isPasswordVisible
+            HStack {
+                Image(systemName: "phone.fill")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.secondary)
+                    .frame(width: 20)
+                
+                TextField("Enter your mobile number", text: $phoneNumber)
+                    .font(.system(size: 16, weight: .medium))
+                    .textInputAutocapitalization(.never)
+                    .disableAutocorrection(true)
+                    .keyboardType(.phonePad)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemGray6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color(.systemGray4), lineWidth: 1)
+                    )
             )
         }
     }
     
-    private var errorMessage: some View {
+    private var errorMessageView: some View {
         HStack {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.red)
             
-            Text(wrongMessage)
+            Text(errorMessage)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.red)
             
@@ -170,73 +182,39 @@ struct LoginView: View {
     }
     
     private var accountManagement: some View {
-        VStack(spacing: 12) {
-            HStack {
-                Text("Don't have an account?")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
-                
-                NavigationLink {
-                    SignUpView()
-                } label: {
-                    Text("Create Account")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.blue)
-                }
-                
-                Spacer()
+        HStack {
+            Text("Don't have an account?")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.secondary)
+            
+            NavigationLink {
+                SignUpView()
+            } label: {
+                Text("Create Account")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.blue)
             }
             
-            HStack {
-                Text("Forgot your password?")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.secondary)
-                
-                NavigationLink {
-                    ResetPassordView()
-                } label: {
-                    Text("Reset Password")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.blue)
-                }
-                
-                Spacer()
-            }
+            Spacer()
         }
         .padding(.horizontal, 4)
     }
     
-    private var signInButton: some View {
+    private var continueButton: some View {
         Button {
-            isLoading = true
-            wrongMessage = " "
-            Task {
-                do {
-                    user = try await vm.signInUser(phoneNumber: phoneNumber, password: password)
-                    if user != nil {
-                        vm.signedInUser = user
-                        goToNextScreen = true
-                    } else {
-                        wrongMessage = "Phone number or password is incorrect"
-                        isLoading = false
-                    }
-                } catch {
-                    wrongMessage = ErrorHandler.shared.handleError(error, operation: "Sign in")
-                    isLoading = false
-                }
-            }
+            sendCodeAndNavigate()
         } label: {
             HStack {
-                if isLoading {
+                if isSendingCode {
                     ProgressView()
                         .scaleEffect(0.8)
                         .foregroundColor(.white)
                 } else {
-                    Image(systemName: "person.fill")
+                    Image(systemName: "arrow.right.circle.fill")
                         .font(.system(size: 18, weight: .semibold))
                 }
                 
-                Text(isLoading ? "Signing In..." : "Sign In")
+                Text(isSendingCode ? "Sending Code..." : "Continue")
                     .font(.system(size: 18, weight: .semibold))
             }
             .foregroundColor(.white)
@@ -252,11 +230,33 @@ struct LoginView: View {
             .cornerRadius(16)
             .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
         }
-        .disabled(isLoading || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty)
-        .opacity((isLoading || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || password.isEmpty) ? 0.6 : 1.0)
-        .animation(.easeInOut(duration: 0.2), value: isLoading)
+        .disabled(isSendingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        .opacity((isSendingCode || phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ? 0.6 : 1.0)
+        .animation(.easeInOut(duration: 0.2), value: isSendingCode)
         .animation(.easeInOut(duration: 0.2), value: phoneNumber.isEmpty)
-        .animation(.easeInOut(duration: 0.2), value: password.isEmpty)
+    }
+    
+    private func sendCodeAndNavigate() {
+        let trimmedPhone = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard PhoneNumberFormatter.canonical(trimmedPhone).count >= 10 else {
+            errorMessage = "Please enter a valid phone number."
+            return
+        }
+        
+        isSendingCode = true
+        errorMessage = " "
+        
+        Task {
+            do {
+                let verification = try await vm.requestPhoneVerificationCode(phoneNumber: trimmedPhone)
+                verificationID = verification
+                isSendingCode = false
+                goToVerificationScreen = true
+            } catch {
+                errorMessage = ErrorHandler.shared.handleError(error, operation: "Send code")
+                isSendingCode = false
+            }
+        }
     }
 }
 

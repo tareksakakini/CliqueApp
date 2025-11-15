@@ -44,6 +44,31 @@ class ErrorHandler {
         // Check for specific error types
         let errorString = error.localizedDescription.lowercased()
         
+        // Firebase Phone Auth specific errors
+        if errorString.contains("too-many-requests") || errorString.contains("quota") || errorString.contains("unusual activity") {
+            return "Too many verification attempts. Please wait 15-60 minutes, or use a test phone number for development (see FIREBASE_TEST_NUMBERS.md)."
+        }
+        
+        if errorString.contains("invalid-phone-number") {
+            return "Invalid phone number format. Please check and try again."
+        }
+        
+        if errorString.contains("missing-phone-number") {
+            return "Please enter a phone number."
+        }
+        
+        if errorString.contains("captcha") || errorString.contains("recaptcha") {
+            return "Verification failed. Please make sure you have a stable internet connection and try again."
+        }
+        
+        if errorString.contains("invalid-verification") || errorString.contains("session-expired") {
+            return "Verification code expired or invalid. Please request a new code."
+        }
+        
+        if errorString.contains("missing-client-identifier") || errorString.contains("app-not-authorized") {
+            return "App configuration error. Please contact support."
+        }
+        
         // Network-related errors
         if errorString.contains("network") || 
            errorString.contains("internet") || 
@@ -59,8 +84,8 @@ class ErrorHandler {
             return AppError.permissionDenied.errorDescription ?? "Permission error"
         }
         
-        // Return generic error with operation context
-        return AppError.operationFailed(operation).errorDescription ?? "Request failed"
+        // Return generic error with operation context, but include the actual error for debugging
+        return "\(AppError.operationFailed(operation).errorDescription ?? "Request failed") (\(error.localizedDescription))"
     }
     
     /// Validates network connection before performing operation

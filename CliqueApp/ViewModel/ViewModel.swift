@@ -277,13 +277,13 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func signUpUserAndAddToFireStore(phoneNumber: String, password: String, verificationID: String, smsCode: String, fullname: String, username: String, profilePic: String, gender: String) async throws -> UserModel? {
+    func signUpUserAndAddToFireStore(phoneNumber: String, verificationID: String, smsCode: String, fullname: String, username: String, profilePic: String, gender: String) async throws -> UserModel? {
         do {
             try ErrorHandler.shared.validateNetworkConnection()
             
             let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
             let normalizedPhone = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
-            let signupUser = try await AuthManager.shared.signUp(phoneNumber: normalizedPhone, password: password, verificationID: verificationID, smsCode: smsCode)
+            let signupUser = try await AuthManager.shared.signUp(phoneNumber: normalizedPhone, verificationID: verificationID, smsCode: smsCode)
             let firestoreService = DatabaseManager()
             try await firestoreService.addUserToFirestore(uid: signupUser.uid, contactHandle: normalizedPhone, fullname: fullname, username: username, profilePic: profilePic, gender: gender, phoneNumber: normalizedPhone)
             let user = try await firestoreService.getUserFromFirestore(uid: signupUser.uid)
@@ -316,25 +316,14 @@ class ViewModel: ObservableObject {
         return try await AuthManager.shared.sendVerificationCode(to: phoneNumber)
     }
     
-    func resetPasswordWithPhone(newPassword: String, verificationID: String, smsCode: String) async -> (success: Bool, errorMessage: String?) {
-        do {
-            try ErrorHandler.shared.validateNetworkConnection()
-            try await AuthManager.shared.resetPassword(newPassword: newPassword, verificationID: verificationID, smsCode: smsCode)
-            return (true, nil)
-        } catch {
-            let message = ErrorHandler.shared.handleError(error, operation: "Reset password")
-            return (false, message)
-        }
-    }
-    
-    func signInUser(phoneNumber: String, password: String) async throws -> UserModel? {
+    func signInUser(phoneNumber: String, verificationID: String, smsCode: String) async throws -> UserModel? {
         do {
             // Check network connection before attempting operation
             try ErrorHandler.shared.validateNetworkConnection()
             
             let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
             let normalizedPhone = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
-            let signedInUser = try await AuthManager.shared.signIn(phoneNumber: normalizedPhone, password: password)
+            let signedInUser = try await AuthManager.shared.signIn(phoneNumber: normalizedPhone, verificationID: verificationID, smsCode: smsCode)
             let firestoreService = DatabaseManager()
             let user = try await firestoreService.getUserFromFirestore(uid: signedInUser.uid)
             
@@ -770,31 +759,6 @@ class ViewModel: ObservableObject {
         } catch {
             print("Error updating username: \(error.localizedDescription)")
             return (false, error.localizedDescription)
-        }
-    }
-    
-    func changePassword(currentPassword: String, newPassword: String) async -> (success: Bool, errorMessage: String?) {
-        do {
-            try await AuthManager.shared.changePassword(currentPassword: currentPassword, newPassword: newPassword)
-            return (true, nil)
-        } catch {
-            print("Error changing password: \(error.localizedDescription)")
-            
-            // Provide user-friendly error messages
-            let errorMessage: String
-            if error.localizedDescription.contains("wrong-password") || error.localizedDescription.contains("invalid-credential") {
-                errorMessage = "Current password is incorrect. Please try again."
-            } else if error.localizedDescription.contains("weak-password") {
-                errorMessage = "New password is too weak. Please choose a stronger password."
-            } else if error.localizedDescription.contains("requires-recent-login") {
-                errorMessage = "For security reasons, please sign out and sign back in, then try changing your password again."
-            } else if error.localizedDescription.contains("network") || error.localizedDescription.contains("internet") {
-                errorMessage = "Network error. Please check your internet connection and try again."
-            } else {
-                errorMessage = "Failed to change password. Please try again."
-            }
-            
-            return (false, errorMessage)
         }
     }
     
