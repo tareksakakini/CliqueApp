@@ -296,8 +296,13 @@ class ViewModel: ObservableObject {
             
             self.signedInUser = user
             
-            await setupOneSignalForUser(userID: user.uid)
-            _ = await linkPhoneNumberToUser(phoneNumber: normalizedPhone)
+            // Run OneSignal setup and phone linking in parallel for faster completion
+            async let oneSignalSetup: Void = setupOneSignalForUser(userID: user.uid)
+            async let phoneLink: (success: Bool, linkedEventsCount: Int, errorMessage: String?) = linkPhoneNumberToUser(phoneNumber: normalizedPhone)
+            
+            // Wait for both operations to complete
+            _ = await oneSignalSetup
+            _ = await phoneLink
             
             return user
         } catch {
@@ -346,8 +351,13 @@ class ViewModel: ObservableObject {
             self.signedInUser = user
             
             // Set up OneSignal and link phone number to existing event invitations
-            await setupOneSignalForUser(userID: user.uid)
-            _ = await linkPhoneNumberToUser(phoneNumber: normalizedPhone)
+            // Run these in parallel since they don't depend on each other
+            async let oneSignalSetup: Void = setupOneSignalForUser(userID: user.uid)
+            async let phoneLink: (success: Bool, linkedEventsCount: Int, errorMessage: String?) = linkPhoneNumberToUser(phoneNumber: normalizedPhone)
+            
+            // Wait for both operations to complete
+            _ = await oneSignalSetup
+            _ = await phoneLink
             
             return user
         } catch {
