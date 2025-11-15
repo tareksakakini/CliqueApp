@@ -968,6 +968,7 @@ struct PhoneLinkingSheet: View {
     @Binding var user: UserModel
     @Binding var isPresented: Bool
     @State private var phoneNumber: String = ""
+    @State private var selectedCountry: Country = Country.default
     @State private var isLinking: Bool = false
     @State private var showResult: Bool = false
     @State private var linkingResult: (success: Bool, linkedEventsCount: Int, errorMessage: String?) = (false, 0, nil)
@@ -1026,34 +1027,12 @@ struct PhoneLinkingSheet: View {
     
     private var phoneInputSection: some View {
         VStack(spacing: 20) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Phone Number")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                HStack {
-                    Image(systemName: "phone.fill")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.secondary)
-                        .frame(width: 20)
-                    
-                    TextField("Enter your phone number", text: $phoneNumber)
-                        .font(.system(size: 16, weight: .medium))
-                        .keyboardType(.phonePad)
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 16)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(.systemGray4), lineWidth: 1)
-                        )
-                )
-            }
+            PhoneNumberFieldWithCountryCode(
+                title: "Phone Number",
+                phoneNumber: $phoneNumber,
+                selectedCountry: $selectedCountry,
+                placeholder: "Enter your phone number"
+            )
             
             Text("We'll search for event invitations sent to this number and link them to your account.")
                 .font(.system(size: 12, weight: .regular))
@@ -1131,17 +1110,23 @@ struct PhoneLinkingSheet: View {
     }
     
     private func linkPhoneNumber() {
-        guard !phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let trimmedPhone = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).filter { $0.isNumber }
+        guard !trimmedPhone.isEmpty else { return }
+        
+        let fullPhoneNumber = PhoneNumberFormatter.e164(
+            countryCode: selectedCountry.dialCode,
+            phoneNumber: trimmedPhone
+        )
         
         isLinking = true
         Task {
-            let result = await vm.linkPhoneNumberToUser(phoneNumber: phoneNumber)
+            let result = await vm.linkPhoneNumberToUser(phoneNumber: fullPhoneNumber)
             DispatchQueue.main.async {
                 self.linkingResult = result
                 self.isLinking = false
                 self.showResult = true
                 if result.success {
-                    self.user.phoneNumber = phoneNumber
+                    self.user.phoneNumber = fullPhoneNumber
                 }
             }
         }

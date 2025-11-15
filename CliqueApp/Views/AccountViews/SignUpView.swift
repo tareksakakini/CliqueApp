@@ -13,6 +13,7 @@ struct SignUpView: View {
     @Environment(\.dismiss) private var dismiss
     
     @State private var phoneNumber: String = ""
+    @State private var selectedCountry: Country = Country.default
     @State private var verificationID: String? = nil
     @State private var isSendingCode: Bool = false
     @State private var errorMessage: String = " "
@@ -40,8 +41,12 @@ struct SignUpView: View {
             }
             .navigationDestination(isPresented: $goToVerificationScreen) {
                 if let verificationID = verificationID {
+                    let fullPhoneNumber = PhoneNumberFormatter.e164(
+                        countryCode: selectedCountry.dialCode,
+                        phoneNumber: phoneNumber
+                    )
                     VerificationCodeView(
-                        phoneNumber: phoneNumber,
+                        phoneNumber: fullPhoneNumber,
                         verificationID: verificationID,
                         isSignUp: true
                     )
@@ -127,34 +132,12 @@ struct SignUpView: View {
     }
     
     private var phoneNumberField: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Phone Number")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.primary)
-            
-            HStack {
-                Image(systemName: "phone.fill")
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundColor(.secondary)
-                    .frame(width: 20)
-                
-                TextField("Enter your mobile number", text: $phoneNumber)
-                    .font(.system(size: 16, weight: .medium))
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-                    .keyboardType(.phonePad)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.systemGray6))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color(.systemGray4), lineWidth: 1)
-                    )
-            )
-        }
+        PhoneNumberFieldWithCountryCode(
+            title: "Phone Number",
+            phoneNumber: $phoneNumber,
+            selectedCountry: $selectedCountry,
+            placeholder: "Enter your mobile number"
+        )
     }
     
     private var errorMessageView: some View {
@@ -237,18 +220,23 @@ struct SignUpView: View {
     }
     
     private func sendCodeAndNavigate() {
-        let trimmedPhone = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard PhoneNumberFormatter.canonical(trimmedPhone).count >= 10 else {
+        let trimmedPhone = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines).filter { $0.isNumber }
+        guard !trimmedPhone.isEmpty else {
             errorMessage = "Please enter a valid phone number."
             return
         }
+        
+        let fullPhoneNumber = PhoneNumberFormatter.e164(
+            countryCode: selectedCountry.dialCode,
+            phoneNumber: trimmedPhone
+        )
         
         isSendingCode = true
         errorMessage = " "
         
         Task {
             do {
-                let verification = try await vm.requestPhoneVerificationCode(phoneNumber: trimmedPhone)
+                let verification = try await vm.requestPhoneVerificationCode(phoneNumber: fullPhoneNumber)
                 verificationID = verification
                 isSendingCode = false
                 goToVerificationScreen = true
