@@ -493,7 +493,7 @@ struct FriendDetailsView: View {
             try await vm.getUserFriendRequests(user_email: viewingUser.email)
             
             // Update badge for the user who accepted
-            await BadgeManager.shared.updateBadge(for: viewingUser.email)
+            await BadgeManager.shared.updateBadge(for: viewingUser.uid)
             
             // Send notification with badge to the user who sent the request
             let route = NotificationRouteBuilder.friends(section: .friends)
@@ -528,7 +528,7 @@ struct FriendDetailsView: View {
             try await vm.getUserFriendRequests(user_email: viewingUser.email)
             
             // Update badge for the user who rejected
-            await BadgeManager.shared.updateBadge(for: viewingUser.email)
+            await BadgeManager.shared.updateBadge(for: viewingUser.uid)
         } catch {
             print("Failed to reject friend request: \(error.localizedDescription)")
             let errorMessage = ErrorHandler.shared.handleError(error, operation: "Decline friend request")
@@ -638,11 +638,11 @@ struct FriendsFriendsListView: View {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(friendsList.sorted { username1, username2 in
-                                let user1 = vm.getUser(username: username1)?.fullname ?? ""
-                                let user2 = vm.getUser(username: username2)?.fullname ?? ""
+                                let user1 = vm.getUser(by: username1)?.fullname ?? ""
+                                let user2 = vm.getUser(by: username2)?.fullname ?? ""
                                 return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
                             }, id: \.self) { friendUsername in
-                                if let friendUser = vm.getUser(username: friendUsername) {
+                                if let friendUser = vm.getUser(by: friendUsername) {
                                     FriendListItemView(
                                         friend: friendUser, 
                                         viewingUser: friend,

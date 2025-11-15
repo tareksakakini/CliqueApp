@@ -92,7 +92,11 @@ class ViewModel: ObservableObject {
         }
         
         // Update badge after refreshing data
-        await BadgeManager.shared.updateBadge(for: user_email)
+        if let identifier = signedInUser?.uid, !identifier.isEmpty {
+            await BadgeManager.shared.updateBadge(for: identifier)
+        } else {
+            await BadgeManager.shared.updateBadge(for: user_email)
+        }
     }
     
     func getUserFriends(user_email: String) async throws {
@@ -170,13 +174,19 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func getUser(username: String) -> UserModel? {
-        for user in self.users {
-            if user.email == username {
-                return user
-            }
+    func getUser(by identifier: String) -> UserModel? {
+        guard !identifier.isEmpty else { return nil }
+        
+        if let match = users.first(where: { $0.uid == identifier }) {
+            return match
         }
-        return nil
+        
+        if let match = users.first(where: { $0.email.caseInsensitiveCompare(identifier) == .orderedSame }) {
+            return match
+        }
+        
+        let normalized = identifier.lowercased()
+        return users.first { $0.username.lowercased() == normalized }
     }
     
     func stringMatchUsers(query: String, viewingUser: UserModel, isFriend: Bool = false) -> [UserModel] {
@@ -185,7 +195,7 @@ class ViewModel: ObservableObject {
         
         if isFriend {
             for username in self.friendship {
-                if let curr_user = self.getUser(username: username) {
+                if let curr_user = self.getUser(by: username) {
                     users_to_check += [curr_user]
                 }
             }
@@ -250,17 +260,17 @@ class ViewModel: ObservableObject {
         let notificationText = "\(user.fullname) deleted the event \(event.title)"
         
         // Send notifications to all invitees except the host
-        for inviteeEmail in allInvitees {
-            if inviteeEmail != user.email { // Don't notify the host
-                if let invitee = self.getUser(username: inviteeEmail) {
-                    let inviteView = event.attendeesInvited.contains(inviteeEmail) || event.attendeesDeclined.contains(inviteeEmail)
+        for inviteeId in allInvitees {
+            if inviteeId != user.uid { // Don't notify the host
+                if let invitee = self.getUser(by: inviteeId) {
+                    let inviteView = event.attendeesInvited.contains(inviteeId) || event.attendeesDeclined.contains(inviteeId)
                     let preferredTab: NotificationRouter.NotificationTab = inviteView ? .invites : .myEvents
                     let route = NotificationRouteBuilder.tab(preferredTab)
                     await sendPushNotificationWithBadge(notificationText: notificationText,
                                                         receiverUID: invitee.uid,
                                                         receiverEmail: invitee.email,
                                                         route: route)
-                    print("Sent event deletion notification to: \(inviteeEmail)")
+                    print("Sent event deletion notification to: \(inviteeId)")
                 }
             }
         }
@@ -288,17 +298,19 @@ class ViewModel: ObservableObject {
             try ErrorHandler.shared.validateNetworkConnection()
             
             let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+            let e164Phone = PhoneNumberFormatter.e164(phoneNumber)
             let normalizedPhone = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
+            let storedPhone = e164Phone.isEmpty ? normalizedPhone : e164Phone
             let signupUser = try await AuthManager.shared.signUp(phoneNumber: normalizedPhone, verificationID: verificationID, smsCode: smsCode)
             let firestoreService = DatabaseManager()
-            try await firestoreService.addUserToFirestore(uid: signupUser.uid, contactHandle: normalizedPhone, fullname: fullname, username: username, profilePic: profilePic, gender: gender, phoneNumber: normalizedPhone)
+            try await firestoreService.addUserToFirestore(uid: signupUser.uid, contactHandle: normalizedPhone, fullname: fullname, username: username, profilePic: profilePic, gender: gender, phoneNumber: storedPhone)
             let user = try await firestoreService.getUserFromFirestore(uid: signupUser.uid)
             
             self.signedInUser = user
             
             // Run OneSignal setup and phone linking in parallel for faster completion
             async let oneSignalSetup: Void = setupOneSignalForUser(userID: user.uid)
-            async let phoneLink: (success: Bool, linkedEventsCount: Int, errorMessage: String?) = linkPhoneNumberToUser(phoneNumber: normalizedPhone)
+            async let phoneLink: (success: Bool, linkedEventsCount: Int, errorMessage: String?) = linkPhoneNumberToUser(phoneNumber: storedPhone)
             
             // Wait for both operations to complete
             _ = await oneSignalSetup
@@ -321,7 +333,9 @@ class ViewModel: ObservableObject {
             }
             
             let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+            let e164Phone = PhoneNumberFormatter.e164(phoneNumber)
             let normalizedPhone = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
+            let storedPhone = e164Phone.isEmpty ? normalizedPhone : e164Phone
             
             // Validate that phone number is not empty
             guard !normalizedPhone.isEmpty else {
@@ -333,7 +347,7 @@ class ViewModel: ObservableObject {
             
             // Add user info to Firestore
             let firestoreService = DatabaseManager()
-            try await firestoreService.addUserToFirestore(uid: currentUser, contactHandle: normalizedPhone, fullname: fullname, username: username, profilePic: profilePic, gender: gender, phoneNumber: normalizedPhone)
+            try await firestoreService.addUserToFirestore(uid: currentUser, contactHandle: normalizedPhone, fullname: fullname, username: username, profilePic: profilePic, gender: gender, phoneNumber: storedPhone)
             
             print("✅ User document created in Firestore")
             
@@ -353,7 +367,7 @@ class ViewModel: ObservableObject {
             // Set up OneSignal and link phone number to existing event invitations
             // Run these in parallel since they don't depend on each other
             async let oneSignalSetup: Void = setupOneSignalForUser(userID: user.uid)
-            async let phoneLink: (success: Bool, linkedEventsCount: Int, errorMessage: String?) = linkPhoneNumberToUser(phoneNumber: normalizedPhone)
+            async let phoneLink: (success: Bool, linkedEventsCount: Int, errorMessage: String?) = linkPhoneNumberToUser(phoneNumber: storedPhone)
             
             // Wait for both operations to complete
             _ = await oneSignalSetup
@@ -432,13 +446,13 @@ class ViewModel: ObservableObject {
     func acceptButtonPressed(user: UserModel, event: EventModel) async throws {
         do {
             let databaseManager = DatabaseManager()
-            try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "accept")
+            try await databaseManager.respondInvite(eventId: event.id, userId: user.uid, action: "accept")
             print("User successfully moved from inviteeAttended to inviteeAccepted!")
             
             // Update badge for the user who accepted
-            await BadgeManager.shared.updateBadge(for: user.email)
+            await BadgeManager.shared.updateBadge(for: user.uid)
             
-            if let host = self.getUser(username: event.host), !event.id.isEmpty {
+            if let host = self.getUser(by: event.host), !event.id.isEmpty {
                 let notificationText: String = "\(user.fullname) is coming to your event!"
                 let route = NotificationRouteBuilder.eventDetail(eventId: event.id,
                                                                  inviteView: false,
@@ -457,14 +471,14 @@ class ViewModel: ObservableObject {
     func declineButtonPressed(user: UserModel, event: EventModel) async throws {
         do {
             let databaseManager = DatabaseManager()
-            try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "reject")
+            try await databaseManager.respondInvite(eventId: event.id, userId: user.uid, action: "reject")
             print("User successfully removed from inviteeAttended!")
             
             // Update badge for the user who declined
-            await BadgeManager.shared.updateBadge(for: user.email)
+            await BadgeManager.shared.updateBadge(for: user.uid)
             
-            if let host = self.getUser(username: event.host), !event.id.isEmpty {
-                if event.host != user.email {
+            if let host = self.getUser(by: event.host), !event.id.isEmpty {
+                if event.host != user.uid {
                     let notificationText: String = "\(user.fullname) cannot make it to your event."
                     let route = NotificationRouteBuilder.eventDetail(eventId: event.id,
                                                                      inviteView: false,
@@ -484,14 +498,14 @@ class ViewModel: ObservableObject {
     func leaveButtonPressed(user: UserModel, event: EventModel) async throws {
         do {
             let databaseManager = DatabaseManager()
-            try await databaseManager.respondInvite(eventId: event.id, userId: user.email, action: "leave")
+            try await databaseManager.respondInvite(eventId: event.id, userId: user.uid, action: "leave")
             print("User successfully removed from inviteeAttended!")
             
             // Update badge for the user who left
-            await BadgeManager.shared.updateBadge(for: user.email)
+            await BadgeManager.shared.updateBadge(for: user.uid)
             
-            if let host = self.getUser(username: event.host), !event.id.isEmpty {
-                if event.host != user.email {
+            if let host = self.getUser(by: event.host), !event.id.isEmpty {
+                if event.host != user.uid {
                     let notificationText: String = "\(user.fullname) cannot make it anymore to your event."
                     let route = NotificationRouteBuilder.eventDetail(eventId: event.id,
                                                                      inviteView: false,
@@ -523,7 +537,7 @@ class ViewModel: ObservableObject {
                     attendeesAccepted: event.attendeesAccepted,
                     attendeesInvited: event.attendeesInvited,
                     attendeesDeclined: event.attendeesDeclined,
-                    host: user.email,
+                    host: user.uid,
                     invitedPhoneNumbers: event.invitedPhoneNumbers,
                     acceptedPhoneNumbers: event.acceptedPhoneNumbers,
                     declinedPhoneNumbers: event.declinedPhoneNumbers,
@@ -541,7 +555,7 @@ class ViewModel: ObservableObject {
                     attendeesAccepted: event.attendeesAccepted,
                     attendeesInvited: event.attendeesInvited,
                     attendeesDeclined: event.attendeesDeclined,
-                    host: user.email,
+                    host: user.uid,
                     invitedPhoneNumbers: event.invitedPhoneNumbers,
                     acceptedPhoneNumbers: event.acceptedPhoneNumbers,
                     declinedPhoneNumbers: event.declinedPhoneNumbers,
@@ -559,7 +573,7 @@ class ViewModel: ObservableObject {
             
             let invitationNotificationText: String = "\(user.fullname) just invited you to an event!"
             for invitee in newInvitees {
-                if let inviteeFull = self.getUser(username: invitee) {
+                if let inviteeFull = self.getUser(by: invitee) {
                     let resolvedEventId = event.id.isEmpty ? eventID : event.id
                     let route = resolvedEventId.isEmpty ? nil :
                         NotificationRouteBuilder.eventDetail(eventId: resolvedEventId,
@@ -626,10 +640,10 @@ class ViewModel: ObservableObject {
         let allInvitees = Set(oldEvent.attendeesAccepted + oldEvent.attendeesInvited + oldEvent.attendeesDeclined)
         
         // Send notifications to all invitees except the host
-        for inviteeEmail in allInvitees {
-            if inviteeEmail != user.email { // Don't notify the host
-                if let invitee = self.getUser(username: inviteeEmail) {
-                    let inviteView = newEvent.attendeesInvited.contains(inviteeEmail) || newEvent.attendeesDeclined.contains(inviteeEmail)
+        for inviteeId in allInvitees {
+            if inviteeId != user.uid { // Don't notify the host
+                if let invitee = self.getUser(by: inviteeId) {
+                    let inviteView = newEvent.attendeesInvited.contains(inviteeId) || newEvent.attendeesDeclined.contains(inviteeId)
                     let preferredTab: NotificationRouter.NotificationTab = inviteView ? .invites : .myEvents
                     let route = newEvent.id.isEmpty ? nil :
                         NotificationRouteBuilder.eventDetail(eventId: newEvent.id,
@@ -639,7 +653,7 @@ class ViewModel: ObservableObject {
                                                         receiverUID: invitee.uid,
                                                         receiverEmail: invitee.email,
                                                         route: route)
-                    print("Sent event update notification to: \(inviteeEmail)")
+                    print("Sent event update notification to: \(inviteeId)")
                 }
             }
         }
@@ -708,7 +722,8 @@ class ViewModel: ObservableObject {
             return (false, 0, "No user is currently signed in")
         }
         let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
-        let phoneToLink = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
+        let e164Phone = PhoneNumberFormatter.e164(phoneNumber)
+        let phoneToLink = e164Phone.isEmpty ? (canonicalPhone.isEmpty ? phoneNumber : canonicalPhone) : e164Phone
         
         do {
             let firestoreService = DatabaseManager()

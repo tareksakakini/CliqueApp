@@ -130,7 +130,7 @@ private extension PersonPillView {
                         try await vm.getUserFriendRequests(user_email: viewing.email)
                         
                         // Update badge for the user who accepted
-                        await BadgeManager.shared.updateBadge(for: viewing.email)
+                        await BadgeManager.shared.updateBadge(for: viewing.uid)
                         
                         // Send notification with badge to the user who sent the request
                         let route = NotificationRouteBuilder.friends(section: .friends)
@@ -160,7 +160,7 @@ private extension PersonPillView {
                         try await vm.getUserFriendRequests(user_email: viewing.email)
                         
                         // Update badge for the user who rejected
-                        await BadgeManager.shared.updateBadge(for: viewing.email)
+                        await BadgeManager.shared.updateBadge(for: viewing.uid)
                     } catch {
                         print("Failed to reject friend request: \(error.localizedDescription)")
                     }

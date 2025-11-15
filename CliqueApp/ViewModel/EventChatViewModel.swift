@@ -35,7 +35,7 @@ final class EventChatViewModel: ObservableObject {
     // MARK: - Public API
     
     var unreadCountForCurrentUser: Int {
-        summary.unreadCount(for: currentUser.email)
+        summary.unreadCount(for: currentUser.stableIdentifier)
     }
     
     var eventTitle: String {
@@ -118,7 +118,7 @@ final class EventChatViewModel: ObservableObject {
     func markChatAsRead() {
         Task {
             do {
-                try await service.markChatAsRead(eventId: event.id, userEmail: currentUser.email)
+                try await service.markChatAsRead(eventId: event.id, userIdentifier: currentUser.stableIdentifier)
             } catch {
                 await MainActor.run {
                     chatError = AlertConfig(message: ErrorHandler.shared.handleError(error, operation: "Refresh unread count"))
@@ -128,6 +128,9 @@ final class EventChatViewModel: ObservableObject {
     }
     
     func isCurrentUser(_ message: EventChatMessage) -> Bool {
-        message.senderEmail == currentUser.email
+        if !message.senderId.isEmpty {
+            return message.senderId == currentUser.uid
+        }
+        return message.senderHandle == currentUser.email
     }
 }

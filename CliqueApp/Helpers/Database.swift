@@ -25,10 +25,12 @@ class DatabaseManager {
         // Determine which phone to use and canonicalize it
         let phoneToUse = phoneNumber.isEmpty ? contactHandle : phoneNumber
         let canonicalPhone = PhoneNumberFormatter.canonical(phoneToUse)
+        let phoneE164 = PhoneNumberFormatter.e164(phoneToUse)
         
-        // Use the canonical version if valid, otherwise fall back to original
+        // Use the canonical version for Firestore document IDs/contact handles
         let storedHandle = canonicalPhone.isEmpty ? phoneToUse : canonicalPhone
-        let storedPhoneNumber = canonicalPhone.isEmpty ? phoneToUse : canonicalPhone
+        // Persist the normalized E.164 phone number for contact info
+        let storedPhoneNumber = phoneE164.isEmpty ? storedHandle : phoneE164
         
         // Final validation: ensure we're not storing empty email
         guard !storedHandle.isEmpty else {
@@ -544,23 +546,23 @@ class DatabaseManager {
             }
             
             // Fetch all events where the user is an attendee
-            let eventSnapshot = try await db.collection("events").whereField("attendeesAccepted", arrayContains: email).getDocuments()
+            let eventSnapshot = try await db.collection("events").whereField("attendeesAccepted", arrayContains: uid).getDocuments()
             for document in eventSnapshot.documents {
                 let eventRef = db.collection("events").document(document.documentID)
                 try await eventRef.updateData([
-                    "attendeesAccepted": FieldValue.arrayRemove([email])
+                    "attendeesAccepted": FieldValue.arrayRemove([uid])
                 ])
             }
             
-            let invitedSnapshot = try await db.collection("events").whereField("attendeesInvited", arrayContains: email).getDocuments()
+            let invitedSnapshot = try await db.collection("events").whereField("attendeesInvited", arrayContains: uid).getDocuments()
             for document in invitedSnapshot.documents {
                 let eventRef = db.collection("events").document(document.documentID)
                 try await eventRef.updateData([
-                    "attendeesInvited": FieldValue.arrayRemove([email])
+                    "attendeesInvited": FieldValue.arrayRemove([uid])
                 ])
             }
             
-            let hostingSnapshot = try await db.collection("events").whereField("host", isEqualTo: email).getDocuments()
+            let hostingSnapshot = try await db.collection("events").whereField("host", isEqualTo: uid).getDocuments()
             for document in hostingSnapshot.documents {
                 let eventRef = db.collection("events").document(document.documentID)
                 try await eventRef.updateData([
@@ -637,10 +639,12 @@ class DatabaseManager {
         try ErrorHandler.shared.validateNetworkConnection()
         
         let userRef = db.collection("users").document(uid)
+        let phoneE164 = PhoneNumberFormatter.e164(phoneNumber)
         let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+        let storedPhone = phoneE164.isEmpty ? canonicalPhone : phoneE164
         
         do {
-            try await userRef.updateData(["phoneNumber": canonicalPhone])
+            try await userRef.updateData(["phoneNumber": storedPhone])
             print("Phone number updated successfully!")
         } catch {
             print("Error updating phone number: \(error.localizedDescription)")
@@ -657,6 +661,7 @@ class DatabaseManager {
         
         // Get user information to use for updating events
         let user = try await getUserFromFirestore(uid: uid)
+        let userIdentifier = user.stableIdentifier
         
         // Find all events where this phone number is invited
         let allEvents = try await getAllEvents()
@@ -676,33 +681,33 @@ class DatabaseManager {
             if let matchingPhone = event.invitedPhoneNumbers.first(where: { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }) {
                 // Remove from phone invitations and add to regular invitations
                 updatedEvent.invitedPhoneNumbers.removeAll { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }
-                if !updatedEvent.attendeesInvited.contains(user.email) {
-                    updatedEvent.attendeesInvited.append(user.email)
+                if !updatedEvent.attendeesInvited.contains(userIdentifier) {
+                    updatedEvent.attendeesInvited.append(userIdentifier)
                 }
                 eventUpdated = true
-                print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (invited)")
+                print("Linked phone \(phoneNumber) to user \(userIdentifier) for event \(event.title) (invited)")
             }
             
             // Check accepted phone numbers
             if let matchingPhone = event.acceptedPhoneNumbers.first(where: { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }) {
                 // Remove from phone acceptances and add to regular acceptances
                 updatedEvent.acceptedPhoneNumbers.removeAll { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }
-                if !updatedEvent.attendeesAccepted.contains(user.email) {
-                    updatedEvent.attendeesAccepted.append(user.email)
+                if !updatedEvent.attendeesAccepted.contains(userIdentifier) {
+                    updatedEvent.attendeesAccepted.append(userIdentifier)
                 }
                 eventUpdated = true
-                print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (accepted)")
+                print("Linked phone \(phoneNumber) to user \(userIdentifier) for event \(event.title) (accepted)")
             }
             
             // Check declined phone numbers
             if let matchingPhone = event.declinedPhoneNumbers.first(where: { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }) {
                 // Remove from phone declines and add to regular declines
                 updatedEvent.declinedPhoneNumbers.removeAll { PhoneNumberFormatter.numbersMatch($0, phoneNumber) }
-                if !updatedEvent.attendeesDeclined.contains(user.email) {
-                    updatedEvent.attendeesDeclined.append(user.email)
+                if !updatedEvent.attendeesDeclined.contains(userIdentifier) {
+                    updatedEvent.attendeesDeclined.append(userIdentifier)
                 }
                 eventUpdated = true
-                print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (declined)")
+                print("Linked phone \(phoneNumber) to user \(userIdentifier) for event \(event.title) (declined)")
             }
             
             // Check for phone numbers in rsvps field (legacy support and web app responses)
@@ -710,16 +715,16 @@ class DatabaseManager {
                 if PhoneNumberFormatter.numbersMatch(rsvpPhone, phoneNumber) {
                     if isAccepted {
                         // This phone number has accepted the invitation via rsvps
-                        if !updatedEvent.attendeesAccepted.contains(user.email) {
-                            updatedEvent.attendeesAccepted.append(user.email)
+                        if !updatedEvent.attendeesAccepted.contains(userIdentifier) {
+                            updatedEvent.attendeesAccepted.append(userIdentifier)
                         }
-                        print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (accepted via rsvps)")
+                        print("Linked phone \(phoneNumber) to user \(userIdentifier) for event \(event.title) (accepted via rsvps)")
                     } else {
                         // This phone number has declined the invitation via rsvps
-                        if !updatedEvent.attendeesDeclined.contains(user.email) {
-                            updatedEvent.attendeesDeclined.append(user.email)
+                        if !updatedEvent.attendeesDeclined.contains(userIdentifier) {
+                            updatedEvent.attendeesDeclined.append(userIdentifier)
                         }
-                        print("Linked phone \(phoneNumber) to user \(user.email) for event \(event.title) (declined via rsvps)")
+                        print("Linked phone \(phoneNumber) to user \(userIdentifier) for event \(event.title) (declined via rsvps)")
                     }
                     
                     // Remove the rsvp entry since we're converting to user-based invitation
@@ -754,7 +759,7 @@ class DatabaseManager {
             }
         }
         
-        print("Successfully linked phone number \(phoneNumber) to user \(user.email). Updated \(updatedEvents.count) events.")
+        print("Successfully linked phone number \(phoneNumber) to user \(userIdentifier). Updated \(updatedEvents.count) events.")
         return updatedEvents
     }
     

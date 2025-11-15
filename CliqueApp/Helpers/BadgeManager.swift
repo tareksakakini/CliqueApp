@@ -15,11 +15,20 @@ class BadgeManager {
     
     private init() {}
     
+    private struct BadgeUserContext {
+        let uid: String
+        let contactHandle: String
+    }
+    
     // MARK: - Public Methods
     
     /// Updates the app badge with the total count of unanswered invites and friend requests
-    func updateBadge(for userEmail: String) async {
-        let count = await calculateBadgeCount(for: userEmail)
+    func updateBadge(for identifier: String) async {
+        guard let context = await resolveUserContext(for: identifier) else {
+            print("⚠️ Unable to resolve user context for badge update (\(identifier))")
+            return
+        }
+        let count = await calculateBadgeCount(for: context)
         await setBadgeCount(count)
     }
     
@@ -39,12 +48,20 @@ class BadgeManager {
     // MARK: - Badge Calculation
     
     /// Calculates the total badge count for a user
-    func calculateBadgeCount(for userEmail: String) async -> Int {
-        let eventInvitesCount = await getUnansweredEventInvitesCount(for: userEmail)
-        let friendRequestsCount = await getFriendRequestsCount(for: userEmail)
+    func calculateBadgeCount(for identifier: String) async -> Int {
+        guard let context = await resolveUserContext(for: identifier) else {
+            print("⚠️ Unable to resolve user context for badge calculation (\(identifier))")
+            return 0
+        }
+        return await calculateBadgeCount(for: context)
+    }
+    
+    private func calculateBadgeCount(for context: BadgeUserContext) async -> Int {
+        let eventInvitesCount = await getUnansweredEventInvitesCount(for: context)
+        let friendRequestsCount = await getFriendRequestsCount(for: context.contactHandle)
         let total = eventInvitesCount + friendRequestsCount
         
-        print("📊 Badge count breakdown for \(userEmail):")
+        print("📊 Badge count breakdown for \(context.uid):")
         print("  - Event invites: \(eventInvitesCount)")
         print("  - Friend requests: \(friendRequestsCount)")
         print("  - Total: \(total)")
@@ -54,27 +71,22 @@ class BadgeManager {
     
     /// Gets the count of unanswered event invitations for a user
     /// Only counts upcoming events (not past events)
-    private func getUnansweredEventInvitesCount(for userEmail: String) async -> Int {
-        let db = Firestore.firestore()
-        
+    private func getUnansweredEventInvitesCount(for context: BadgeUserContext) async -> Int {
         do {
-            // Query events where the user is in the attendeesInvited array
-            let snapshot = try await db.collection("events")
-                .whereField("attendeesInvited", arrayContains: userEmail)
-                .getDocuments()
+            let snapshots = try await fetchInvitedEventSnapshots(for: context)
             
             // Filter to only count upcoming events (not past)
             let now = Date()
-            let upcomingInvites = snapshot.documents.filter { document in
-                guard let data = document.data() as? [String: Any],
-                      let startDateTime = (data["startDateTime"] as? Timestamp)?.dateValue() else {
+            let upcomingInvites = snapshots.filter { document in
+                let data = document.data()
+                guard let startDateTime = (data["startDateTime"] as? Timestamp)?.dateValue() else {
                     return false
                 }
                 return startDateTime >= now
             }
             
             let count = upcomingInvites.count
-            print("📅 Upcoming event invites for \(userEmail): \(count) (filtered from \(snapshot.documents.count) total)")
+            print("📅 Upcoming event invites for \(context.uid): \(count) (filtered from \(snapshots.count) total)")
             
             return count
         } catch {
@@ -84,12 +96,12 @@ class BadgeManager {
     }
     
     /// Gets the count of pending friend requests for a user
-    private func getFriendRequestsCount(for userEmail: String) async -> Int {
+    private func getFriendRequestsCount(for userHandle: String) async -> Int {
         let db = Firestore.firestore()
         
         do {
             let snapshot = try await db.collection("friendRequests")
-                .document(userEmail)
+                .document(userHandle)
                 .getDocument()
             
             let requests = snapshot.data()?["requests"] as? [String] ?? []
@@ -100,32 +112,94 @@ class BadgeManager {
         }
     }
     
+    private func resolveUserContext(for identifier: String) async -> BadgeUserContext? {
+        let trimmed = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        
+        let db = Firestore.firestore()
+        
+        do {
+            // Attempt to fetch by UID (document ID)
+            let directDoc = try await db.collection("users").document(trimmed).getDocument()
+            if let data = directDoc.data() {
+                let handle = data["email"] as? String ?? trimmed
+                return BadgeUserContext(uid: directDoc.documentID, contactHandle: handle)
+            }
+            
+            // Fallback: look up by the legacy email/contact handle
+            let snapshot = try await db.collection("users")
+                .whereField("email", isEqualTo: trimmed)
+                .limit(to: 1)
+                .getDocuments()
+            
+            if let doc = snapshot.documents.first {
+                let handle = doc.data()["email"] as? String ?? trimmed
+                return BadgeUserContext(uid: doc.documentID, contactHandle: handle)
+            }
+        } catch {
+            print("❌ Error resolving user context for \(identifier): \(error.localizedDescription)")
+        }
+        
+        return nil
+    }
+    
+    private func fetchInvitedEventSnapshots(for context: BadgeUserContext) async throws -> [QueryDocumentSnapshot] {
+        let db = Firestore.firestore()
+        var documents: [QueryDocumentSnapshot] = []
+        var seen = Set<String>()
+        
+        let primarySnapshot = try await db.collection("events")
+            .whereField("attendeesInvited", arrayContains: context.uid)
+            .getDocuments()
+        for doc in primarySnapshot.documents where seen.insert(doc.documentID).inserted {
+            documents.append(doc)
+        }
+        
+        let handle = context.contactHandle
+        if !handle.isEmpty, handle != context.uid {
+            let handleSnapshot = try await db.collection("events")
+                .whereField("attendeesInvited", arrayContains: handle)
+                .getDocuments()
+            for doc in handleSnapshot.documents where seen.insert(doc.documentID).inserted {
+                documents.append(doc)
+            }
+        }
+        
+        return documents
+    }
+    
     // MARK: - Helper Methods for Push Notifications
     
     /// Gets badge data to include in push notifications
     /// Returns a dictionary with badge count and breakdown
-    func getBadgeDataForNotification(receiverEmail: String) async -> [String: Any] {
-        let badgeCount = await calculateBadgeCount(for: receiverEmail)
+    func getBadgeDataForNotification(receiverIdentifier: String) async -> [String: Any] {
+        guard let context = await resolveUserContext(for: receiverIdentifier) else {
+            return ["badge": 0, "receiverEmail": receiverIdentifier]
+        }
+        
+        let badgeCount = await calculateBadgeCount(for: context)
         
         return [
             "badge": badgeCount,
-            "receiverEmail": receiverEmail
+            "receiverEmail": context.contactHandle,
+            "receiverId": context.uid
         ]
     }
     
     // MARK: - Debugging Methods
     
     /// Detailed debugging information about badge count
-    func debugBadgeCount(for userEmail: String) async -> String {
+    func debugBadgeCount(for identifier: String) async -> String {
+        guard let context = await resolveUserContext(for: identifier) else {
+            return "Unable to resolve user for identifier: \(identifier)"
+        }
         let db = Firestore.firestore()
-        var debugInfo = "🔍 Badge Debug for: \(userEmail)\n"
+        var debugInfo = "🔍 Badge Debug for: \(context.uid)\n"
         debugInfo += "================================\n\n"
         
         // Check event invites
         do {
-            let eventSnapshot = try await db.collection("events")
-                .whereField("attendeesInvited", arrayContains: userEmail)
-                .getDocuments()
+            let eventSnapshots = try await fetchInvitedEventSnapshots(for: context)
             
             let now = Date()
             let dateFormatter = DateFormatter()
@@ -133,9 +207,9 @@ class BadgeManager {
             dateFormatter.timeStyle = .short
             
             debugInfo += "📧 EVENT INVITES:\n"
-            debugInfo += "Total in database: \(eventSnapshot.documents.count)\n\n"
+            debugInfo += "Total in database: \(eventSnapshots.count)\n\n"
             
-            for (index, doc) in eventSnapshot.documents.enumerated() {
+            for (index, doc) in eventSnapshots.enumerated() {
                 let data = doc.data()
                 let title = data["title"] as? String ?? "Unknown"
                 let startDate = (data["startDateTime"] as? Timestamp)?.dateValue() ?? Date()
@@ -146,9 +220,9 @@ class BadgeManager {
                 debugInfo += "     Status: \(isPast ? "❌ PAST (not counted)" : "✅ UPCOMING (counted)")\n\n"
             }
             
-            let upcomingCount = eventSnapshot.documents.filter { doc in
-                guard let data = doc.data() as? [String: Any],
-                      let startDateTime = (data["startDateTime"] as? Timestamp)?.dateValue() else {
+            let upcomingCount = eventSnapshots.filter { doc in
+                let data = doc.data()
+                guard let startDateTime = (data["startDateTime"] as? Timestamp)?.dateValue() else {
                     return false
                 }
                 return startDateTime >= now
@@ -162,7 +236,7 @@ class BadgeManager {
         // Check friend requests
         do {
             let friendReqSnapshot = try await db.collection("friendRequests")
-                .document(userEmail)
+                .document(context.contactHandle)
                 .getDocument()
             
             let requests = friendReqSnapshot.data()?["requests"] as? [String] ?? []
@@ -178,7 +252,7 @@ class BadgeManager {
         }
         
         // Total badge count
-        let totalBadge = await calculateBadgeCount(for: userEmail)
+        let totalBadge = await calculateBadgeCount(for: context)
         debugInfo += "================================\n"
         debugInfo += "🎯 TOTAL BADGE COUNT: \(totalBadge)\n"
         
@@ -190,28 +264,34 @@ class BadgeManager {
 
 extension BadgeManager {
     /// Sets up real-time listeners for badge updates (optional, for when app is active)
-    func startObservingBadgeUpdates(for userEmail: String) {
+    func startObservingBadgeUpdates(for identifier: String) {
+        Task {
+            guard let context = await resolveUserContext(for: identifier) else { return }
+            attachBadgeObservers(for: context)
+        }
+    }
+    
+    private func attachBadgeObservers(for context: BadgeUserContext) {
         let db = Firestore.firestore()
         
         // Listen to events where user is invited
         db.collection("events")
-            .whereField("attendeesInvited", arrayContains: userEmail)
+            .whereField("attendeesInvited", arrayContains: context.uid)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self, error == nil else { return }
                 Task {
-                    await self.updateBadge(for: userEmail)
+                    await self.updateBadge(for: context.uid)
                 }
             }
         
         // Listen to friend requests
         db.collection("friendRequests")
-            .document(userEmail)
+            .document(context.contactHandle)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self, error == nil else { return }
                 Task {
-                    await self.updateBadge(for: userEmail)
+                    await self.updateBadge(for: context.uid)
                 }
             }
     }
 }
-

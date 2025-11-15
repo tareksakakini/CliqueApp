@@ -11,20 +11,23 @@ import FirebaseFirestore
 struct EventChatMessage: Identifiable, Hashable {
     let id: String
     let eventId: String
-    let senderEmail: String
+    let senderId: UserID
+    let senderHandle: String
     let senderName: String
     let text: String
     let createdAt: Date
     
     init(id: String = UUID().uuidString,
          eventId: String,
-         senderEmail: String,
+         senderId: UserID,
+         senderHandle: String,
          senderName: String,
          text: String,
          createdAt: Date = Date()) {
         self.id = id
         self.eventId = eventId
-        self.senderEmail = senderEmail
+        self.senderId = senderId
+        self.senderHandle = senderHandle
         self.senderName = senderName
         self.text = text
         self.createdAt = createdAt
@@ -34,7 +37,6 @@ struct EventChatMessage: Identifiable, Hashable {
         guard
             let id = data["id"] as? String,
             let eventId = data["eventId"] as? String,
-            let senderEmail = data["senderEmail"] as? String,
             let senderName = data["senderName"] as? String,
             let text = data["text"] as? String
         else {
@@ -46,7 +48,8 @@ struct EventChatMessage: Identifiable, Hashable {
         
         self.id = id
         self.eventId = eventId
-        self.senderEmail = senderEmail
+        self.senderId = data["senderId"] as? String ?? data["senderUID"] as? String ?? data["senderEmail"] as? String ?? ""
+        self.senderHandle = data["senderEmail"] as? String ?? ""
         self.senderName = senderName
         self.text = text
         self.createdAt = createdAt

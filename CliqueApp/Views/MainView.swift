@@ -18,9 +18,11 @@ struct MainView: View {
     @State private var friendsSectionSelection: MyFriendsView.FriendSection = .friends
     
     private var pendingInvitesCount: Int {
+        let identifiers = Set(user.identifierCandidates)
+        guard !identifiers.isEmpty else { return 0 }
         let now = Date()
         return vm.events.filter { event in
-            event.attendeesInvited.contains(user.email) && event.startDateTime >= now
+            event.attendeesInvited.contains { identifiers.contains($0) } && event.startDateTime >= now
         }.count
     }
     

@@ -703,11 +703,11 @@ struct CreateEventView: View {
                     ForEach(Array(inviteesUserModels.enumerated()), id: \.element) { index, invitee in
                         ModernInviteePillView(
                             viewingUser: user,
-                            displayedUser: vm.getUser(username: invitee.email) ?? invitee,
+                            displayedUser: vm.getUser(by: invitee.stableIdentifier) ?? invitee,
                             invitees: $inviteesUserModels,
-                            status: inviteeStatuses[invitee.email] ?? .invited,
+                            status: inviteeStatuses[invitee.stableIdentifier] ?? .invited,
                             onStatusChange: { newStatus in
-                                inviteeStatuses[invitee.email] = newStatus
+                                inviteeStatuses[invitee.stableIdentifier] = newStatus
                             },
                             showStatusControls: !isNewEvent,
                             isLastItem: index == inviteesUserModels.count - 1 && invitedContacts.isEmpty
@@ -820,33 +820,33 @@ struct CreateEventView: View {
                         let temp_uuid = isNewEvent ? UUID().uuidString : event.id
                         messageEventID = temp_uuid
                         
-                        var invitedEmails: [String] = []
-                        var acceptedEmails: [String] = []
-                        var declinedEmails: [String] = []
+                        var invitedUserIds: [String] = []
+                        var acceptedUserIds: [String] = []
+                        var declinedUserIds: [String] = []
                         
                         for user in inviteesUserModels {
-                            let email = user.email
-                            guard !email.isEmpty else { continue }
-                            let status = inviteeStatuses[email] ?? .invited
+                            let identifier = user.stableIdentifier
+                            guard !identifier.isEmpty else { continue }
+                            let status = inviteeStatuses[identifier] ?? .invited
                             switch status {
                             case .invited:
-                                if !invitedEmails.contains(email) {
-                                    invitedEmails.append(email)
+                                if !invitedUserIds.contains(identifier) {
+                                    invitedUserIds.append(identifier)
                                 }
                             case .accepted:
-                                if !acceptedEmails.contains(email) {
-                                    acceptedEmails.append(email)
+                                if !acceptedUserIds.contains(identifier) {
+                                    acceptedUserIds.append(identifier)
                                 }
                             case .declined:
-                                if !declinedEmails.contains(email) {
-                                    declinedEmails.append(email)
+                                if !declinedUserIds.contains(identifier) {
+                                    declinedUserIds.append(identifier)
                                 }
                             }
                         }
                         
-                        event.attendeesInvited = invitedEmails
-                        event.attendeesAccepted = acceptedEmails
-                        event.attendeesDeclined = declinedEmails
+                        event.attendeesInvited = invitedUserIds
+                        event.attendeesAccepted = acceptedUserIds
+                        event.attendeesDeclined = declinedUserIds
                         
                         var pendingNumbers: [String] = []
                         var acceptedNumbers: [String] = []
@@ -942,24 +942,24 @@ struct CreateEventView: View {
         inviteeStatuses = [:]
         contactStatuses = [:]
         
-        var addedEmails: Set<String> = []
-        let emailGroups: [(emails: [String], status: InviteStatus)] = [
+        var addedIdentifiers: Set<String> = []
+        let identifierGroups: [(ids: [String], status: InviteStatus)] = [
             (event.attendeesAccepted, .accepted),
             (event.attendeesInvited, .invited),
             (event.attendeesDeclined, .declined)
         ]
         
-        for group in emailGroups {
-            for email in group.emails where !email.isEmpty {
-                inviteeStatuses[email] = group.status
-                guard !addedEmails.contains(email) else { continue }
+        for group in identifierGroups {
+            for identifier in group.ids where !identifier.isEmpty {
+                inviteeStatuses[identifier] = group.status
+                guard !addedIdentifiers.contains(identifier) else { continue }
                 
-                if let user = vm.getUser(username: email) {
+                if let user = vm.getUser(by: identifier) {
                     inviteesUserModels.append(user)
                 } else {
-                    inviteesUserModels.append(makePlaceholderUser(email: email))
+                    inviteesUserModels.append(makePlaceholderUser(identifier: identifier))
                 }
-                addedEmails.insert(email)
+                addedIdentifiers.insert(identifier)
             }
         }
         
@@ -982,28 +982,28 @@ struct CreateEventView: View {
         }
     }
 
-    private func makePlaceholderUser(email: String) -> UserModel {
+    private func makePlaceholderUser(identifier: String) -> UserModel {
         var placeholder = UserModel()
-        placeholder.email = email
-        placeholder.fullname = email
-        placeholder.uid = email
-        placeholder.username = email.split(separator: "@").first.map(String.init) ?? email
+        placeholder.uid = identifier
+        placeholder.email = identifier
+        placeholder.fullname = identifier
+        placeholder.username = identifier.split(separator: "@").first.map(String.init) ?? identifier
         return placeholder
     }
     
     private func syncInviteeStatuses(oldValue: [UserModel], newValue: [UserModel]) {
-        let oldEmails = Set(oldValue.map { $0.email }.filter { !$0.isEmpty })
-        let newEmails = Set(newValue.map { $0.email }.filter { !$0.isEmpty })
+        let oldIdentifiers = Set(oldValue.map { $0.stableIdentifier }.filter { !$0.isEmpty })
+        let newIdentifiers = Set(newValue.map { $0.stableIdentifier }.filter { !$0.isEmpty })
         
-        let added = newEmails.subtracting(oldEmails)
-        let removed = oldEmails.subtracting(newEmails)
+        let added = newIdentifiers.subtracting(oldIdentifiers)
+        let removed = oldIdentifiers.subtracting(newIdentifiers)
         
-        for email in added where inviteeStatuses[email] == nil {
-            inviteeStatuses[email] = .invited
+        for identifier in added where inviteeStatuses[identifier] == nil {
+            inviteeStatuses[identifier] = .invited
         }
         
-        for email in removed {
-            inviteeStatuses.removeValue(forKey: email)
+        for identifier in removed {
+            inviteeStatuses.removeValue(forKey: identifier)
         }
     }
     

@@ -55,7 +55,7 @@ struct CliqueAppApp: App {
         // Update badge when app becomes active
         Task {
             if let user = await vm.getSignedInUser() {
-                await BadgeManager.shared.updateBadge(for: user.email)
+                await BadgeManager.shared.updateBadge(for: user.uid)
             }
         }
     }
@@ -108,14 +108,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
            let additionalData = customData["a"] as? [String: Any] {
             
             let receiverEmail = additionalData["receiverEmail"] as? String
+            let receiverId = additionalData["receiverId"] as? String
             let expectedBadge = additionalData["expectedBadge"] as? Int
             
-            print("📬 Notification data - Email: \(receiverEmail ?? "none"), Expected badge: \(expectedBadge ?? -1)")
+            print("📬 Notification data - Email: \(receiverEmail ?? "none"), Id: \(receiverId ?? "none"), Expected badge: \(expectedBadge ?? -1)")
             
-            if let email = receiverEmail {
+            if let identifier = receiverId ?? receiverEmail {
                 Task {
                     // Recalculate badge from database to ensure accuracy
-                    await BadgeManager.shared.updateBadge(for: email)
+                    await BadgeManager.shared.updateBadge(for: identifier)
                     
                     let currentBadge = await UIApplication.shared.applicationIconBadgeNumber
                     print("📬 Badge updated. Current: \(currentBadge), Expected: \(expectedBadge ?? -1)")

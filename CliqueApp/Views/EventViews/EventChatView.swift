@@ -114,7 +114,7 @@ struct EventChatView: View {
                                             isCurrentUser: viewModel.isCurrentUser(message),
                                             showsSenderName: !(shouldGroup && !viewModel.isCurrentUser(message)),
                                             viewModel: vm,
-                                            hostEmail: viewModel.event.host)
+                                            hostIdentifier: viewModel.event.host)
                             .padding(.top, shouldGroup ? 4 : 12)
                             .id(message.id)
                         }
@@ -204,7 +204,9 @@ struct EventChatView: View {
         guard index > 0 else { return false }
         let current = viewModel.messages[index]
         let previous = viewModel.messages[index - 1]
-        guard current.senderEmail == previous.senderEmail else { return false }
+        let currentId = current.senderId.isEmpty ? current.senderHandle : current.senderId
+        let previousId = previous.senderId.isEmpty ? previous.senderHandle : previous.senderId
+        guard currentId == previousId else { return false }
         let calendar = Calendar.current
         guard calendar.isDate(current.createdAt, inSameDayAs: previous.createdAt) else { return false }
         return current.createdAt.timeIntervalSince(previous.createdAt) < 120
@@ -262,22 +264,25 @@ private struct EventChatBubble: View {
     let isCurrentUser: Bool
     let showsSenderName: Bool
     let viewModel: ViewModel
-    let hostEmail: String
+    let hostIdentifier: String
     
-    init(message: EventChatMessage, isCurrentUser: Bool, showsSenderName: Bool = true, viewModel: ViewModel, hostEmail: String) {
+    init(message: EventChatMessage, isCurrentUser: Bool, showsSenderName: Bool = true, viewModel: ViewModel, hostIdentifier: String) {
         self.message = message
         self.isCurrentUser = isCurrentUser
         self.showsSenderName = showsSenderName
         self.viewModel = viewModel
-        self.hostEmail = hostEmail
+        self.hostIdentifier = hostIdentifier
     }
     
     private var senderUser: UserModel? {
-        viewModel.getUser(username: message.senderEmail)
+        viewModel.getUser(by: message.senderId.isEmpty ? message.senderHandle : message.senderId)
     }
     
     private var isHost: Bool {
-        message.senderEmail == hostEmail
+        if !message.senderId.isEmpty {
+            return message.senderId == hostIdentifier
+        }
+        return message.senderHandle == hostIdentifier
     }
     
     var body: some View {
@@ -351,7 +356,11 @@ struct EventChatPreviewRow: View {
             return "Be the first to say hello"
         }
         
-        let senderIsCurrentUser = viewModel.summary.lastMessageSenderEmail == viewModel.currentUser.email
+        let senderIdentifier = viewModel.summary.lastMessageSenderId.isEmpty
+            ? viewModel.summary.lastMessageSenderHandle
+            : viewModel.summary.lastMessageSenderId
+        let senderIsCurrentUser = !senderIdentifier.isEmpty &&
+            senderIdentifier == viewModel.currentUser.stableIdentifier
         if senderIsCurrentUser {
             return "You: \(viewModel.summary.lastMessage)"
         } else if viewModel.summary.lastMessageSender.isEmpty {

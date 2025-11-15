@@ -50,10 +50,12 @@ struct EventModel: Hashable {
         return utcCalendar.date(from: utcComponents) ?? Date()
     }()
     var noEndTime: Bool = false
-    var attendeesAccepted: [String] = []
-    var attendeesInvited: [String] = []
-    var attendeesDeclined: [String] = []
-    var host: String = ""
+    /// Stores user IDs (UIDs) for each RSVP bucket.
+    var attendeesAccepted: [UserID] = []
+    var attendeesInvited: [UserID] = []
+    var attendeesDeclined: [UserID] = []
+    /// Stores the hosting user's UID (legacy data may still contain emails/usernames).
+    var host: UserID = ""
     var eventPic: String = ""
     var invitedPhoneNumbers: [String] = []
     var acceptedPhoneNumbers: [String] = []
@@ -81,32 +83,32 @@ struct EventModel: Hashable {
 }
 
 extension EventModel {
-    /// Returns all in-app participant emails that should be part of the chat.
-    var chatParticipantEmails: [String] {
-        var participants = Set<String>()
+    /// Returns the unique user IDs for all in-app participants that should be part of the chat.
+    var chatParticipantUserIds: [UserID] {
+        var participants = Set<UserID>()
         if !host.isEmpty {
             participants.insert(host)
         }
-        attendeesAccepted.forEach { email in
-            if !email.isEmpty {
-                participants.insert(email)
+        attendeesAccepted.forEach { identifier in
+            if !identifier.isEmpty {
+                participants.insert(identifier)
             }
         }
-        attendeesInvited.forEach { email in
-            if !email.isEmpty {
-                participants.insert(email)
+        attendeesInvited.forEach { identifier in
+            if !identifier.isEmpty {
+                participants.insert(identifier)
             }
         }
-        attendeesDeclined.forEach { email in
-            if !email.isEmpty {
-                participants.insert(email)
+        attendeesDeclined.forEach { identifier in
+            if !identifier.isEmpty {
+                participants.insert(identifier)
             }
         }
         return Array(participants)
     }
     
     /// Indicates whether an email should view the event from the invite tab.
-    func isInviteContext(for email: String) -> Bool {
-        attendeesInvited.contains(email) || attendeesDeclined.contains(email)
+    func isInviteContext(for userId: UserID) -> Bool {
+        attendeesInvited.contains(userId) || attendeesDeclined.contains(userId)
     }
 }

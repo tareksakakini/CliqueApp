@@ -272,14 +272,14 @@ struct MyFriendsView: View {
         } else {
             LazyVStack(spacing: 0) {
                 let sortedFriends = vm.friendship.sorted { username1, username2 in
-                    let user1 = vm.getUser(username: username1)?.fullname ?? ""
-                    let user2 = vm.getUser(username: username2)?.fullname ?? ""
+                    let user1 = vm.getUser(by: username1)?.fullname ?? ""
+                    let user2 = vm.getUser(by: username2)?.fullname ?? ""
                     return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
                 }
                 ForEach(Array(sortedFriends.enumerated()), id: \.element) { index, friend_username in
                     ModernPersonPillView(
                         viewingUser: user,
-                        displayedUser: vm.getUser(username: friend_username),
+                        displayedUser: vm.getUser(by: friend_username),
                         personType: "friend",
                         invitees: .constant([]),
                         isLastItem: index == sortedFriends.count - 1,
@@ -309,14 +309,14 @@ struct MyFriendsView: View {
         } else {
             LazyVStack(spacing: 0) {
                 let sortedRequests = vm.friendInviteReceived.sorted { username1, username2 in
-                    let user1 = vm.getUser(username: username1)?.fullname ?? ""
-                    let user2 = vm.getUser(username: username2)?.fullname ?? ""
+                    let user1 = vm.getUser(by: username1)?.fullname ?? ""
+                    let user2 = vm.getUser(by: username2)?.fullname ?? ""
                     return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
                 }
                 ForEach(Array(sortedRequests.enumerated()), id: \.element) { index, request_username in
                     ModernPersonPillView(
                         viewingUser: user,
-                        displayedUser: vm.getUser(username: request_username),
+                        displayedUser: vm.getUser(by: request_username),
                         personType: "requester",
                         invitees: .constant([]),
                         isLastItem: index == sortedRequests.count - 1,
@@ -346,14 +346,14 @@ struct MyFriendsView: View {
         } else {
             LazyVStack(spacing: 0) {
                 let sortedSent = vm.friendInviteSent.sorted { username1, username2 in
-                    let user1 = vm.getUser(username: username1)?.fullname ?? ""
-                    let user2 = vm.getUser(username: username2)?.fullname ?? ""
+                    let user1 = vm.getUser(by: username1)?.fullname ?? ""
+                    let user2 = vm.getUser(by: username2)?.fullname ?? ""
                     return user1.localizedCaseInsensitiveCompare(user2) == .orderedAscending
                 }
                 ForEach(Array(sortedSent.enumerated()), id: \.element) { index, sent_username in
                     ModernPersonPillView(
                         viewingUser: user,
-                        displayedUser: vm.getUser(username: sent_username),
+                        displayedUser: vm.getUser(by: sent_username),
                         personType: "requestedFriend",
                         invitees: .constant([]),
                         isLastItem: index == sortedSent.count - 1,

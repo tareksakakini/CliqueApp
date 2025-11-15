@@ -69,6 +69,7 @@ final class EventChatService {
         let payload: [String: Any] = [
             "id": messageRef.documentID,
             "eventId": event.id,
+            "senderId": sender.uid,
             "senderEmail": sender.email,
             "senderName": sender.fullname,
             "text": trimmedText,
@@ -80,8 +81,8 @@ final class EventChatService {
         await notifyParticipantsAboutMessage(event: event, sender: sender, text: trimmedText)
     }
     
-    func markChatAsRead(eventId: String, userEmail: String) async throws {
-        guard !eventId.isEmpty else { return }
+    func markChatAsRead(eventId: String, userIdentifier: String) async throws {
+        guard !eventId.isEmpty, !userIdentifier.isEmpty else { return }
         
         try await db.runTransaction { [weak self] transaction, _ in
             guard let self = self else { return nil }
@@ -91,8 +92,8 @@ final class EventChatService {
             var unreadCounts = data["unreadCounts"] as? [String: Int] ?? [:]
             var readStates = data["readStates"] as? [String: Timestamp] ?? [:]
             
-            unreadCounts[userEmail] = 0
-            readStates[userEmail] = Timestamp(date: Date())
+            unreadCounts[userIdentifier] = 0
+            readStates[userIdentifier] = Timestamp(date: Date())
             
             transaction.setData([
                 "unreadCounts": unreadCounts,
@@ -117,32 +118,33 @@ final class EventChatService {
                                 timestamp: Timestamp,
                                 messageText: String) async throws {
         let docRef = chatDocument(for: event.id)
-        let latestParticipants = Set(event.chatParticipantEmails)
+        let latestParticipants = Set(event.chatParticipantUserIds)
         
         try await db.runTransaction { transaction, _ in
             let snapshot = try? transaction.getDocument(docRef)
             var data = snapshot?.data() ?? [:]
             var storedParticipants = Set(data["participants"] as? [String] ?? [])
             storedParticipants.formUnion(latestParticipants)
-            storedParticipants.insert(sender.email)
+            storedParticipants.insert(sender.uid)
             
             var unreadCounts = data["unreadCounts"] as? [String: Int] ?? [:]
             var readStates = data["readStates"] as? [String: Timestamp] ?? [:]
             
             for participant in storedParticipants {
-                if participant == sender.email {
+                if participant == sender.uid {
                     unreadCounts[participant] = 0
                 } else {
                     unreadCounts[participant] = (unreadCounts[participant] ?? 0) + 1
                 }
             }
             
-            readStates[sender.email] = timestamp
+            readStates[sender.uid] = timestamp
             
             transaction.setData([
                 "eventId": event.id,
                 "lastMessage": messageText,
                 "lastMessageSender": sender.fullname,
+                "lastMessageSenderId": sender.uid,
                 "lastMessageSenderEmail": sender.email,
                 "lastMessageAt": timestamp,
                 "participants": Array(storedParticipants),
@@ -156,16 +158,16 @@ final class EventChatService {
     private func notifyParticipantsAboutMessage(event: EventModel,
                                                 sender: UserModel,
                                                 text: String) async {
-        let recipients = event.chatParticipantEmails.filter { $0 != sender.email }
+        let recipients = event.chatParticipantUserIds.filter { $0 != sender.uid }
         guard !recipients.isEmpty else { return }
         
-        let users = await fetchUsers(byEmails: recipients)
+        let users = await fetchUsers(byIdentifiers: recipients)
         guard !users.isEmpty else { return }
         
         let snippet = text.count > 120 ? String(text.prefix(117)) + "..." : text
         
         for user in users {
-            let inviteView = event.isInviteContext(for: user.email)
+            let inviteView = event.isInviteContext(for: user.uid)
             let preferredTab: NotificationRouter.NotificationTab = inviteView ? .invites : .myEvents
             let route = NotificationRouteBuilder.eventDetail(eventId: event.id,
                                                              inviteView: inviteView,
@@ -179,15 +181,38 @@ final class EventChatService {
         }
     }
     
-    private func fetchUsers(byEmails emails: [String]) async -> [UserModel] {
-        guard !emails.isEmpty else { return [] }
+    private func fetchUsers(byIdentifiers identifiers: [String]) async -> [UserModel] {
+        guard !identifiers.isEmpty else { return [] }
         
         var results: [UserModel] = []
+        let uniqueIdentifiers = Array(Set(identifiers)).filter { !$0.isEmpty }
+        var unresolved = Set(uniqueIdentifiers)
         let chunkSize = 10
-        let uniqueEmails = Array(Set(emails))
         
-        for chunkStart in stride(from: 0, to: uniqueEmails.count, by: chunkSize) {
-            let chunk = Array(uniqueEmails[chunkStart..<min(chunkStart + chunkSize, uniqueEmails.count)])
+        // First, try fetching by UID
+        for chunkStart in stride(from: 0, to: uniqueIdentifiers.count, by: chunkSize) {
+            let chunk = Array(uniqueIdentifiers[chunkStart..<min(chunkStart + chunkSize, uniqueIdentifiers.count)])
+            do {
+                let snapshot = try await db.collection("users")
+                    .whereField("uid", in: chunk)
+                    .getDocuments()
+                
+                let users = snapshot.documents.compactMap { doc -> UserModel? in
+                    unresolved.remove(doc.documentID)
+                    return UserModel().initFromFirestore(userData: doc.data())
+                }
+                results.append(contentsOf: users)
+            } catch {
+                print("Failed to fetch users by UID chunk: \(error.localizedDescription)")
+            }
+        }
+        
+        let remainingHandles = Array(unresolved)
+        guard !remainingHandles.isEmpty else { return results }
+        
+        // Fallback: fetch by email/contact handle
+        for chunkStart in stride(from: 0, to: remainingHandles.count, by: chunkSize) {
+            let chunk = Array(remainingHandles[chunkStart..<min(chunkStart + chunkSize, remainingHandles.count)])
             do {
                 let snapshot = try await db.collection("users")
                     .whereField("email", in: chunk)
@@ -198,7 +223,7 @@ final class EventChatService {
                 }
                 results.append(contentsOf: users)
             } catch {
-                print("Failed to fetch users for chat notification: \(error.localizedDescription)")
+                print("Failed to fetch users by contact handle chunk: \(error.localizedDescription)")
             }
         }
         

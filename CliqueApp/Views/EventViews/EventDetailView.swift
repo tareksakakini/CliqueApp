@@ -49,19 +49,19 @@ struct EventDetailView: View {
     }
     
     private var isHost: Bool {
-        currentEvent.host == user.email
+        currentEvent.host == user.uid
     }
     
     private var isAttending: Bool {
-        currentEvent.attendeesAccepted.contains(user.email)
+        currentEvent.attendeesAccepted.contains(user.uid)
     }
     
     private var isInvited: Bool {
-        currentEvent.attendeesInvited.contains(user.email)
+        currentEvent.attendeesInvited.contains(user.uid)
     }
     
     private var hasDeclined: Bool {
-        currentEvent.attendeesDeclined.contains(user.email)
+        currentEvent.attendeesDeclined.contains(user.uid)
     }
     
     private var durationText: String {
@@ -396,8 +396,8 @@ struct EventDetailView: View {
                     .foregroundColor(.secondary)
             }
             
-            if let host = vm.getUser(username: currentEvent.host) {
-                let isViewingUser = host.email == user.email
+            if let host = vm.getUser(by: currentEvent.host) {
+                let isViewingUser = host.uid == user.uid
                 
                 if isViewingUser {
                     // Not clickable when viewing yourself as host
@@ -506,7 +506,7 @@ struct EventDetailView: View {
                 
                 LazyVStack(spacing: 12) {
                     ForEach(currentEvent.attendeesAccepted, id: \.self) { attendeeEmail in
-                        if let attendee = vm.getUser(username: attendeeEmail) {
+                        if let attendee = vm.getUser(by: attendeeEmail) {
                             attendeeRow(user: attendee, status: .coming)
                         }
                     }
@@ -524,7 +524,7 @@ struct EventDetailView: View {
                 
                 LazyVStack(spacing: 12) {
                     ForEach(currentEvent.attendeesInvited, id: \.self) { attendeeEmail in
-                        if let attendee = vm.getUser(username: attendeeEmail) {
+                        if let attendee = vm.getUser(by: attendeeEmail) {
                             attendeeRow(user: attendee, status: .pending)
                         }
                     }
@@ -542,7 +542,7 @@ struct EventDetailView: View {
                 
                 LazyVStack(spacing: 12) {
                     ForEach(currentEvent.attendeesDeclined, id: \.self) { attendeeEmail in
-                        if let attendee = vm.getUser(username: attendeeEmail) {
+                        if let attendee = vm.getUser(by: attendeeEmail) {
                             attendeeRow(user: attendee, status: .notComing)
                         }
                     }
@@ -586,7 +586,7 @@ struct EventDetailView: View {
     }
     
     private func attendeeRow(user attendee: UserModel, status: AttendeeStatus) -> some View {
-        let isViewingUser = attendee.email == user.email
+        let isViewingUser = attendee.uid == user.uid
         
         return Group {
             if isViewingUser {
@@ -938,11 +938,11 @@ struct EventDetailView: View {
     private func acceptDeclinedInvite() async {
         do {
             let databaseManager = DatabaseManager()
-            try await databaseManager.respondInvite(eventId: currentEvent.id, userId: user.email, action: "acceptDeclined")
+            try await databaseManager.respondInvite(eventId: currentEvent.id, userId: user.uid, action: "acceptDeclined")
             try await vm.getAllEvents()
             
             // Send notification to host
-            if let host = vm.getUser(username: currentEvent.host), currentEvent.host != user.email {
+            if let host = vm.getUser(by: currentEvent.host), currentEvent.host != user.uid {
                 let notificationText = "\(user.fullname) has accepted your event invitation!"
                 let route = NotificationRouteBuilder.eventDetail(eventId: currentEvent.id,
                                                                  inviteView: false,

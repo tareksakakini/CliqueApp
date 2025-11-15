@@ -48,9 +48,9 @@ final class EventChatUnreadStore: ObservableObject {
         }
     }
     
-    func unreadCount(for eventId: String, userEmail: String) -> Int {
+    func unreadCount(for eventId: String, userIdentifier: String) -> Int {
         guard !eventId.isEmpty else { return 0 }
-        return metadataByEvent[eventId]?.unreadCount(for: userEmail) ?? 0
+        return metadataByEvent[eventId]?.unreadCount(for: userIdentifier) ?? 0
     }
     
     deinit {

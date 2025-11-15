@@ -188,7 +188,7 @@ struct AISuggestionsView: View {
             attendeesAccepted: [],
             attendeesInvited: [],
             attendeesDeclined: [],
-            host: user.email,
+            host: user.uid,
             eventPic: "",
             invitedPhoneNumbers: [],
             acceptedPhoneNumbers: [],

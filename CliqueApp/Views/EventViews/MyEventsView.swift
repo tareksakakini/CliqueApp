@@ -39,6 +39,15 @@ struct MyEventsView: View {
         return isInviteView ? [.pending, .declined] : [.upcoming, .past]
     }
     
+    private var userIdentifierSet: Set<String> {
+        Set(user.identifierCandidates)
+    }
+    
+    private func containsUser(_ identifiers: Set<String>, in list: [String]) -> Bool {
+        guard !identifiers.isEmpty else { return false }
+        return list.contains { identifiers.contains($0) }
+    }
+    
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -169,18 +178,19 @@ struct MyEventsView: View {
         if isInviteView {
             // For invite view, filter based on pending/declined status and exclude past events
             let now = Date()
+            let identifiers = userIdentifierSet
             
             switch selectedEventType {
             case .pending:
                 return vm.events
                     .filter { event in
-                        event.attendeesInvited.contains(user.email) && event.startDateTime >= now
+                        containsUser(identifiers, in: event.attendeesInvited) && event.startDateTime >= now
                     }
                     .sorted { $0.startDateTime < $1.startDateTime }
             case .declined:
                 return vm.events
                     .filter { event in
-                        event.attendeesDeclined.contains(user.email) && event.startDateTime >= now
+                        containsUser(identifiers, in: event.attendeesDeclined) && event.startDateTime >= now
                     }
                     .sorted { $0.startDateTime < $1.startDateTime }
             default:
@@ -188,9 +198,10 @@ struct MyEventsView: View {
             }
         } else {
             // For events view, filter based on upcoming/past
+            let identifiers = userIdentifierSet
             let allEvents = vm.events.filter { event in
                 let checklist = event.attendeesAccepted + [event.host]
-                return checklist.contains(user.email)
+                return containsUser(identifiers, in: checklist)
             }
             
             let now = Date()
@@ -325,7 +336,7 @@ struct ModernEventPillView: View {
     }
     
     private var unreadCount: Int {
-        unreadStore.unreadCount(for: event.id, userEmail: user.email)
+        unreadStore.unreadCount(for: event.id, userIdentifier: user.uid)
     }
     
     private var unreadCountLabel: String {
@@ -540,7 +551,7 @@ struct ModernEventPillView: View {
             Spacer()
             
             // Host Info
-            if let host = vm.getUser(username: event.host) {
+            if let host = vm.getUser(by: event.host) {
                 VStack(alignment: .trailing, spacing: 4) {
                     Text("HOST")
                         .font(.system(size: 10, weight: .bold, design: .rounded))
@@ -555,9 +566,6 @@ struct ModernEventPillView: View {
             }
         }
     }
-    
-    
-    
     private func presentEventDetail(autoOpenChat: Bool) {
         Task {
             let freshEvent = await vm.refreshEventById(id: event.id)

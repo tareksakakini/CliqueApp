@@ -236,7 +236,7 @@ extension EventResponseView {
         HStack {
             EventTitle
             Spacer()
-            if event.host == user.email {
+            if event.host == user.uid {
                 EditButton
             }
         }
@@ -300,7 +300,7 @@ extension EventResponseView {
             .bold()
             .padding(.top, 15)
             
-            if let user = vm.getUser(username: event.host) {
+            if let user = vm.getUser(by: event.host) {
                 HStack {
                     ProfilePictureView(user: user, diameter: 30, isPhone: false)
                     Text("\(user.fullname)")
@@ -313,7 +313,7 @@ extension EventResponseView {
     
     private var EventAttendeesAccepted: some View {
         ForEach(event.attendeesAccepted, id: \.self) {username in
-            if let user = vm.getUser(username: username) {
+            if let user = vm.getUser(by: username) {
                 HStack {
                     ProfilePictureView(user: user, diameter: 30, isPhone: false)
                     Text("\(user.fullname)")
@@ -326,7 +326,7 @@ extension EventResponseView {
     
     private var EventAttendeesInvited: some View {
         ForEach(event.attendeesInvited, id: \.self) {username in
-            if let user = vm.getUser(username: username) {
+            if let user = vm.getUser(by: username) {
                 HStack {
                     ProfilePictureView(user: user, diameter: 30, isPhone: false)
                     Text("\(user.fullname)")

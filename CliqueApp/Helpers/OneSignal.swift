@@ -57,6 +57,8 @@ func sendPushNotification(notificationText: String,
     
     // Add custom data for badge calculation in extension
     var customData: [String: Any] = [:]
+    customData["receiverId"] = receiverUID
+    print("📤 Added receiverId to notification: \(receiverUID)")
     if let receiverEmail = receiverEmail {
         customData["receiverEmail"] = receiverEmail
         print("📤 Added receiverEmail to notification: \(receiverEmail)")
@@ -104,7 +106,7 @@ func sendPushNotificationWithBadge(notificationText: String,
                                    receiverEmail: String,
                                    route: [String: Any]? = nil,
                                    title: String? = nil) async {
-    let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverEmail)
+    let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverUID)
     sendPushNotification(notificationText: notificationText,
                          receiverUID: receiverUID,
                          receiverEmail: receiverEmail,
@@ -125,7 +127,7 @@ func sendSilentBadgeUpdate(receiverUID: String, receiverEmail: String) async {
         return
     }
     
-    let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverEmail)
+    let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverUID)
     
     let url = URL(string: "https://onesignal.com/api/v1/notifications")!
     var request = URLRequest(url: url)
@@ -139,7 +141,7 @@ func sendSilentBadgeUpdate(receiverUID: String, receiverEmail: String) async {
         "content_available": true, // Silent notification
         "ios_badgeType": "SetTo",
         "ios_badgeCount": badgeCount,
-        "data": ["receiverEmail": receiverEmail, "badgeUpdate": true]
+        "data": ["receiverEmail": receiverEmail, "receiverId": receiverUID, "badgeUpdate": true]
     ]
     
     do {

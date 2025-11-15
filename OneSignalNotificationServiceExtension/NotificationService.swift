@@ -22,13 +22,19 @@ class NotificationService: UNNotificationServiceExtension {
             
             // Extract receiver email from notification data
             var receiverEmail: String? = nil
+            var receiverId: String? = nil
             
             // Try to get email from OneSignal custom data format
             if let custom = bestAttemptContent.userInfo["custom"] as? [String: Any],
-               let additionalData = custom["a"] as? [String: Any],
-               let email = additionalData["receiverEmail"] as? String {
-                receiverEmail = email
-                print("🔔 [Extension] Found email in custom.a: \(email)")
+               let additionalData = custom["a"] as? [String: Any] {
+                if let email = additionalData["receiverEmail"] as? String {
+                    receiverEmail = email
+                    print("🔔 [Extension] Found email in custom.a: \(email)")
+                }
+                if let userId = additionalData["receiverId"] as? String {
+                    receiverId = userId
+                    print("🔔 [Extension] Found receiverId in custom.a: \(userId)")
+                }
             }
             // Also try direct data field
             else if let email = bestAttemptContent.userInfo["receiverEmail"] as? String {
@@ -36,9 +42,9 @@ class NotificationService: UNNotificationServiceExtension {
                 print("🔔 [Extension] Found email in root: \(email)")
             }
             
-            if let email = receiverEmail {
+            if receiverEmail != nil || receiverId != nil {
                 // Calculate and set badge
-                calculateAndSetBadge(for: email, content: bestAttemptContent, handler: contentHandler)
+                calculateAndSetBadge(userId: receiverId, email: receiverEmail, content: bestAttemptContent, handler: contentHandler)
             } else {
                 print("⚠️ [Extension] No receiverEmail found, delivering notification without badge")
                 contentHandler(bestAttemptContent)
@@ -46,8 +52,8 @@ class NotificationService: UNNotificationServiceExtension {
         }
     }
     
-    private func calculateAndSetBadge(for email: String, content: UNMutableNotificationContent, handler: @escaping (UNNotificationContent) -> Void) {
-        print("🔔 [Extension] Calculating badge for: \(email)")
+    private func calculateAndSetBadge(userId: String?, email: String?, content: UNMutableNotificationContent, handler: @escaping (UNNotificationContent) -> Void) {
+        print("🔔 [Extension] Calculating badge for: id=\(userId ?? "nil"), email=\(email ?? "nil")")
         
         // Initialize Firebase if needed
         if FirebaseApp.app() == nil {
@@ -60,9 +66,36 @@ class NotificationService: UNNotificationServiceExtension {
         // Use a task to handle async operations
         Task {
             do {
+                var resolvedId = userId
+                var resolvedEmail = email
+                
+                if resolvedId == nil, let email = email {
+                    let userSnapshot = try await db.collection("users")
+                        .whereField("email", isEqualTo: email)
+                        .limit(to: 1)
+                        .getDocuments()
+                    resolvedId = userSnapshot.documents.first?.documentID
+                }
+                
+                if resolvedEmail == nil, let userId = resolvedId {
+                    let doc = try await db.collection("users").document(userId).getDocument()
+                    resolvedEmail = (doc.data()?["email"] as? String) ?? email
+                }
+                
+                guard let finalId = resolvedId else {
+                    print("❌ [Extension] Unable to resolve user ID for badge calculation")
+                    handler(content)
+                    return
+                }
+                guard let finalEmail = resolvedEmail else {
+                    print("❌ [Extension] Unable to resolve user handle for badge calculation")
+                    handler(content)
+                    return
+                }
+                
                 // Count upcoming event invites
                 let eventSnapshot = try await db.collection("events")
-                    .whereField("attendeesInvited", arrayContains: email)
+                    .whereField("attendeesInvited", arrayContains: finalId)
                     .getDocuments()
                 
                 let now = Date()
@@ -78,7 +111,7 @@ class NotificationService: UNNotificationServiceExtension {
                 
                 // Count friend requests
                 let friendReqSnapshot = try await db.collection("friendRequests")
-                    .document(email)
+                    .document(finalEmail)
                     .getDocument()
                 let friendRequests = (friendReqSnapshot.data()?["requests"] as? [String])?.count ?? 0
                 
@@ -88,7 +121,7 @@ class NotificationService: UNNotificationServiceExtension {
                 let totalBadge = upcomingInvites + friendRequests
                 content.badge = NSNumber(value: totalBadge)
                 
-                print("🔔 [Extension] ✅ Set badge to \(totalBadge) for \(email)")
+                print("🔔 [Extension] ✅ Set badge to \(totalBadge) for id=\(finalId)")
                 
                 // Deliver the notification
                 handler(content)

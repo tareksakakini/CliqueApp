@@ -152,7 +152,7 @@ func acceptButtonPressed(user: UserModel, event: EventModel) async {
     await BadgeManager.shared.updateBadge(for: user.email)
     
     // Notify host with badge
-    if let host = self.getUser(username: event.host) {
+    if let host = self.getUser(by: event.host) {
         await sendPushNotificationWithBadge(
             notificationText: "\(user.fullname) is coming to your event!",
             receiverID: host.subscriptionId,
