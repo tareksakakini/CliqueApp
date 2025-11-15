@@ -110,11 +110,10 @@ struct PhoneNumberFieldWithCountryCode: View {
     // Format phone number based on country
     private func formatPhoneNumber(_ number: String, for country: Country) -> String {
         let digits = number.filter { $0.isNumber }
+        if digits.isEmpty { return "" }
         
-        // US and Canada formatting: (###) ###-####
+        // Only format US and Canada numbers: (###) ###-####
         if country.code == "US" || country.code == "CA" {
-            if digits.isEmpty { return "" }
-            
             var formatted = ""
             for (index, character) in digits.enumerated() {
                 if index == 0 {
@@ -133,36 +132,8 @@ struct PhoneNumberFieldWithCountryCode: View {
             return formatted
         }
         
-        // UK formatting: ##### ######
-        else if country.code == "GB" {
-            if digits.isEmpty { return "" }
-            
-            var formatted = ""
-            for (index, character) in digits.enumerated() {
-                formatted.append(character)
-                if index == 4 {
-                    formatted.append(" ")
-                } else if index == 10 {
-                    break
-                }
-            }
-            return formatted
-        }
-        
-        // General international formatting: Add space every 3-4 digits
-        else {
-            if digits.isEmpty { return "" }
-            
-            var formatted = ""
-            for (index, character) in digits.enumerated() {
-                formatted.append(character)
-                // Add space after every 3 digits, but not at the end
-                if (index + 1) % 3 == 0 && index < digits.count - 1 && index < 14 {
-                    formatted.append(" ")
-                }
-            }
-            return formatted
-        }
+        // All other countries: just return the digits as-is
+        return digits
     }
 }
 
