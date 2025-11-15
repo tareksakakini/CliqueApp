@@ -41,7 +41,7 @@ private extension PersonPillView {
                     .font(.title3)
                     .bold()
                 
-                Text(user.email)
+                Text(user.uid)
                     .foregroundColor(Color.gray)
                     .font(.caption)
                     .bold()
@@ -85,8 +85,8 @@ private extension PersonPillView {
                   let viewing = viewingUser else { return }
             Task {
                 do {
-                    try await DatabaseManager().updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "remove")
-                    try await vm.getUserFriends(user_email: viewing.email)
+                    try await DatabaseManager().updateFriends(viewing_user: viewing.uid, viewed_user: displayed.uid, action: "remove")
+                    try await vm.getUserFriends(userId: viewing.uid)
                 } catch {
                     print("Failed to remove friendship: \(error.localizedDescription)")
                 }
@@ -125,9 +125,9 @@ private extension PersonPillView {
                 Task {
                     do {
                         let db = DatabaseManager()
-                        try await db.updateFriends(viewing_user: viewing.email, viewed_user: displayed.email, action: "add")
-                        try await vm.getUserFriends(user_email: viewing.email)
-                        try await vm.getUserFriendRequests(user_email: viewing.email)
+                        try await db.updateFriends(viewing_user: viewing.uid, viewed_user: displayed.uid, action: "add")
+                        try await vm.getUserFriends(userId: viewing.uid)
+                        try await vm.getUserFriendRequests(userId: viewing.uid)
                         
                         // Update badge for the user who accepted
                         await BadgeManager.shared.updateBadge(for: viewing.uid)
@@ -136,7 +136,6 @@ private extension PersonPillView {
                         let route = NotificationRouteBuilder.friends(section: .friends)
                         await sendPushNotificationWithBadge(notificationText: "\(viewing.fullname) just accepted your friend request!",
                                                             receiverUID: displayed.uid,
-                                                            receiverEmail: displayed.email,
                                                             route: route)
                     } catch {
                         print("Failed to accept friend request: \(error.localizedDescription)")
@@ -155,9 +154,9 @@ private extension PersonPillView {
                       let viewing = viewingUser else { return }
                 Task {
                     do {
-                        try await DatabaseManager().removeFriendRequest(sender: displayed.email, receiver: viewing.email)
-                        try await vm.getUserFriends(user_email: viewing.email)
-                        try await vm.getUserFriendRequests(user_email: viewing.email)
+                        try await DatabaseManager().removeFriendRequest(sender: displayed.uid, receiver: viewing.uid)
+                        try await vm.getUserFriends(userId: viewing.uid)
+                        try await vm.getUserFriendRequests(userId: viewing.uid)
                         
                         // Update badge for the user who rejected
                         await BadgeManager.shared.updateBadge(for: viewing.uid)
@@ -183,14 +182,13 @@ private extension PersonPillView {
             Task {
                 do {
                     let db = DatabaseManager()
-                    try await db.sendFriendRequest(sender: viewing.email, receiver: displayed.email)
-                    try await vm.getUserFriendRequestsSent(user_email: viewing.email)
+                    try await db.sendFriendRequest(sender: viewing.uid, receiver: displayed.uid)
+                    try await vm.getUserFriendRequestsSent(userId: viewing.uid)
                     
                     // Send notification with badge to the receiver
                     let route = NotificationRouteBuilder.friends(section: .requests)
                     await sendPushNotificationWithBadge(notificationText: "\(viewing.fullname) just sent you a friend request!",
                                                         receiverUID: displayed.uid,
-                                                        receiverEmail: displayed.email,
                                                         route: route)
                 } catch {
                     print("Friend Request Failed: \(error.localizedDescription)")

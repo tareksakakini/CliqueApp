@@ -299,7 +299,7 @@ struct AccountInfoView: View {
                 
                 if let user = user {
                     // Critical validation before navigation
-                    guard !user.email.isEmpty else {
+                    guard !user.uid.isEmpty else {
                         print("❌ User object has empty email after creation")
                         alertMessage = "Account creation failed - incomplete user data. Please try again."
                         showAlert = true

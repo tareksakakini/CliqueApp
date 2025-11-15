@@ -985,7 +985,7 @@ struct CreateEventView: View {
     private func makePlaceholderUser(identifier: String) -> UserModel {
         var placeholder = UserModel()
         placeholder.uid = identifier
-        placeholder.email = identifier
+        placeholder.uid = identifier
         placeholder.fullname = identifier
         placeholder.username = identifier.split(separator: "@").first.map(String.init) ?? identifier
         return placeholder

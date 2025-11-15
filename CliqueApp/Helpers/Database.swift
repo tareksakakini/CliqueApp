@@ -8,38 +8,36 @@ import FirebaseStorage
 class DatabaseManager {
     private let db = Firestore.firestore()
     
-    func addUserToFirestore(uid: String, contactHandle: String, fullname: String, username: String, profilePic: String, gender: String, phoneNumber: String = "") async throws {
+    func addUserToFirestore(userId: String,
+                            authUID: String,
+                            fullname: String,
+                            username: String,
+                            profilePic: String,
+                            gender: String,
+                            phoneNumber: String = "") async throws {
         // Check network connection before attempting operation
         try ErrorHandler.shared.validateNetworkConnection()
         
         // Validate inputs
-        guard !uid.isEmpty else {
-            throw NSError(domain: "DatabaseError", code: 400, userInfo: [NSLocalizedDescriptionKey: "UID cannot be empty"])
+        guard !userId.isEmpty else {
+            throw NSError(domain: "DatabaseError", code: 400, userInfo: [NSLocalizedDescriptionKey: "User ID cannot be empty"])
         }
-        guard !contactHandle.isEmpty else {
-            throw NSError(domain: "DatabaseError", code: 400, userInfo: [NSLocalizedDescriptionKey: "Contact handle (phone) cannot be empty"])
+        guard !authUID.isEmpty else {
+            throw NSError(domain: "DatabaseError", code: 400, userInfo: [NSLocalizedDescriptionKey: "Auth UID cannot be empty"])
         }
         
-        let userRef = db.collection("users").document(uid)
+        let userRef = db.collection("users").document(userId)
         
         // Determine which phone to use and canonicalize it
-        let phoneToUse = phoneNumber.isEmpty ? contactHandle : phoneNumber
-        let canonicalPhone = PhoneNumberFormatter.canonical(phoneToUse)
-        let phoneE164 = PhoneNumberFormatter.e164(phoneToUse)
-        
-        // Use the canonical version for Firestore document IDs/contact handles
-        let storedHandle = canonicalPhone.isEmpty ? phoneToUse : canonicalPhone
-        // Persist the normalized E.164 phone number for contact info
-        let storedPhoneNumber = phoneE164.isEmpty ? storedHandle : phoneE164
-        
-        // Final validation: ensure we're not storing empty email
-        guard !storedHandle.isEmpty else {
-            throw NSError(domain: "DatabaseError", code: 400, userInfo: [NSLocalizedDescriptionKey: "Stored handle (email field) cannot be empty after canonicalization"])
-        }
+        let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+        let phoneE164 = PhoneNumberFormatter.e164(phoneNumber)
+        let storedPhoneNumber = phoneE164.isEmpty
+            ? (canonicalPhone.isEmpty ? phoneNumber : canonicalPhone)
+            : phoneE164
         
         let userData: [String: Any] = [
-            "uid": uid,
-            "email": storedHandle,
+            "uid": userId,
+            "authUID": authUID,
             "createdAt": Date(),
             "fullname": fullname,
             "username": username,
@@ -48,7 +46,7 @@ class DatabaseManager {
             "phoneNumber": storedPhoneNumber
         ]
         
-        print("📝 Creating Firestore user document with email (phone): \(storedHandle)")
+        print("📝 Creating Firestore user document with userId: \(userId)")
         
         do {
             try await userRef.setData(userData)
@@ -59,11 +57,11 @@ class DatabaseManager {
         }
     }
     
-    func getUserFromFirestore(uid: String) async throws -> UserModel {
+    func getUserById(_ userId: String) async throws -> UserModel {
         // Check network connection before attempting operation
         try ErrorHandler.shared.validateNetworkConnection()
         
-        let userRef = db.collection("users").document(uid)
+        let userRef = db.collection("users").document(userId)
         
         do {
             let document = try await userRef.getDocument()
@@ -75,6 +73,20 @@ class DatabaseManager {
             print("Error fetching user: \(error.localizedDescription)")
             throw error
         }
+    }
+    
+    func getUserByAuthUID(_ authUID: String) async throws -> UserModel {
+        try ErrorHandler.shared.validateNetworkConnection()
+        
+        let snapshot = try await db.collection("users")
+            .whereField("authUID", isEqualTo: authUID)
+            .limit(to: 1)
+            .getDocuments()
+        
+        guard let document = snapshot.documents.first else {
+            throw NSError(domain: "FirestoreError", code: 404, userInfo: [NSLocalizedDescriptionKey: "User not found for auth UID"])
+        }
+        return UserModel().initFromFirestore(userData: document.data())
     }
     
     func addEventToFirestore(id: String, title: String, location: String, description: String, startDateTime: Date, endDateTime: Date, noEndTime: Bool, attendeesAccepted: [String], attendeesInvited: [String], attendeesDeclined: [String], host: String, invitedPhoneNumbers: [String], acceptedPhoneNumbers: [String], declinedPhoneNumbers: [String], selectedImage: UIImage?) async throws {
@@ -477,11 +489,11 @@ class DatabaseManager {
         }
     }
     
-    func retrieveFriendRequest(user_email: String) async throws -> [String] {
+    func retrieveFriendRequest(userId: String) async throws -> [String] {
         // Check network connection before attempting operation
         try ErrorHandler.shared.validateNetworkConnection()
         
-        let receiverRef = db.collection("friendRequests").document(user_email)
+        let receiverRef = db.collection("friendRequests").document(userId)
         
         do {
             // Fetch both users' current friend lists in parallel
@@ -495,11 +507,11 @@ class DatabaseManager {
         }
     }
     
-    func retrieveFriendRequestSent(user_email: String) async throws -> [String] {
+    func retrieveFriendRequestSent(userId: String) async throws -> [String] {
         // Check network connection before attempting operation
         try ErrorHandler.shared.validateNetworkConnection()
         
-        let receiverRef = db.collection("friendRequestsSent").document(user_email)
+        let receiverRef = db.collection("friendRequestsSent").document(userId)
         
         do {
             // Fetch both users' current friend lists in parallel
@@ -513,11 +525,11 @@ class DatabaseManager {
         }
     }
     
-    func retrieveFriends(user_email: String) async throws -> [String] {
+    func retrieveFriends(userId: String) async throws -> [String] {
         // Check network connection before attempting operation
         try ErrorHandler.shared.validateNetworkConnection()
         
-        let receiverRef = db.collection("friendships").document(user_email)
+        let receiverRef = db.collection("friendships").document(userId)
         
         do {
             // Fetch both users' current friend lists in parallel
@@ -531,38 +543,38 @@ class DatabaseManager {
         }
     }
     
-    func deleteUserAccount(uid: String, email: String) async throws {
+    func deleteUserAccount(userId: String, authUID: String) async throws {
         // Check network connection before attempting operation
         try ErrorHandler.shared.validateNetworkConnection()
         
-        let userRef = db.collection("users").document(uid)
-        let userFriendRef = db.collection("friendships").document(email)
-        let friendRequestRef = db.collection("friendRequests").document(email)
+        let userRef = db.collection("users").document(userId)
+        let userFriendRef = db.collection("friendships").document(userId)
+        let friendRequestRef = db.collection("friendRequests").document(userId)
         
         do {
             // Delete the user's authentication account
-            if let user = Auth.auth().currentUser {
+            if let user = Auth.auth().currentUser, user.uid == authUID {
                 try await user.delete()
             }
             
             // Fetch all events where the user is an attendee
-            let eventSnapshot = try await db.collection("events").whereField("attendeesAccepted", arrayContains: uid).getDocuments()
+            let eventSnapshot = try await db.collection("events").whereField("attendeesAccepted", arrayContains: userId).getDocuments()
             for document in eventSnapshot.documents {
                 let eventRef = db.collection("events").document(document.documentID)
                 try await eventRef.updateData([
-                    "attendeesAccepted": FieldValue.arrayRemove([uid])
+                    "attendeesAccepted": FieldValue.arrayRemove([userId])
                 ])
             }
             
-            let invitedSnapshot = try await db.collection("events").whereField("attendeesInvited", arrayContains: uid).getDocuments()
+            let invitedSnapshot = try await db.collection("events").whereField("attendeesInvited", arrayContains: userId).getDocuments()
             for document in invitedSnapshot.documents {
                 let eventRef = db.collection("events").document(document.documentID)
                 try await eventRef.updateData([
-                    "attendeesInvited": FieldValue.arrayRemove([uid])
+                    "attendeesInvited": FieldValue.arrayRemove([userId])
                 ])
             }
             
-            let hostingSnapshot = try await db.collection("events").whereField("host", isEqualTo: uid).getDocuments()
+            let hostingSnapshot = try await db.collection("events").whereField("host", isEqualTo: userId).getDocuments()
             for document in hostingSnapshot.documents {
                 let eventRef = db.collection("events").document(document.documentID)
                 try await eventRef.updateData([
@@ -576,7 +588,7 @@ class DatabaseManager {
                 for friendId in friendsList {
                     let friendRef = db.collection("friendships").document(friendId)
                     try await friendRef.updateData([
-                        "friends": FieldValue.arrayRemove([email])
+                        "friends": FieldValue.arrayRemove([userId])
                     ])
                 }
             }
@@ -585,8 +597,8 @@ class DatabaseManager {
             let friendRequestsSnapshot = try await db.collection("friendRequests").getDocuments()
             for document in friendRequestsSnapshot.documents {
                 let friendRequestRef = db.collection("friendRequests").document(document.documentID)
-                if var requests = document.data()["requests"] as? [String], requests.contains(email) {
-                    requests.removeAll { $0 == email }
+                if var requests = document.data()["requests"] as? [String], requests.contains(userId) {
+                    requests.removeAll { $0 == userId }
                     try await friendRequestRef.updateData(["requests": requests])
                 }
             }
@@ -660,7 +672,7 @@ class DatabaseManager {
         try await updateUserPhoneNumber(uid: uid, phoneNumber: phoneNumber)
         
         // Get user information to use for updating events
-        let user = try await getUserFromFirestore(uid: uid)
+        let user = try await getUserById(uid)
         let userIdentifier = user.stableIdentifier
         
         // Find all events where this phone number is invited
@@ -912,33 +924,20 @@ class DatabaseManager {
             // Normalize the phone number to match stored format
             let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
             
-            // Query for users where email or phoneNumber field matches the canonical phone
-            let emailQuery = usersRef.whereField("email", isEqualTo: canonicalPhone)
+            // Query for users where phoneNumber field matches the canonical phone
             let phoneQuery = usersRef.whereField("phoneNumber", isEqualTo: canonicalPhone)
-            
-            // Execute both queries in parallel
-            async let emailSnapshot = emailQuery.getDocuments()
-            async let phoneSnapshot = phoneQuery.getDocuments()
-            
-            let (emailResults, phoneResults) = try await (emailSnapshot, phoneSnapshot)
+            let phoneSnapshot = try await phoneQuery.getDocuments()
             
             // Check if we found any valid matches
-            let emailMatches = emailResults.documents.filter { document in
-                if let email = document.data()["email"] as? String {
-                    return PhoneNumberFormatter.numbersMatch(email, canonicalPhone)
-                }
-                return false
-            }
-            
-            let phoneMatches = phoneResults.documents.filter { document in
+            let phoneMatches = phoneSnapshot.documents.filter { document in
                 if let phone = document.data()["phoneNumber"] as? String {
                     return PhoneNumberFormatter.numbersMatch(phone, canonicalPhone)
                 }
                 return false
             }
             
-            let isRegistered = !emailMatches.isEmpty || !phoneMatches.isEmpty
-            print("Phone '\(phoneNumber)' (canonical: \(canonicalPhone)) check: \(isRegistered ? "REGISTERED" : "AVAILABLE") (email matches: \(emailMatches.count), phone matches: \(phoneMatches.count))")
+            let isRegistered = !phoneMatches.isEmpty
+            print("Phone '\(phoneNumber)' (canonical: \(canonicalPhone)) check: \(isRegistered ? "REGISTERED" : "AVAILABLE") (matches: \(phoneMatches.count))")
             return isRegistered
         } catch {
             print("Error checking phone number registration: \(error.localizedDescription)")

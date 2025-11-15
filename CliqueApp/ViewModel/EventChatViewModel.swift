@@ -131,6 +131,6 @@ final class EventChatViewModel: ObservableObject {
         if !message.senderId.isEmpty {
             return message.senderId == currentUser.uid
         }
-        return message.senderHandle == currentUser.email
+        return message.senderHandle == currentUser.uid
     }
 }

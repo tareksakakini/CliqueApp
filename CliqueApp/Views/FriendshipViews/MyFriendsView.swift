@@ -132,9 +132,9 @@ struct MyFriendsView: View {
             
             do {
                 try await vm.getAllUsers()
-                try await vm.getUserFriends(user_email: user.email)
-                try await vm.getUserFriendRequests(user_email: user.email)
-                try await vm.getUserFriendRequestsSent(user_email: user.email)
+                try await vm.getUserFriends(userId: user.uid)
+                try await vm.getUserFriendRequests(userId: user.uid)
+                try await vm.getUserFriendRequestsSent(userId: user.uid)
             } catch {
                 print("Failed to refresh friends data: \(error.localizedDescription)")
                 let errorMessage = ErrorHandler.shared.handleError(error, operation: "Refresh friends")

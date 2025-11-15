@@ -828,7 +828,7 @@ struct MySettingsView: View {
                 await clearOneSignalForUser()
                 
                 let databaseManager = DatabaseManager()
-                try await databaseManager.deleteUserAccount(uid: user.uid, email: user.email)
+                try await databaseManager.deleteUserAccount(userId: user.uid, authUID: user.authUID)
                 deleteResult = (success: true, message: "Account deleted successfully")
                 goToAccountDeletedScreen = true
                 pendingDeletion = false

@@ -86,8 +86,8 @@ struct AddFriendView: View {
             
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user), id: \.email) { user_returned in
-                        if ud.friendInviteSent.contains(user_returned.email) {
+                    ForEach(ud.stringMatchUsers(query: searchEntry, viewingUser: user), id: \.uid) { user_returned in
+                        if ud.friendInviteSent.contains(user_returned.uid) {
                             ModernSearchPersonPillView(
                                 viewingUser: user,
                                 displayedUser: user_returned,
@@ -97,7 +97,7 @@ struct AddFriendView: View {
                                     selectedPerson = person
                                 }
                             )
-                        } else if user.email != user_returned.email && !ud.friendship.contains(user_returned.email) {
+                        } else if user.uid != user_returned.uid && !ud.friendship.contains(user_returned.uid) {
                             ModernSearchPersonPillView(
                                 viewingUser: user,
                                 displayedUser: user_returned,

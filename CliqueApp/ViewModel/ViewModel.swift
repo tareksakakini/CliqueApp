@@ -21,11 +21,11 @@ class ViewModel: ObservableObject {
     @Published var userProfilePic: UIImage?
     @Published var signedInUser: UserModel? {
         didSet {
-            guard signedInUser?.email != oldValue?.email else { return }
+            guard signedInUser?.uid != oldValue?.uid else { return }
             
             stopRealtimeListeners()
             
-            guard let email = signedInUser?.email, !email.isEmpty else {
+            guard let userId = signedInUser?.uid, !userId.isEmpty else {
                 resetUserScopedData()
                 return
             }
@@ -34,7 +34,7 @@ class ViewModel: ObservableObject {
                 resetUserScopedData()
             }
             
-            startRealtimeListeners(for: email)
+            startRealtimeListeners(for: userId)
         }
     }
     
@@ -53,10 +53,10 @@ class ViewModel: ObservableObject {
         self.userProfilePic = nil
     }
     
-    func refreshData(user_email: String) async {
-        // Guard against empty email to prevent Firestore errors
-        guard !user_email.isEmpty else {
-            print("❌ Cannot refresh data: user_email is empty")
+    func refreshData(userId: String) async {
+        // Guard against empty identifier to prevent Firestore errors
+        guard !userId.isEmpty else {
+            print("❌ Cannot refresh data: userId is empty")
             return
         }
         
@@ -74,35 +74,31 @@ class ViewModel: ObservableObject {
         }
         
         do {
-            try await self.getUserFriends(user_email: user_email)
+            try await self.getUserFriends(userId: userId)
         } catch {
             print("Failed to refresh friends: \(error.localizedDescription)")
         }
         
         do {
-            try await self.getUserFriendRequests(user_email: user_email)
+            try await self.getUserFriendRequests(userId: userId)
         } catch {
             print("Failed to refresh friend requests: \(error.localizedDescription)")
         }
         
         do {
-            try await self.getUserFriendRequestsSent(user_email: user_email)
+            try await self.getUserFriendRequestsSent(userId: userId)
         } catch {
             print("Failed to refresh sent friend requests: \(error.localizedDescription)")
         }
         
         // Update badge after refreshing data
-        if let identifier = signedInUser?.uid, !identifier.isEmpty {
-            await BadgeManager.shared.updateBadge(for: identifier)
-        } else {
-            await BadgeManager.shared.updateBadge(for: user_email)
-        }
+        await BadgeManager.shared.updateBadge(for: userId)
     }
     
-    func getUserFriends(user_email: String) async throws {
+    func getUserFriends(userId: String) async throws {
         let firestoreService = DatabaseManager()
         do {
-            let fetchedRequests = try await firestoreService.retrieveFriends(user_email: user_email)
+            let fetchedRequests = try await firestoreService.retrieveFriends(userId: userId)
             self.friendship = fetchedRequests
         } catch {
             print("Failed to fetch friends: \(error.localizedDescription)")
@@ -110,10 +106,10 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func getUserFriendRequests(user_email: String) async throws {
+    func getUserFriendRequests(userId: String) async throws {
         let firestoreService = DatabaseManager()
         do {
-            let fetchedRequests = try await firestoreService.retrieveFriendRequest(user_email: user_email)
+            let fetchedRequests = try await firestoreService.retrieveFriendRequest(userId: userId)
             self.friendInviteReceived = fetchedRequests
         } catch {
             print("Failed to fetch friend requests: \(error.localizedDescription)")
@@ -121,10 +117,10 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func getUserFriendRequestsSent(user_email: String) async throws {
+    func getUserFriendRequestsSent(userId: String) async throws {
         let firestoreService = DatabaseManager()
         do {
-            let fetchedRequests = try await firestoreService.retrieveFriendRequestSent(user_email: user_email)
+            let fetchedRequests = try await firestoreService.retrieveFriendRequestSent(userId: userId)
             self.friendInviteSent = fetchedRequests
         } catch {
             print("Failed to fetch sent friend requests: \(error.localizedDescription)")
@@ -177,11 +173,7 @@ class ViewModel: ObservableObject {
     func getUser(by identifier: String) -> UserModel? {
         guard !identifier.isEmpty else { return nil }
         
-        if let match = users.first(where: { $0.uid == identifier }) {
-            return match
-        }
-        
-        if let match = users.first(where: { $0.email.caseInsensitiveCompare(identifier) == .orderedSame }) {
+        if let match = users.first(where: { $0.matchesIdentifier(identifier) }) {
             return match
         }
         
@@ -268,7 +260,6 @@ class ViewModel: ObservableObject {
                     let route = NotificationRouteBuilder.tab(preferredTab)
                     await sendPushNotificationWithBadge(notificationText: notificationText,
                                                         receiverUID: invitee.uid,
-                                                        receiverEmail: invitee.email,
                                                         route: route)
                     print("Sent event deletion notification to: \(inviteeId)")
                 }
@@ -279,16 +270,17 @@ class ViewModel: ObservableObject {
     }
     
     func getSignedInUser() async -> UserModel? {
-        let signedInUserUID = await AuthManager.shared.getSignedInUserID()
-        if let signedInUserUID = signedInUserUID {
-            let firestoreService = DatabaseManager()
-            let signedInUser = try? await firestoreService.getUserFromFirestore(uid: signedInUserUID)
-            if let user = signedInUser {
-                self.signedInUser = user
-            }
-            return signedInUser
+        guard let authUID = await AuthManager.shared.getSignedInUserID() else {
+            return nil
         }
-        else {
+        
+        let firestoreService = DatabaseManager()
+        do {
+            let user = try await firestoreService.getUserByAuthUID(authUID)
+            self.signedInUser = user
+            return user
+        } catch {
+            print("Failed to fetch signed in user: \(error.localizedDescription)")
             return nil
         }
     }
@@ -303,8 +295,15 @@ class ViewModel: ObservableObject {
             let storedPhone = e164Phone.isEmpty ? normalizedPhone : e164Phone
             let signupUser = try await AuthManager.shared.signUp(phoneNumber: normalizedPhone, verificationID: verificationID, smsCode: smsCode)
             let firestoreService = DatabaseManager()
-            try await firestoreService.addUserToFirestore(uid: signupUser.uid, contactHandle: normalizedPhone, fullname: fullname, username: username, profilePic: profilePic, gender: gender, phoneNumber: storedPhone)
-            let user = try await firestoreService.getUserFromFirestore(uid: signupUser.uid)
+            let userId = UUID().uuidString
+            try await firestoreService.addUserToFirestore(userId: userId,
+                                                          authUID: signupUser.uid,
+                                                          fullname: fullname,
+                                                          username: username,
+                                                          profilePic: profilePic,
+                                                          gender: gender,
+                                                          phoneNumber: storedPhone)
+            let user = try await firestoreService.getUserById(userId)
             
             self.signedInUser = user
             
@@ -347,20 +346,27 @@ class ViewModel: ObservableObject {
             
             // Add user info to Firestore
             let firestoreService = DatabaseManager()
-            try await firestoreService.addUserToFirestore(uid: currentUser, contactHandle: normalizedPhone, fullname: fullname, username: username, profilePic: profilePic, gender: gender, phoneNumber: storedPhone)
+            let userId = UUID().uuidString
+            try await firestoreService.addUserToFirestore(userId: userId,
+                                                          authUID: currentUser,
+                                                          fullname: fullname,
+                                                          username: username,
+                                                          profilePic: profilePic,
+                                                          gender: gender,
+                                                          phoneNumber: storedPhone)
             
             print("✅ User document created in Firestore")
             
             // Fetch the user back to verify it was created
-            let user = try await firestoreService.getUserFromFirestore(uid: currentUser)
+            let user = try await firestoreService.getUserById(userId)
             
-            // Critical validation: ensure the user has a valid email (phone number)
-            guard !user.email.isEmpty else {
-                print("❌ CRITICAL: User fetched from Firestore has empty email field")
-                throw ErrorHandler.AppError.authenticationFailed("User data is incomplete - email field is empty")
+            // Critical validation: ensure the user has a valid identifier
+            guard !user.uid.isEmpty else {
+                print("❌ CRITICAL: User fetched from Firestore has empty userId field")
+                throw ErrorHandler.AppError.authenticationFailed("User data is incomplete - user ID field is empty")
             }
             
-            print("✅ User fetched from Firestore - email: \(user.email), uid: \(user.uid)")
+            print("✅ User fetched from Firestore - uid: \(user.uid)")
             
             self.signedInUser = user
             
@@ -416,7 +422,7 @@ class ViewModel: ObservableObject {
             let normalizedPhone = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
             let signedInUser = try await AuthManager.shared.signIn(phoneNumber: normalizedPhone, verificationID: verificationID, smsCode: smsCode)
             let firestoreService = DatabaseManager()
-            let user = try await firestoreService.getUserFromFirestore(uid: signedInUser.uid)
+            let user = try await firestoreService.getUserById(signedInUser.uid)
             
             print("🔐 User authenticated: \(user.uid)")
             
@@ -459,7 +465,6 @@ class ViewModel: ObservableObject {
                                                                  preferredTab: .myEvents)
                 await sendPushNotificationWithBadge(notificationText: notificationText,
                                                     receiverUID: host.uid,
-                                                    receiverEmail: host.email,
                                                     route: route)
             }
         } catch {
@@ -485,7 +490,6 @@ class ViewModel: ObservableObject {
                                                                      preferredTab: .myEvents)
                     await sendPushNotificationWithBadge(notificationText: notificationText,
                                                         receiverUID: host.uid,
-                                                        receiverEmail: host.email,
                                                         route: route)
                 }
             }
@@ -512,7 +516,6 @@ class ViewModel: ObservableObject {
                                                                      preferredTab: .myEvents)
                     await sendPushNotificationWithBadge(notificationText: notificationText,
                                                         receiverUID: host.uid,
-                                                        receiverEmail: host.email,
                                                         route: route)
                 }
             }
@@ -581,7 +584,6 @@ class ViewModel: ObservableObject {
                                                               preferredTab: .invites)
                     await sendPushNotificationWithBadge(notificationText: invitationNotificationText,
                                                         receiverUID: inviteeFull.uid,
-                                                        receiverEmail: inviteeFull.email,
                                                         route: route)
                 }
             }
@@ -651,7 +653,6 @@ class ViewModel: ObservableObject {
                                                               preferredTab: preferredTab)
                     await sendPushNotificationWithBadge(notificationText: notificationText,
                                                         receiverUID: invitee.uid,
-                                                        receiverEmail: invitee.email,
                                                         route: route)
                     print("Sent event update notification to: \(inviteeId)")
                 }

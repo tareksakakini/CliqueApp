@@ -24,7 +24,6 @@ private func loadOneSignalConfig() -> (apiKey: String, appId: String)? {
 
 func sendPushNotification(notificationText: String,
                           receiverUID: String,
-                          receiverEmail: String? = nil,
                           badgeCount: Int? = nil,
                           route: [String: Any]? = nil,
                           title: String? = nil) {
@@ -59,10 +58,6 @@ func sendPushNotification(notificationText: String,
     var customData: [String: Any] = [:]
     customData["receiverId"] = receiverUID
     print("📤 Added receiverId to notification: \(receiverUID)")
-    if let receiverEmail = receiverEmail {
-        customData["receiverEmail"] = receiverEmail
-        print("📤 Added receiverEmail to notification: \(receiverEmail)")
-    }
     if let route = route {
         customData[NotificationRouter.Key.route] = route
         print("📤 Added route to notification: \(route)")
@@ -103,17 +98,15 @@ func sendPushNotification(notificationText: String,
 /// Sends a push notification with automatic badge count calculation
 func sendPushNotificationWithBadge(notificationText: String,
                                    receiverUID: String,
-                                   receiverEmail: String,
                                    route: [String: Any]? = nil,
                                    title: String? = nil) async {
     let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverUID)
     sendPushNotification(notificationText: notificationText,
                          receiverUID: receiverUID,
-                         receiverEmail: receiverEmail,
                          badgeCount: badgeCount,
                          route: route,
                          title: title)
-    print("📤 Sent notification to \(receiverEmail)")
+    print("📤 Sent notification to user \(receiverUID)")
     print("   Title: \(title ?? "Yalla")")
     print("   Text: \(notificationText)")
     print("   Badge will be set to: \(badgeCount)")
@@ -121,7 +114,7 @@ func sendPushNotificationWithBadge(notificationText: String,
 }
 
 /// Sends a silent notification to update badge count only
-func sendSilentBadgeUpdate(receiverUID: String, receiverEmail: String) async {
+func sendSilentBadgeUpdate(receiverUID: String) async {
     guard let config = loadOneSignalConfig() else {
         print("❌ Cannot send silent badge update: OneSignal configuration not loaded")
         return
@@ -141,7 +134,7 @@ func sendSilentBadgeUpdate(receiverUID: String, receiverEmail: String) async {
         "content_available": true, // Silent notification
         "ios_badgeType": "SetTo",
         "ios_badgeCount": badgeCount,
-        "data": ["receiverEmail": receiverEmail, "receiverId": receiverUID, "badgeUpdate": true]
+        "data": ["receiverId": receiverUID, "badgeUpdate": true]
     ]
     
     do {

@@ -612,7 +612,7 @@ struct ChatBubbleView: View {
                 var user = UserModel()
                 user.uid = "preview-user"
                 user.fullname = "John Doe"
-                user.email = "john.doe@example.com"
+                user.uid = "john.doe@example.com"
                 user.phoneNumber = "+1234567890"
                 return user
             }()

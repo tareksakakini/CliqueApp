@@ -949,7 +949,6 @@ struct EventDetailView: View {
                                                                  preferredTab: .myEvents)
                 sendPushNotification(notificationText: notificationText,
                                      receiverUID: host.uid,
-                                     receiverEmail: host.email,
                                      route: route)
             }
         } catch {

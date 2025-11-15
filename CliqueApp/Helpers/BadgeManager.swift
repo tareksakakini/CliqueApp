@@ -17,7 +17,6 @@ class BadgeManager {
     
     private struct BadgeUserContext {
         let uid: String
-        let contactHandle: String
     }
     
     // MARK: - Public Methods
@@ -58,7 +57,7 @@ class BadgeManager {
     
     private func calculateBadgeCount(for context: BadgeUserContext) async -> Int {
         let eventInvitesCount = await getUnansweredEventInvitesCount(for: context)
-        let friendRequestsCount = await getFriendRequestsCount(for: context.contactHandle)
+        let friendRequestsCount = await getFriendRequestsCount(for: context.uid)
         let total = eventInvitesCount + friendRequestsCount
         
         print("📊 Badge count breakdown for \(context.uid):")
@@ -96,12 +95,12 @@ class BadgeManager {
     }
     
     /// Gets the count of pending friend requests for a user
-    private func getFriendRequestsCount(for userHandle: String) async -> Int {
+    private func getFriendRequestsCount(for userId: String) async -> Int {
         let db = Firestore.firestore()
         
         do {
             let snapshot = try await db.collection("friendRequests")
-                .document(userHandle)
+                .document(userId)
                 .getDocument()
             
             let requests = snapshot.data()?["requests"] as? [String] ?? []
@@ -121,20 +120,18 @@ class BadgeManager {
         do {
             // Attempt to fetch by UID (document ID)
             let directDoc = try await db.collection("users").document(trimmed).getDocument()
-            if let data = directDoc.data() {
-                let handle = data["email"] as? String ?? trimmed
-                return BadgeUserContext(uid: directDoc.documentID, contactHandle: handle)
+            if directDoc.exists {
+                return BadgeUserContext(uid: directDoc.documentID)
             }
             
-            // Fallback: look up by the legacy email/contact handle
+            // Fallback: look up by auth UID
             let snapshot = try await db.collection("users")
-                .whereField("email", isEqualTo: trimmed)
+                .whereField("authUID", isEqualTo: trimmed)
                 .limit(to: 1)
                 .getDocuments()
             
             if let doc = snapshot.documents.first {
-                let handle = doc.data()["email"] as? String ?? trimmed
-                return BadgeUserContext(uid: doc.documentID, contactHandle: handle)
+                return BadgeUserContext(uid: doc.documentID)
             }
         } catch {
             print("❌ Error resolving user context for \(identifier): \(error.localizedDescription)")
@@ -155,16 +152,6 @@ class BadgeManager {
             documents.append(doc)
         }
         
-        let handle = context.contactHandle
-        if !handle.isEmpty, handle != context.uid {
-            let handleSnapshot = try await db.collection("events")
-                .whereField("attendeesInvited", arrayContains: handle)
-                .getDocuments()
-            for doc in handleSnapshot.documents where seen.insert(doc.documentID).inserted {
-                documents.append(doc)
-            }
-        }
-        
         return documents
     }
     
@@ -174,14 +161,13 @@ class BadgeManager {
     /// Returns a dictionary with badge count and breakdown
     func getBadgeDataForNotification(receiverIdentifier: String) async -> [String: Any] {
         guard let context = await resolveUserContext(for: receiverIdentifier) else {
-            return ["badge": 0, "receiverEmail": receiverIdentifier]
+            return ["badge": 0, "receiverId": receiverIdentifier]
         }
         
         let badgeCount = await calculateBadgeCount(for: context)
         
         return [
             "badge": badgeCount,
-            "receiverEmail": context.contactHandle,
             "receiverId": context.uid
         ]
     }
@@ -236,7 +222,7 @@ class BadgeManager {
         // Check friend requests
         do {
             let friendReqSnapshot = try await db.collection("friendRequests")
-                .document(context.contactHandle)
+                .document(context.uid)
                 .getDocument()
             
             let requests = friendReqSnapshot.data()?["requests"] as? [String] ?? []
@@ -286,7 +272,7 @@ extension BadgeManager {
         
         // Listen to friend requests
         db.collection("friendRequests")
-            .document(context.contactHandle)
+            .document(context.uid)
             .addSnapshotListener { [weak self] snapshot, error in
                 guard let self = self, error == nil else { return }
                 Task {

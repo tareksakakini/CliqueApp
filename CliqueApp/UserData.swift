@@ -9,43 +9,59 @@ import Foundation
 
 struct UserData {
     
+    private static let tarekId = "user-tarek"
+    private static let aliId = "user-ali"
+    private static let hassanId = "user-hassan"
+    private static let mohamadId = "user-mohamad"
+    private static let jadId = "user-jad"
+    
     static var friendshipData: [String: [String]] = [
-        "tareksakakini@gmail.com": ["alikanj@gmail.com", "hassandbouk@gmail.com", "mohamadelhajj@gmail.com"],
-        "hassandbouk@gmail.com": ["tareksakakini@gmail.com", "jadyaacoub@gmail.com"],
-        "jadyaacoub@gmail.com": ["hassandbouk@gmail.com"],
-        "mohamadelhajj@gmail.com": ["tareksakakini@gmail.com"],
-        "alikanj@gmail.com": ["tareksakakini@gmail.com"]
+        tarekId: [aliId, hassanId, mohamadId],
+        hassanId: [tarekId, jadId],
+        jadId: [hassanId],
+        mohamadId: [tarekId],
+        aliId: [tarekId]
     ]
     
     static var friendInviteReceived: [String: [String]] = [
-        "tareksakakini@gmail.com": ["jadyaacoub@gmail.com"]
+        tarekId: [jadId]
     ]
         
     static var userData: [UserModel] = [
         UserModel(
+            uid: tarekId,
+            authUID: "auth-\(tarekId)",
             fullname: "Tarek Sakakini",
-            email: "tarek.sakakini@gmail.com",
+            username: "tarek",
             createdAt: Date(),
             profilePic: "https://firebasestorage.googleapis.com:443/v0/b/cliqueapp-3834b.firebasestorage.app/o/profile_pictures%2FdWqRV0mlUWMCipVVAOp2NuADoBE3.jpg?alt=media&token=5be91c8f-2960-40a3-ae63-f511fc612a75"
         ),
         UserModel(
+            uid: aliId,
+            authUID: "auth-\(aliId)",
             fullname: "Ali Kanj",
-            email: "alikanj@gmail.com",
+            username: "ali",
             createdAt: Date()
         ),
         UserModel(
+            uid: hassanId,
+            authUID: "auth-\(hassanId)",
             fullname: "Hassan Dbouk",
-            email: "hassandbouk@gmail.com",
+            username: "hassan",
             createdAt: Date()
         ),
         UserModel(
+            uid: mohamadId,
+            authUID: "auth-\(mohamadId)",
             fullname: "Mohamad El Hajj",
-            email: "mohamadelhajj@gmail.com",
+            username: "mohamad",
             createdAt: Date()
         ),
         UserModel(
+            uid: jadId,
+            authUID: "auth-\(jadId)",
             fullname: "Jad Yaacoub",
-            email: "jadyaacoub@gmail.com",
+            username: "jad",
             createdAt: Date()
         )
     ]
@@ -57,9 +73,9 @@ struct UserData {
             location: "Northstar",
             startDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 5, hour: 11, minute: 10))!,
             endDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 5, hour: 11, minute: 10))!,
-            attendeesAccepted: ["tareksakakini@gmail.com", "alikanj@gmail.com"],
-            attendeesInvited: ["jadyaacoub@gmail.com", "testing3@testing.com"],
-            host: "tareksakakini@gmail.com"
+            attendeesAccepted: [tarekId, aliId],
+            attendeesInvited: [jadId, hassanId],
+            host: tarekId
         ),
         EventModel(
             id: "2",
@@ -67,9 +83,9 @@ struct UserData {
             location: "George and Marias",
             startDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 4, hour: 11, minute: 10))!,
             endDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 4, hour: 11, minute: 10))!,
-            attendeesAccepted: ["tareksakakini@gmail.com"],
-            attendeesInvited: ["alikanj@gmail.com"],
-            host: "tareksakakini@gmail.com"
+            attendeesAccepted: [tarekId],
+            attendeesInvited: [aliId],
+            host: tarekId
         ),
         EventModel(
             id: "3",
@@ -77,9 +93,9 @@ struct UserData {
             location: "Old Soul",
             startDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 6, hour: 11, minute: 10))!,
             endDateTime: Calendar.current.date(from: DateComponents(year: 2025, month: 2, day: 6, hour: 11, minute: 10))!,
-            attendeesAccepted: ["alikanj@gmail.com"],
-            attendeesInvited: ["tareksakakini@gmail.com"],
-            host: "alikanj@gmail.com"
+            attendeesAccepted: [aliId],
+            attendeesInvited: [tarekId],
+            host: aliId
         ),
 //        EventModel(
 //            id: "4",

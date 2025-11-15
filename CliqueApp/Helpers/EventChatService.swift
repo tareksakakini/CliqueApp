@@ -70,7 +70,7 @@ final class EventChatService {
             "id": messageRef.documentID,
             "eventId": event.id,
             "senderId": sender.uid,
-            "senderEmail": sender.email,
+            "senderEmail": sender.uid,
             "senderName": sender.fullname,
             "text": trimmedText,
             "createdAt": timestamp
@@ -145,7 +145,7 @@ final class EventChatService {
                 "lastMessage": messageText,
                 "lastMessageSender": sender.fullname,
                 "lastMessageSenderId": sender.uid,
-                "lastMessageSenderEmail": sender.email,
+                "lastMessageSenderEmail": sender.uid,
                 "lastMessageAt": timestamp,
                 "participants": Array(storedParticipants),
                 "unreadCounts": unreadCounts,
@@ -175,7 +175,6 @@ final class EventChatService {
                                                              openChat: true)
             await sendPushNotificationWithBadge(notificationText: "\(sender.fullname): \(snippet)",
                                                 receiverUID: user.uid,
-                                                receiverEmail: user.email,
                                                 route: route,
                                                 title: event.title)
         }

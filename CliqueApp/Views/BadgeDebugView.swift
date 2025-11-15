@@ -11,7 +11,7 @@ struct BadgeDebugView: View {
     @EnvironmentObject private var vm: ViewModel
     @State private var debugInfo: String = "Tap 'Refresh Debug Info' to see badge details"
     @State private var isLoading: Bool = false
-    @State private var selectedUserEmail: String = ""
+    @State private var selectedUserId: String = ""
     
     var body: some View {
         NavigationView {
@@ -23,26 +23,25 @@ struct BadgeDebugView: View {
                     
                     if let signedInUser = vm.signedInUser {
                         Button(action: {
-                            selectedUserEmail = signedInUser.email
+                            selectedUserId = signedInUser.uid
                         }) {
                             HStack {
-                                Image(systemName: selectedUserEmail == signedInUser.email ? "checkmark.circle.fill" : "circle")
+                                Image(systemName: selectedUserId == signedInUser.uid ? "checkmark.circle.fill" : "circle")
                                     .foregroundColor(.green)
-                                Text("Current User: \(signedInUser.email)")
+                                Text("Current User ID: \(signedInUser.uid)")
                                     .font(.subheadline)
                             }
                             .padding(.vertical, 4)
                         }
                     }
                     
-                    // Or enter email manually
+                    // Or enter user ID manually
                     HStack {
                         Image(systemName: "envelope.fill")
                             .foregroundColor(.gray)
-                        TextField("Or enter email manually", text: $selectedUserEmail)
+                        TextField("Or enter user ID manually", text: $selectedUserId)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
                             .autocapitalization(.none)
-                            .keyboardType(.emailAddress)
                     }
                 }
                 .padding()
@@ -69,7 +68,7 @@ struct BadgeDebugView: View {
                     .background(Color.green)
                     .cornerRadius(12)
                 }
-                .disabled(isLoading || selectedUserEmail.isEmpty)
+                .disabled(isLoading || selectedUserId.isEmpty)
                 
                 // Debug output
                 ScrollView {
@@ -90,11 +89,11 @@ struct BadgeDebugView: View {
     }
     
     private func refreshDebugInfo() {
-        guard !selectedUserEmail.isEmpty else { return }
+        guard !selectedUserId.isEmpty else { return }
         
         isLoading = true
         Task {
-            let info = await BadgeManager.shared.debugBadgeCount(for: selectedUserEmail)
+            let info = await BadgeManager.shared.debugBadgeCount(for: selectedUserId)
             await MainActor.run {
                 debugInfo = info
                 isLoading = false
@@ -107,4 +106,3 @@ struct BadgeDebugView: View {
     BadgeDebugView()
         .environmentObject(ViewModel())
 }
-

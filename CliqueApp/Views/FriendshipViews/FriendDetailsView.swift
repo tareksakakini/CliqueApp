@@ -423,11 +423,11 @@ struct FriendDetailsView: View {
     }
     
     private func getRelationshipStatus() -> RelationshipStatus {
-        if vm.friendship.contains(friend.email) {
+        if vm.friendship.contains(friend.uid) {
             return .friend
-        } else if vm.friendInviteReceived.contains(friend.email) {
+        } else if vm.friendInviteReceived.contains(friend.uid) {
             return .requestReceived
-        } else if vm.friendInviteSent.contains(friend.email) {
+        } else if vm.friendInviteSent.contains(friend.uid) {
             return .requestSent
         } else {
             return .none
@@ -437,7 +437,7 @@ struct FriendDetailsView: View {
     private func loadFriendsList() async {
         isLoadingFriends = true
         do {
-            let fetchedFriends = try await DatabaseManager().retrieveFriends(user_email: friend.email)
+            let fetchedFriends = try await DatabaseManager().retrieveFriends(userId: friend.uid)
             DispatchQueue.main.async {
                 self.friendsList = fetchedFriends
                 self.isLoadingFriends = false
@@ -463,8 +463,8 @@ struct FriendDetailsView: View {
         }
         
         do {
-            try await DatabaseManager().updateFriends(viewing_user: viewingUser.email, viewed_user: friend.email, action: "remove")
-            try await vm.getUserFriends(user_email: viewingUser.email)
+            try await DatabaseManager().updateFriends(viewing_user: viewingUser.uid, viewed_user: friend.uid, action: "remove")
+            try await vm.getUserFriends(userId: viewingUser.uid)
         } catch {
             print("Failed to remove friendship: \(error.localizedDescription)")
             let errorMessage = ErrorHandler.shared.handleError(error, operation: "Remove friend")
@@ -488,9 +488,9 @@ struct FriendDetailsView: View {
         
         do {
             let db = DatabaseManager()
-            try await db.updateFriends(viewing_user: viewingUser.email, viewed_user: friend.email, action: "add")
-            try await vm.getUserFriends(user_email: viewingUser.email)
-            try await vm.getUserFriendRequests(user_email: viewingUser.email)
+            try await db.updateFriends(viewing_user: viewingUser.uid, viewed_user: friend.uid, action: "add")
+            try await vm.getUserFriends(userId: viewingUser.uid)
+            try await vm.getUserFriendRequests(userId: viewingUser.uid)
             
             // Update badge for the user who accepted
             await BadgeManager.shared.updateBadge(for: viewingUser.uid)
@@ -499,7 +499,6 @@ struct FriendDetailsView: View {
             let route = NotificationRouteBuilder.friends(section: .friends)
             await sendPushNotificationWithBadge(notificationText: "\(viewingUser.fullname) just accepted your friend request!",
                                                 receiverUID: friend.uid,
-                                                receiverEmail: friend.email,
                                                 route: route)
         } catch {
             print("Failed to accept friend request: \(error.localizedDescription)")
@@ -523,9 +522,9 @@ struct FriendDetailsView: View {
         }
         
         do {
-            try await DatabaseManager().removeFriendRequest(sender: friend.email, receiver: viewingUser.email)
-            try await vm.getUserFriends(user_email: viewingUser.email)
-            try await vm.getUserFriendRequests(user_email: viewingUser.email)
+            try await DatabaseManager().removeFriendRequest(sender: friend.uid, receiver: viewingUser.uid)
+            try await vm.getUserFriends(userId: viewingUser.uid)
+            try await vm.getUserFriendRequests(userId: viewingUser.uid)
             
             // Update badge for the user who rejected
             await BadgeManager.shared.updateBadge(for: viewingUser.uid)
@@ -551,8 +550,8 @@ struct FriendDetailsView: View {
         }
         
         do {
-            try await DatabaseManager().removeFriendRequest(sender: viewingUser.email, receiver: friend.email)
-            try await vm.getUserFriendRequestsSent(user_email: viewingUser.email)
+            try await DatabaseManager().removeFriendRequest(sender: viewingUser.uid, receiver: friend.uid)
+            try await vm.getUserFriendRequestsSent(userId: viewingUser.uid)
         } catch {
             print("Failed to unsend friend request: \(error.localizedDescription)")
             let errorMessage = ErrorHandler.shared.handleError(error, operation: "Unsend friend request")
@@ -576,14 +575,13 @@ struct FriendDetailsView: View {
         
         do {
             let db = DatabaseManager()
-            try await db.sendFriendRequest(sender: viewingUser.email, receiver: friend.email)
-            try await vm.getUserFriendRequestsSent(user_email: viewingUser.email)
+            try await db.sendFriendRequest(sender: viewingUser.uid, receiver: friend.uid)
+            try await vm.getUserFriendRequestsSent(userId: viewingUser.uid)
             
             // Send notification with badge to the receiver
             let route = NotificationRouteBuilder.friends(section: .requests)
             await sendPushNotificationWithBadge(notificationText: "\(viewingUser.fullname) just sent you a friend request!",
                                                 receiverUID: friend.uid,
-                                                receiverEmail: friend.email,
                                                 route: route)
         } catch {
             print("Friend Request Failed: \(error.localizedDescription)")

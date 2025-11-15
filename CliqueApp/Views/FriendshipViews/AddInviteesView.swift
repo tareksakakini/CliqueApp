@@ -135,7 +135,7 @@ struct AddInviteesView: View {
             ScrollView {
                 LazyVStack(spacing: 0) {
                     let filteredUsers = ud.stringMatchUsers(query: searchEntry, viewingUser: user, isFriend: true)
-                    ForEach(Array(filteredUsers.enumerated()), id: \.element.email) { index, user_returned in
+                    ForEach(Array(filteredUsers.enumerated()), id: \.element.uid) { index, user_returned in
                         ModernInviteeSearchPillView(
                             viewingUser: user,
                             displayedUser: user_returned,

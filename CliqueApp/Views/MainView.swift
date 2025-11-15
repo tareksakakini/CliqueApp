@@ -74,18 +74,14 @@ struct MainView: View {
         }
         .navigationBarHidden(true)
         .task {
-            print("📱 MainView .task starting for user uid: \(user.uid), email: \(user.email)")
+            print("📱 MainView .task starting for user id: \(user.uid)")
             
-            // CRITICAL: Validate user has email (phone number) before proceeding
-            guard !user.email.isEmpty else {
-                print("❌ CRITICAL ERROR: User has empty email field in MainView!")
-                print("❌ User UID: \(user.uid)")
-                print("❌ This will cause Firestore 'Document Path cannot be empty' errors")
-                // Don't proceed with data refresh to avoid crashes
+            guard !user.uid.isEmpty else {
+                print("❌ CRITICAL ERROR: User has empty identifier in MainView!")
                 return
             }
             
-            await vm.refreshData(user_email: user.email)
+            await vm.refreshData(userId: user.uid)
             
             print("📱 MainView loaded for user: \(user.uid)")
             
