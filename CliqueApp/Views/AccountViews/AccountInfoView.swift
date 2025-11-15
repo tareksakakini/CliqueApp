@@ -13,8 +13,6 @@ struct AccountInfoView: View {
     @Environment(\.dismiss) private var dismiss
     
     let phoneNumber: String
-    let verificationID: String
-    let verificationCode: String
     
     @State private var fullname: String = ""
     @State private var username: String = ""
@@ -291,25 +289,33 @@ struct AccountInfoView: View {
         
         Task {
             do {
-                user = try await vm.signUpUserAndAddToFireStore(
+                user = try await vm.completeUserProfile(
                     phoneNumber: phoneNumber,
-                    verificationID: verificationID,
-                    smsCode: verificationCode,
                     fullname: fullname,
                     username: username,
                     profilePic: "userDefault",
                     gender: gender
                 )
+                
                 if let user = user {
+                    // Critical validation before navigation
+                    guard !user.email.isEmpty else {
+                        print("❌ User object has empty email after creation")
+                        alertMessage = "Account creation failed - incomplete user data. Please try again."
+                        showAlert = true
+                        isCreatingAccount = false
+                        return
+                    }
+                    
                     vm.signedInUser = user
                     goToMainView = true
                 } else {
-                    alertMessage = "Sign up failed. Please try again."
+                    alertMessage = "Failed to complete profile. Please try again."
                     showAlert = true
                     isCreatingAccount = false
                 }
             } catch {
-                alertMessage = ErrorHandler.shared.handleError(error, operation: "Sign up")
+                alertMessage = ErrorHandler.shared.handleError(error, operation: "Complete profile")
                 showAlert = true
                 isCreatingAccount = false
             }
@@ -319,12 +325,8 @@ struct AccountInfoView: View {
 
 #Preview {
     NavigationStack {
-        AccountInfoView(
-            phoneNumber: "6505551234",
-            verificationID: "test-verification-id",
-            verificationCode: "123456"
-        )
-        .environmentObject(ViewModel())
+        AccountInfoView(phoneNumber: "+16505551234")
+            .environmentObject(ViewModel())
     }
 }
 

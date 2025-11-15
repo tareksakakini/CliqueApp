@@ -15,6 +15,7 @@ struct SignUpView: View {
     @State private var phoneNumber: String = ""
     @State private var selectedCountry: Country = Country.default
     @State private var verificationID: String? = nil
+    @State private var verifiedPhoneNumber: String? = nil // Store the phone number that was verified
     @State private var isSendingCode: Bool = false
     @State private var errorMessage: String = " "
     @State private var goToVerificationScreen: Bool = false
@@ -40,22 +41,21 @@ struct SignUpView: View {
                 }
             }
             .navigationDestination(isPresented: $goToVerificationScreen) {
-                if let verificationID = verificationID {
-                    let fullPhoneNumber = PhoneNumberFormatter.e164(
-                        countryCode: selectedCountry.dialCode,
-                        phoneNumber: phoneNumber
-                    )
+                if let verificationID = verificationID, let verifiedPhone = verifiedPhoneNumber {
                     VerificationCodeView(
-                        phoneNumber: fullPhoneNumber,
+                        phoneNumber: verifiedPhone,
                         verificationID: verificationID,
                         isSignUp: true
                     )
+                } else {
+                    EmptyView()
                 }
             }
             .onAppear {
                 phoneNumber = ""
                 errorMessage = " "
                 verificationID = nil
+                verifiedPhoneNumber = nil // Also clear the stored verified phone number
             }
     }
     
@@ -149,6 +149,8 @@ struct SignUpView: View {
             Text(errorMessage)
                 .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.red)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
             
             Spacer()
         }
@@ -226,6 +228,7 @@ struct SignUpView: View {
             return
         }
         
+        // Normalize the phone number first
         let fullPhoneNumber = PhoneNumberFormatter.e164(
             countryCode: selectedCountry.dialCode,
             phoneNumber: trimmedPhone
@@ -235,9 +238,21 @@ struct SignUpView: View {
         errorMessage = " "
         
         Task {
+            // Check if phone number is already registered (after normalization)
+            let isRegistered = await vm.isPhoneNumberRegistered(fullPhoneNumber)
+            
+            if isRegistered {
+                // Phone number is already registered - show error message
+                errorMessage = "Phone number is already registered."
+                isSendingCode = false
+                return
+            }
+            
+            // Phone number is not registered - proceed with sending verification code
             do {
                 let verification = try await vm.requestPhoneVerificationCode(phoneNumber: fullPhoneNumber)
                 verificationID = verification
+                verifiedPhoneNumber = fullPhoneNumber // Store the verified phone number
                 isSendingCode = false
                 goToVerificationScreen = true
             } catch {

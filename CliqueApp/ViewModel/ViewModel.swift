@@ -54,6 +54,12 @@ class ViewModel: ObservableObject {
     }
     
     func refreshData(user_email: String) async {
+        // Guard against empty email to prevent Firestore errors
+        guard !user_email.isEmpty else {
+            print("❌ Cannot refresh data: user_email is empty")
+            return
+        }
+        
         // Silent refresh - don't throw errors, just log them
         do {
             try await self.getAllUsers()
@@ -300,6 +306,56 @@ class ViewModel: ObservableObject {
         }
     }
     
+    func completeUserProfile(phoneNumber: String, fullname: String, username: String, profilePic: String, gender: String) async throws -> UserModel? {
+        do {
+            try ErrorHandler.shared.validateNetworkConnection()
+            
+            // Get the currently authenticated user
+            guard let currentUser = await AuthManager.shared.getSignedInUserID() else {
+                throw ErrorHandler.AppError.authenticationFailed("No authenticated user found")
+            }
+            
+            let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+            let normalizedPhone = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
+            
+            // Validate that phone number is not empty
+            guard !normalizedPhone.isEmpty else {
+                print("❌ Phone number is empty in completeUserProfile")
+                throw ErrorHandler.AppError.authenticationFailed("Phone number cannot be empty")
+            }
+            
+            print("🔐 Creating user profile for phone: \(normalizedPhone), uid: \(currentUser)")
+            
+            // Add user info to Firestore
+            let firestoreService = DatabaseManager()
+            try await firestoreService.addUserToFirestore(uid: currentUser, contactHandle: normalizedPhone, fullname: fullname, username: username, profilePic: profilePic, gender: gender, phoneNumber: normalizedPhone)
+            
+            print("✅ User document created in Firestore")
+            
+            // Fetch the user back to verify it was created
+            let user = try await firestoreService.getUserFromFirestore(uid: currentUser)
+            
+            // Critical validation: ensure the user has a valid email (phone number)
+            guard !user.email.isEmpty else {
+                print("❌ CRITICAL: User fetched from Firestore has empty email field")
+                throw ErrorHandler.AppError.authenticationFailed("User data is incomplete - email field is empty")
+            }
+            
+            print("✅ User fetched from Firestore - email: \(user.email), uid: \(user.uid)")
+            
+            self.signedInUser = user
+            
+            // Set up OneSignal and link phone number to existing event invitations
+            await setupOneSignalForUser(userID: user.uid)
+            _ = await linkPhoneNumberToUser(phoneNumber: normalizedPhone)
+            
+            return user
+        } catch {
+            print("❌ Complete profile failed: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
     func isUsernameTaken(_ username: String) async -> Bool {
         let firestoreService = DatabaseManager()
         do {
@@ -308,6 +364,17 @@ class ViewModel: ObservableObject {
         } catch {
             print("Failed to check username availability: \(error.localizedDescription)")
             return true // Return true to be safe in case of error
+        }
+    }
+    
+    func isPhoneNumberRegistered(_ phoneNumber: String) async -> Bool {
+        let firestoreService = DatabaseManager()
+        do {
+            let isRegistered = try await firestoreService.isPhoneNumberRegistered(phoneNumber: phoneNumber)
+            return isRegistered
+        } catch {
+            print("Failed to check phone number registration: \(error.localizedDescription)")
+            return false // Return false to allow the flow to continue in case of error
         }
     }
     

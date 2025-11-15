@@ -11,10 +11,29 @@ class DatabaseManager {
     func addUserToFirestore(uid: String, contactHandle: String, fullname: String, username: String, profilePic: String, gender: String, phoneNumber: String = "") async throws {
         // Check network connection before attempting operation
         try ErrorHandler.shared.validateNetworkConnection()
+        
+        // Validate inputs
+        guard !uid.isEmpty else {
+            throw NSError(domain: "DatabaseError", code: 400, userInfo: [NSLocalizedDescriptionKey: "UID cannot be empty"])
+        }
+        guard !contactHandle.isEmpty else {
+            throw NSError(domain: "DatabaseError", code: 400, userInfo: [NSLocalizedDescriptionKey: "Contact handle (phone) cannot be empty"])
+        }
+        
         let userRef = db.collection("users").document(uid)
-        let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber.isEmpty ? contactHandle : phoneNumber)
-        let storedPhoneNumber = canonicalPhone.isEmpty ? PhoneNumberFormatter.canonical(phoneNumber) : canonicalPhone
-        let storedHandle = canonicalPhone.isEmpty ? contactHandle : canonicalPhone
+        
+        // Determine which phone to use and canonicalize it
+        let phoneToUse = phoneNumber.isEmpty ? contactHandle : phoneNumber
+        let canonicalPhone = PhoneNumberFormatter.canonical(phoneToUse)
+        
+        // Use the canonical version if valid, otherwise fall back to original
+        let storedHandle = canonicalPhone.isEmpty ? phoneToUse : canonicalPhone
+        let storedPhoneNumber = canonicalPhone.isEmpty ? phoneToUse : canonicalPhone
+        
+        // Final validation: ensure we're not storing empty email
+        guard !storedHandle.isEmpty else {
+            throw NSError(domain: "DatabaseError", code: 400, userInfo: [NSLocalizedDescriptionKey: "Stored handle (email field) cannot be empty after canonicalization"])
+        }
         
         let userData: [String: Any] = [
             "uid": uid,
@@ -27,11 +46,13 @@ class DatabaseManager {
             "phoneNumber": storedPhoneNumber
         ]
         
+        print("📝 Creating Firestore user document with email (phone): \(storedHandle)")
+        
         do {
             try await userRef.setData(userData)
-            print("User added successfully!")
+            print("✅ User added successfully to Firestore!")
         } catch {
-            print("Error adding user: \(error.localizedDescription)")
+            print("❌ Error adding user: \(error.localizedDescription)")
             throw error
         }
     }
@@ -886,6 +907,50 @@ class DatabaseManager {
             return isTaken
         } catch {
             print("Error checking username availability: \(error.localizedDescription)")
+            throw error
+        }
+    }
+    
+    func isPhoneNumberRegistered(phoneNumber: String) async throws -> Bool {
+        // Check network connection before attempting operation
+        try ErrorHandler.shared.validateNetworkConnection()
+        
+        let usersRef = db.collection("users")
+        
+        do {
+            // Normalize the phone number to match stored format
+            let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+            
+            // Query for users where email or phoneNumber field matches the canonical phone
+            let emailQuery = usersRef.whereField("email", isEqualTo: canonicalPhone)
+            let phoneQuery = usersRef.whereField("phoneNumber", isEqualTo: canonicalPhone)
+            
+            // Execute both queries in parallel
+            async let emailSnapshot = emailQuery.getDocuments()
+            async let phoneSnapshot = phoneQuery.getDocuments()
+            
+            let (emailResults, phoneResults) = try await (emailSnapshot, phoneSnapshot)
+            
+            // Check if we found any valid matches
+            let emailMatches = emailResults.documents.filter { document in
+                if let email = document.data()["email"] as? String {
+                    return PhoneNumberFormatter.numbersMatch(email, canonicalPhone)
+                }
+                return false
+            }
+            
+            let phoneMatches = phoneResults.documents.filter { document in
+                if let phone = document.data()["phoneNumber"] as? String {
+                    return PhoneNumberFormatter.numbersMatch(phone, canonicalPhone)
+                }
+                return false
+            }
+            
+            let isRegistered = !emailMatches.isEmpty || !phoneMatches.isEmpty
+            print("Phone '\(phoneNumber)' (canonical: \(canonicalPhone)) check: \(isRegistered ? "REGISTERED" : "AVAILABLE") (email matches: \(emailMatches.count), phone matches: \(phoneMatches.count))")
+            return isRegistered
+        } catch {
+            print("Error checking phone number registration: \(error.localizedDescription)")
             throw error
         }
     }

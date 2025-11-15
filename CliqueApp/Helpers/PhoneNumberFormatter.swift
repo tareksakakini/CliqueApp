@@ -70,8 +70,11 @@ struct PhoneNumberFormatter {
             return ""
         }
         
-        // Remove leading zeros from phone number
-        let trimmedNumber = cleanNumber.trimmingCharacters(in: CharacterSet(charactersIn: "0"))
+        // Remove only a single leading zero if present (for countries that use 0 for domestic dialing)
+        var trimmedNumber = cleanNumber
+        if trimmedNumber.hasPrefix("0") {
+            trimmedNumber = String(trimmedNumber.dropFirst())
+        }
         
         return "+\(cleanCountryCode)\(trimmedNumber)"
     }

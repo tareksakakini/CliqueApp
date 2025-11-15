@@ -59,11 +59,7 @@ struct VerificationCodeView: View {
                 }
             }
             .navigationDestination(isPresented: $goToAccountInfo) {
-                AccountInfoView(
-                    phoneNumber: phoneNumber,
-                    verificationID: currentVerificationID,
-                    verificationCode: verificationCode
-                )
+                AccountInfoView(phoneNumber: phoneNumber)
             }
             .onAppear {
                 startResendTimer()
@@ -283,20 +279,18 @@ struct VerificationCodeView: View {
         Task {
             do {
                 if isSignUp {
-                    // Sign up flow - just verify the code and navigate to account info
-                    // We'll verify by checking if we can create a credential
+                    // Sign up flow - verify the code and sign in
+                    // User stays authenticated, then adds their info in AccountInfoView
                     let phoneCredential = PhoneAuthProvider.provider().credential(
                         withVerificationID: currentVerificationID,
                         verificationCode: verificationCode
                     )
                     
-                    // Try to verify the credential by attempting to sign in
+                    // Sign in with the phone credential
                     _ = try await Auth.auth().signIn(with: phoneCredential)
                     
-                    // Verification successful, but we need to sign out immediately
-                    // The actual account creation will happen in AccountInfoView
-                    try? Auth.auth().signOut()
-                    
+                    // Verification successful, user is now authenticated
+                    // Navigate to account info to complete profile
                     isVerifying = false
                     goToAccountInfo = true
                 } else {
