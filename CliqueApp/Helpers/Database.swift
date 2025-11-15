@@ -601,20 +601,6 @@ class DatabaseManager {
         }
     }
     
-    func updateUserSubscriptionId(uid: String, subscriptionId: String) async throws {
-        // Check network connection before attempting operation
-        try ErrorHandler.shared.validateNetworkConnection()
-        
-        let userRef = db.collection("users").document(uid)
-        
-        do {
-            try await userRef.updateData(["subscriptionId": subscriptionId])
-            print("Subscription ID updated successfully!")
-        } catch {
-            print("Error updating subscription ID: \(error.localizedDescription)")
-            throw error
-        }
-    }
     
     func updateUserFullName(uid: String, fullName: String) async throws {
         // Check network connection before attempting operation

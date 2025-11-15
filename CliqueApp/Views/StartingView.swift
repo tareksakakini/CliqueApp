@@ -32,8 +32,29 @@ struct StartingView: View {
             
             // If user is already signed in, ensure OneSignal is properly configured
             if let user = signedInUser {
-                if !isOneSignalConfiguredForUser(expectedUserID: user.uid) {
+                let currentExternalId = getCurrentOneSignalExternalUserId()
+                
+                if currentExternalId != user.uid {
+                    // OneSignal is either not configured or configured for wrong user
+                    // Clear and re-setup for the correct user
+                    print("🔄 OneSignal mismatch detected. Expected: \(user.uid), Current: \(currentExternalId ?? "None")")
+                    await clearOneSignalForUser()
                     await setupOneSignalForUser(userID: user.uid)
+                    
+                    // Verify it worked
+                    let verified = await verifyOneSignalState(expectedUserID: user.uid)
+                    if !verified {
+                        print("⚠️ OneSignal setup failed in StartingView")
+                    }
+                } else {
+                    print("✅ OneSignal already correctly configured for user: \(user.uid)")
+                }
+            } else {
+                // No user signed in, ensure OneSignal is cleared
+                let currentExternalId = getCurrentOneSignalExternalUserId()
+                if currentExternalId != nil {
+                    print("🧹 Clearing stale OneSignal session")
+                    await clearOneSignalForUser()
                 }
             }
             

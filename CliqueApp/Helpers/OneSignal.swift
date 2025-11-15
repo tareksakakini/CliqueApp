@@ -23,7 +23,7 @@ private func loadOneSignalConfig() -> (apiKey: String, appId: String)? {
 }
 
 func sendPushNotification(notificationText: String,
-                          receiverID: String,
+                          receiverUID: String,
                           receiverEmail: String? = nil,
                           badgeCount: Int? = nil,
                           route: [String: Any]? = nil,
@@ -42,7 +42,7 @@ func sendPushNotification(notificationText: String,
     var payload: [String: Any] = [
         "app_id": config.appId,
         "contents": ["en": "\(notificationText)"],
-        "include_player_ids": ["\(receiverID)"],
+        "include_external_user_ids": ["\(receiverUID)"],  // Changed from include_player_ids to include_external_user_ids
         "mutable_content": true  // REQUIRED - allows notification service extension to modify badge
     ]
     
@@ -100,13 +100,13 @@ func sendPushNotification(notificationText: String,
 
 /// Sends a push notification with automatic badge count calculation
 func sendPushNotificationWithBadge(notificationText: String,
-                                   receiverID: String,
+                                   receiverUID: String,
                                    receiverEmail: String,
                                    route: [String: Any]? = nil,
                                    title: String? = nil) async {
     let badgeCount = await BadgeManager.shared.calculateBadgeCount(for: receiverEmail)
     sendPushNotification(notificationText: notificationText,
-                         receiverID: receiverID,
+                         receiverUID: receiverUID,
                          receiverEmail: receiverEmail,
                          badgeCount: badgeCount,
                          route: route,
@@ -115,11 +115,11 @@ func sendPushNotificationWithBadge(notificationText: String,
     print("   Title: \(title ?? "Yalla")")
     print("   Text: \(notificationText)")
     print("   Badge will be set to: \(badgeCount)")
-    print("   PlayerID: \(receiverID)")
+    print("   User UID: \(receiverUID)")
 }
 
 /// Sends a silent notification to update badge count only
-func sendSilentBadgeUpdate(receiverID: String, receiverEmail: String) async {
+func sendSilentBadgeUpdate(receiverUID: String, receiverEmail: String) async {
     guard let config = loadOneSignalConfig() else {
         print("❌ Cannot send silent badge update: OneSignal configuration not loaded")
         return
@@ -135,7 +135,7 @@ func sendSilentBadgeUpdate(receiverID: String, receiverEmail: String) async {
     
     let payload: [String: Any] = [
         "app_id": config.appId,
-        "include_player_ids": [receiverID],
+        "include_external_user_ids": [receiverUID],  // Changed from include_player_ids to include_external_user_ids
         "content_available": true, // Silent notification
         "ios_badgeType": "SetTo",
         "ios_badgeCount": badgeCount,
@@ -159,26 +159,6 @@ func getOneSignalSubscriptionId() async -> String? {
 }
 
 // MARK: - OneSignal User Management
-
-/// Force a clean slate for OneSignal - call at app startup
-func initializeOneSignalCleanState() async {
-    print("[OneSignal] 🧽 INITIALIZING CLEAN STATE")
-    
-    // Start with a clean slate
-    OneSignal.logout()
-    
-    // Wait for it to clear
-    try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-    
-    await logOneSignalState()
-    
-    let currentId = getCurrentOneSignalExternalUserId()
-    if currentId == nil {
-        print("[OneSignal] ✅ Clean state initialized successfully")
-    } else {
-        print("[OneSignal] ⚠️ WARNING: Still have external ID after clean: \(currentId!)")
-    }
-}
 
 /// Sets up OneSignal for a signed-in user with enhanced verification
 func setupOneSignalForUser(userID: String) async {

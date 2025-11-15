@@ -16,7 +16,6 @@ struct UserModel: Hashable, Identifiable {
     var email: String = ""
     var createdAt: Date = Date()
     var profilePic: String = ""
-    var subscriptionId: String = ""
     var gender: String = ""
     var phoneNumber: String = ""
     
@@ -28,7 +27,6 @@ struct UserModel: Hashable, Identifiable {
         user.email = userData["email"] as? String ?? ""
         user.createdAt = (userData["createdAt"] as? Timestamp)?.dateValue() ?? Date()
         user.profilePic = userData["profilePic"] as? String ?? ""
-        user.subscriptionId = userData["subscriptionId"] as? String ?? ""
         user.gender = userData["gender"] as? String ?? ""
         user.phoneNumber = userData["phoneNumber"] as? String ?? ""
         return user

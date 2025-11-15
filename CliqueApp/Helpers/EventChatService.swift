@@ -165,7 +165,6 @@ final class EventChatService {
         let snippet = text.count > 120 ? String(text.prefix(117)) + "..." : text
         
         for user in users {
-            guard !user.subscriptionId.isEmpty else { continue }
             let inviteView = event.isInviteContext(for: user.email)
             let preferredTab: NotificationRouter.NotificationTab = inviteView ? .invites : .myEvents
             let route = NotificationRouteBuilder.eventDetail(eventId: event.id,
@@ -173,7 +172,7 @@ final class EventChatService {
                                                              preferredTab: preferredTab,
                                                              openChat: true)
             await sendPushNotificationWithBadge(notificationText: "\(sender.fullname): \(snippet)",
-                                                receiverID: user.subscriptionId,
+                                                receiverUID: user.uid,
                                                 receiverEmail: user.email,
                                                 route: route,
                                                 title: event.title)

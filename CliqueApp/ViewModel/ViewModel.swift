@@ -257,7 +257,7 @@ class ViewModel: ObservableObject {
                     let preferredTab: NotificationRouter.NotificationTab = inviteView ? .invites : .myEvents
                     let route = NotificationRouteBuilder.tab(preferredTab)
                     await sendPushNotificationWithBadge(notificationText: notificationText,
-                                                        receiverID: invitee.subscriptionId,
+                                                        receiverUID: invitee.uid,
                                                         receiverEmail: invitee.email,
                                                         route: route)
                     print("Sent event deletion notification to: \(inviteeEmail)")
@@ -428,29 +428,6 @@ class ViewModel: ObservableObject {
         }
     }
     
-    func updateOneSignalSubscriptionId(user: UserModel) async {
-        // Ensure OneSignal is properly configured for this user first
-        if !isOneSignalConfiguredForUser(expectedUserID: user.uid) {
-            print("OneSignal not configured for user \(user.uid), setting up...")
-            await setupOneSignalForUser(userID: user.uid)
-            
-            // Wait a bit for OneSignal to process the login
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
-        }
-        
-        if let playerId = await getOneSignalSubscriptionId() {
-            print("OneSignal Subscription ID: \(playerId)")
-            do {
-                let firestoreService = DatabaseManager()
-                try await firestoreService.updateUserSubscriptionId(uid: user.uid, subscriptionId: playerId)
-                print("Successfully updated subscription ID for user \(user.uid)")
-            } catch {
-                print("Updating subscription id failed: \(error.localizedDescription)")
-            }
-        } else {
-            print("Failed to retrieve OneSignal Subscription ID for user \(user.uid)")
-        }
-    }
     
     func acceptButtonPressed(user: UserModel, event: EventModel) async throws {
         do {
@@ -467,7 +444,7 @@ class ViewModel: ObservableObject {
                                                                  inviteView: false,
                                                                  preferredTab: .myEvents)
                 await sendPushNotificationWithBadge(notificationText: notificationText,
-                                                    receiverID: host.subscriptionId,
+                                                    receiverUID: host.uid,
                                                     receiverEmail: host.email,
                                                     route: route)
             }
@@ -493,7 +470,7 @@ class ViewModel: ObservableObject {
                                                                      inviteView: false,
                                                                      preferredTab: .myEvents)
                     await sendPushNotificationWithBadge(notificationText: notificationText,
-                                                        receiverID: host.subscriptionId,
+                                                        receiverUID: host.uid,
                                                         receiverEmail: host.email,
                                                         route: route)
                 }
@@ -520,7 +497,7 @@ class ViewModel: ObservableObject {
                                                                      inviteView: false,
                                                                      preferredTab: .myEvents)
                     await sendPushNotificationWithBadge(notificationText: notificationText,
-                                                        receiverID: host.subscriptionId,
+                                                        receiverUID: host.uid,
                                                         receiverEmail: host.email,
                                                         route: route)
                 }
@@ -589,7 +566,7 @@ class ViewModel: ObservableObject {
                                                               inviteView: true,
                                                               preferredTab: .invites)
                     await sendPushNotificationWithBadge(notificationText: invitationNotificationText,
-                                                        receiverID: inviteeFull.subscriptionId,
+                                                        receiverUID: inviteeFull.uid,
                                                         receiverEmail: inviteeFull.email,
                                                         route: route)
                 }
@@ -659,7 +636,7 @@ class ViewModel: ObservableObject {
                                                               inviteView: inviteView,
                                                               preferredTab: preferredTab)
                     await sendPushNotificationWithBadge(notificationText: notificationText,
-                                                        receiverID: invitee.subscriptionId,
+                                                        receiverUID: invitee.uid,
                                                         receiverEmail: invitee.email,
                                                         route: route)
                     print("Sent event update notification to: \(inviteeEmail)")

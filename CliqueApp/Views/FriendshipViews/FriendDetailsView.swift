@@ -498,7 +498,7 @@ struct FriendDetailsView: View {
             // Send notification with badge to the user who sent the request
             let route = NotificationRouteBuilder.friends(section: .friends)
             await sendPushNotificationWithBadge(notificationText: "\(viewingUser.fullname) just accepted your friend request!",
-                                                receiverID: friend.subscriptionId,
+                                                receiverUID: friend.uid,
                                                 receiverEmail: friend.email,
                                                 route: route)
         } catch {
@@ -582,7 +582,7 @@ struct FriendDetailsView: View {
             // Send notification with badge to the receiver
             let route = NotificationRouteBuilder.friends(section: .requests)
             await sendPushNotificationWithBadge(notificationText: "\(viewingUser.fullname) just sent you a friend request!",
-                                                receiverID: friend.subscriptionId,
+                                                receiverUID: friend.uid,
                                                 receiverEmail: friend.email,
                                                 route: route)
         } catch {

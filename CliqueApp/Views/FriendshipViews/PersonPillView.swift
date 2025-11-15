@@ -135,7 +135,7 @@ private extension PersonPillView {
                         // Send notification with badge to the user who sent the request
                         let route = NotificationRouteBuilder.friends(section: .friends)
                         await sendPushNotificationWithBadge(notificationText: "\(viewing.fullname) just accepted your friend request!",
-                                                            receiverID: displayed.subscriptionId,
+                                                            receiverUID: displayed.uid,
                                                             receiverEmail: displayed.email,
                                                             route: route)
                     } catch {
@@ -189,7 +189,7 @@ private extension PersonPillView {
                     // Send notification with badge to the receiver
                     let route = NotificationRouteBuilder.friends(section: .requests)
                     await sendPushNotificationWithBadge(notificationText: "\(viewing.fullname) just sent you a friend request!",
-                                                        receiverID: displayed.subscriptionId,
+                                                        receiverUID: displayed.uid,
                                                         receiverEmail: displayed.email,
                                                         route: route)
                 } catch {

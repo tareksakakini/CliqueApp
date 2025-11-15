@@ -104,8 +104,6 @@ struct MainView: View {
                 print("✅ OneSignal correctly configured")
             }
             
-            await vm.updateOneSignalSubscriptionId(user: user)
-            
             // Load profile pic (non-critical, silent failure is acceptable)
             do {
                 try await vm.loadProfilePic(imageUrl: user.profilePic)

@@ -86,10 +86,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             }
         }, fallbackToSettings: true)
         
-        // Initialize OneSignal with clean state
-        Task {
-            await initializeOneSignalCleanState()
-        }
+        // Note: We do NOT clear OneSignal state at app launch anymore
+        // OneSignal will maintain the user's logged-in state across app launches
+        // This allows users to receive notifications on multiple devices
         
         if let launchedFromNotification = launchOptions?[.remoteNotification] as? [AnyHashable: Any] {
             NotificationRouter.shared.handleNotificationPayload(launchedFromNotification)

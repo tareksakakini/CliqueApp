@@ -948,7 +948,7 @@ struct EventDetailView: View {
                                                                  inviteView: false,
                                                                  preferredTab: .myEvents)
                 sendPushNotification(notificationText: notificationText,
-                                     receiverID: host.subscriptionId,
+                                     receiverUID: host.uid,
                                      receiverEmail: host.email,
                                      route: route)
             }
