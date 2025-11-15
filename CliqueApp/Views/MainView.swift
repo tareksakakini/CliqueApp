@@ -19,10 +19,13 @@ struct MainView: View {
     
     private var pendingInvitesCount: Int {
         let identifiers = Set(user.identifierCandidates)
-        guard !identifiers.isEmpty else { return 0 }
+        let canonicalPhone = PhoneNumberFormatter.canonical(user.phoneNumber)
+        guard !identifiers.isEmpty || !canonicalPhone.isEmpty else { return 0 }
         let now = Date()
         return vm.events.filter { event in
-            event.attendeesInvited.contains { identifiers.contains($0) } && event.startDateTime >= now
+            let invitedById = event.attendeesInvited.contains { identifiers.contains($0) }
+            let invitedByPhone = !canonicalPhone.isEmpty && event.invitedPhoneNumbers.contains(canonicalPhone)
+            return (invitedById || invitedByPhone) && event.startDateTime >= now
         }.count
     }
     

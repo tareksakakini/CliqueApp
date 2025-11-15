@@ -20,40 +20,30 @@ class NotificationService: UNNotificationServiceExtension {
             // Let OneSignal process the notification first (but don't call handler yet)
             OneSignalExtension.didReceiveNotificationExtensionRequest(self.receivedRequest, with: bestAttemptContent, withContentHandler: nil)
             
-            // Extract receiver email from notification data
-            var receiverEmail: String? = nil
+            // Extract receiver data from notification
             var receiverId: String? = nil
-            
-            // Try to get email from OneSignal custom data format
+
             if let custom = bestAttemptContent.userInfo["custom"] as? [String: Any],
-               let additionalData = custom["a"] as? [String: Any] {
-                if let email = additionalData["receiverEmail"] as? String {
-                    receiverEmail = email
-                    print("🔔 [Extension] Found email in custom.a: \(email)")
-                }
-                if let userId = additionalData["receiverId"] as? String {
-                    receiverId = userId
-                    print("🔔 [Extension] Found receiverId in custom.a: \(userId)")
-                }
-            }
-            // Also try direct data field
-            else if let email = bestAttemptContent.userInfo["receiverEmail"] as? String {
-                receiverEmail = email
-                print("🔔 [Extension] Found email in root: \(email)")
+               let additionalData = custom["a"] as? [String: Any],
+               let userId = additionalData["receiverId"] as? String {
+                receiverId = userId
+                print("🔔 [Extension] Found receiverId in custom.a: \(userId)")
+            } else if let userId = bestAttemptContent.userInfo["receiverId"] as? String {
+                receiverId = userId
+                print("🔔 [Extension] Found receiverId in root: \(userId)")
             }
             
-            if receiverEmail != nil || receiverId != nil {
-                // Calculate and set badge
-                calculateAndSetBadge(userId: receiverId, email: receiverEmail, content: bestAttemptContent, handler: contentHandler)
+            if let receiverId {
+                calculateAndSetBadge(userId: receiverId, content: bestAttemptContent, handler: contentHandler)
             } else {
-                print("⚠️ [Extension] No receiverEmail found, delivering notification without badge")
+                print("⚠️ [Extension] No receiverId found, delivering notification without badge")
                 contentHandler(bestAttemptContent)
             }
         }
     }
     
-    private func calculateAndSetBadge(userId: String?, email: String?, content: UNMutableNotificationContent, handler: @escaping (UNNotificationContent) -> Void) {
-        print("🔔 [Extension] Calculating badge for: id=\(userId ?? "nil"), email=\(email ?? "nil")")
+    private func calculateAndSetBadge(userId: String, content: UNMutableNotificationContent, handler: @escaping (UNNotificationContent) -> Void) {
+        print("🔔 [Extension] Calculating badge for: id=\(userId)")
         
         // Initialize Firebase if needed
         if FirebaseApp.app() == nil {
@@ -66,42 +56,40 @@ class NotificationService: UNNotificationServiceExtension {
         // Use a task to handle async operations
         Task {
             do {
-                var resolvedId = userId
-                var resolvedEmail = email
+                let doc = try await db.collection("users").document(userId).getDocument()
                 
-                if resolvedId == nil, let email = email {
-                    let userSnapshot = try await db.collection("users")
-                        .whereField("email", isEqualTo: email)
-                        .limit(to: 1)
-                        .getDocuments()
-                    resolvedId = userSnapshot.documents.first?.documentID
-                }
-                
-                if resolvedEmail == nil, let userId = resolvedId {
-                    let doc = try await db.collection("users").document(userId).getDocument()
-                    resolvedEmail = (doc.data()?["email"] as? String) ?? email
-                }
-                
-                guard let finalId = resolvedId else {
-                    print("❌ [Extension] Unable to resolve user ID for badge calculation")
+                guard let data = doc.data() else {
+                    print("❌ [Extension] User document not found for \(userId)")
                     handler(content)
                     return
                 }
-                guard let finalEmail = resolvedEmail else {
-                    print("❌ [Extension] Unable to resolve user handle for badge calculation")
-                    handler(content)
-                    return
-                }
+                
+                let canonicalPhone = canonicalPhoneNumber(data["phoneNumber"] as? String ?? "")
                 
                 // Count upcoming event invites
-                let eventSnapshot = try await db.collection("events")
-                    .whereField("attendeesInvited", arrayContains: finalId)
+                var eventDocs: [QueryDocumentSnapshot] = []
+                var seen = Set<String>()
+                
+                let invitedSnapshot = try await db.collection("events")
+                    .whereField("attendeesInvited", arrayContains: userId)
                     .getDocuments()
+                for doc in invitedSnapshot.documents where seen.insert(doc.documentID).inserted {
+                    eventDocs.append(doc)
+                }
+                
+                if !canonicalPhone.isEmpty {
+                    let phoneSnapshot = try await db.collection("events")
+                        .whereField("invitedPhoneNumbers", arrayContains: canonicalPhone)
+                        .getDocuments()
+                    for doc in phoneSnapshot.documents where seen.insert(doc.documentID).inserted {
+                        eventDocs.append(doc)
+                    }
+                }
                 
                 let now = Date()
-                let upcomingInvites = eventSnapshot.documents.filter { doc in
-                    guard let data = doc.data() as? [String: Any],
-                          let timestamp = data["startDateTime"] as? Timestamp else {
+                let upcomingInvites = eventDocs.filter { doc in
+                    let data = doc.data()
+                    guard let timestamp = data["startDateTime"] as? Timestamp else {
                         return false
                     }
                     return timestamp.dateValue() >= now
@@ -111,7 +99,7 @@ class NotificationService: UNNotificationServiceExtension {
                 
                 // Count friend requests
                 let friendReqSnapshot = try await db.collection("friendRequests")
-                    .document(finalEmail)
+                    .document(userId)
                     .getDocument()
                 let friendRequests = (friendReqSnapshot.data()?["requests"] as? [String])?.count ?? 0
                 
@@ -121,7 +109,7 @@ class NotificationService: UNNotificationServiceExtension {
                 let totalBadge = upcomingInvites + friendRequests
                 content.badge = NSNumber(value: totalBadge)
                 
-                print("🔔 [Extension] ✅ Set badge to \(totalBadge) for id=\(finalId)")
+                print("🔔 [Extension] ✅ Set badge to \(totalBadge) for id=\(userId)")
                 
                 // Deliver the notification
                 handler(content)
@@ -132,6 +120,15 @@ class NotificationService: UNNotificationServiceExtension {
                 handler(content)
             }
         }
+    }
+    
+    private func canonicalPhoneNumber(_ input: String) -> String {
+        let digits = input.filter { $0.isNumber }
+        guard !digits.isEmpty else { return "" }
+        if digits.count == 11, digits.hasPrefix("1") {
+            return String(digits.dropFirst())
+        }
+        return digits
     }
     
     override func serviceExtensionTimeWillExpire() {

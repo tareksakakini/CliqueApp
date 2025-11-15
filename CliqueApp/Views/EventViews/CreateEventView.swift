@@ -715,12 +715,13 @@ struct CreateEventView: View {
                     }
                     
                     ForEach(Array(invitedContacts.enumerated()), id: \.element.phoneNumber) { index, contact in
+                        let phoneKey = canonicalPhoneNumber(contact.phoneNumber)
                         ModernContactPillView(
                             contact: contact,
                             invitedContacts: $invitedContacts,
-                            status: contactStatuses[contact.phoneNumber] ?? .invited,
+                            status: contactStatuses[phoneKey] ?? .invited,
                             onStatusChange: { newStatus in
-                                contactStatuses[contact.phoneNumber] = newStatus
+                                contactStatuses[phoneKey] = newStatus
                             },
                             showStatusControls: !isNewEvent,
                             isLastItem: (inviteesUserModels.count + index) == totalItems - 1
@@ -853,21 +854,21 @@ struct CreateEventView: View {
                         var declinedNumbers: [String] = []
                         
                         for contact in invitedContacts {
-                            let number = contact.phoneNumber
-                            guard !number.isEmpty else { continue }
-                            let status = contactStatuses[number] ?? .invited
+                            let storedNumber = canonicalPhoneNumber(contact.phoneNumber)
+                            guard !storedNumber.isEmpty else { continue }
+                            let status = contactStatuses[storedNumber] ?? .invited
                             switch status {
                             case .invited:
-                                if !pendingNumbers.contains(number) {
-                                    pendingNumbers.append(number)
+                                if !pendingNumbers.contains(storedNumber) {
+                                    pendingNumbers.append(storedNumber)
                                 }
                             case .accepted:
-                                if !acceptedNumbers.contains(number) {
-                                    acceptedNumbers.append(number)
+                                if !acceptedNumbers.contains(storedNumber) {
+                                    acceptedNumbers.append(storedNumber)
                                 }
                             case .declined:
-                                if !declinedNumbers.contains(number) {
-                                    declinedNumbers.append(number)
+                                if !declinedNumbers.contains(storedNumber) {
+                                    declinedNumbers.append(storedNumber)
                                 }
                             }
                         }
@@ -971,13 +972,15 @@ struct CreateEventView: View {
         ]
         
         for group in phoneGroups {
-            for number in group.numbers where !number.isEmpty {
-                contactStatuses[number] = group.status
-                guard !addedNumbers.contains(number) else { continue }
+            for number in group.numbers {
+                let canonical = canonicalPhoneNumber(number)
+                guard !canonical.isEmpty else { continue }
+                contactStatuses[canonical] = group.status
+                guard !addedNumbers.contains(canonical) else { continue }
                 
                 let contact = ContactInfo(name: number, phoneNumber: number)
                 invitedContacts.append(contact)
-                addedNumbers.insert(number)
+                addedNumbers.insert(canonical)
             }
         }
     }
@@ -1008,8 +1011,8 @@ struct CreateEventView: View {
     }
     
     private func syncContactStatuses(oldValue: [ContactInfo], newValue: [ContactInfo]) {
-        let oldNumbers = Set(oldValue.map { $0.phoneNumber }.filter { !$0.isEmpty })
-        let newNumbers = Set(newValue.map { $0.phoneNumber }.filter { !$0.isEmpty })
+        let oldNumbers = Set(oldValue.map { canonicalPhoneNumber($0.phoneNumber) }.filter { !$0.isEmpty })
+        let newNumbers = Set(newValue.map { canonicalPhoneNumber($0.phoneNumber) }.filter { !$0.isEmpty })
         
         let added = newNumbers.subtracting(oldNumbers)
         let removed = oldNumbers.subtracting(newNumbers)
@@ -1035,6 +1038,15 @@ struct CreateEventView: View {
         newPhoneNumbers = []
         oldEvent = EventModel()
         viewIdentityID = UUID().uuidString
+    }
+    
+    private func canonicalPhoneNumber(_ number: String) -> String {
+        let canonical = PhoneNumberFormatter.canonical(number)
+        if !canonical.isEmpty {
+            return canonical
+        }
+        let digits = number.filter { $0.isNumber }
+        return digits
     }
     
     private func downloadAndCropUnsplashImage(from url: URL) async -> UIImage? {

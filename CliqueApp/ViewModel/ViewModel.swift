@@ -875,8 +875,8 @@ class ViewModel: ObservableObject {
     
     // MARK: - Real-time listeners
     
-    private func startRealtimeListeners(for userEmail: String) {
-        guard !userEmail.isEmpty else { return }
+    private func startRealtimeListeners(for userId: String) {
+        guard !userId.isEmpty else { return }
         
         let firestoreService = DatabaseManager()
         
@@ -892,7 +892,7 @@ class ViewModel: ObservableObject {
             }
         }
         
-        friendsListener = firestoreService.listenToFriends(userEmail: userEmail) { [weak self] result in
+        friendsListener = firestoreService.listenToFriends(userId: userId) { [weak self] result in
             Task { @MainActor in
                 guard let self = self else { return }
                 switch result {
@@ -904,7 +904,7 @@ class ViewModel: ObservableObject {
             }
         }
         
-        friendRequestsListener = firestoreService.listenToFriendRequests(userEmail: userEmail) { [weak self] result in
+        friendRequestsListener = firestoreService.listenToFriendRequests(userId: userId) { [weak self] result in
             Task { @MainActor in
                 guard let self = self else { return }
                 switch result {
@@ -916,7 +916,7 @@ class ViewModel: ObservableObject {
             }
         }
         
-        friendRequestsSentListener = firestoreService.listenToFriendRequestsSent(userEmail: userEmail) { [weak self] result in
+        friendRequestsSentListener = firestoreService.listenToFriendRequestsSent(userId: userId) { [weak self] result in
             Task { @MainActor in
                 guard let self = self else { return }
                 switch result {

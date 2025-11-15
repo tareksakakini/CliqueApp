@@ -43,6 +43,10 @@ struct MyEventsView: View {
         Set(user.identifierCandidates)
     }
     
+    private var userCanonicalPhone: String {
+        PhoneNumberFormatter.canonical(user.phoneNumber)
+    }
+    
     private func containsUser(_ identifiers: Set<String>, in list: [String]) -> Bool {
         guard !identifiers.isEmpty else { return false }
         return list.contains { identifiers.contains($0) }
@@ -179,18 +183,23 @@ struct MyEventsView: View {
             // For invite view, filter based on pending/declined status and exclude past events
             let now = Date()
             let identifiers = userIdentifierSet
+            let phone = userCanonicalPhone
             
             switch selectedEventType {
             case .pending:
                 return vm.events
                     .filter { event in
-                        containsUser(identifiers, in: event.attendeesInvited) && event.startDateTime >= now
+                        let invitedById = containsUser(identifiers, in: event.attendeesInvited)
+                        let invitedByPhone = !phone.isEmpty && event.invitedPhoneNumbers.contains(phone)
+                        return (invitedById || invitedByPhone) && event.startDateTime >= now
                     }
                     .sorted { $0.startDateTime < $1.startDateTime }
             case .declined:
                 return vm.events
                     .filter { event in
-                        containsUser(identifiers, in: event.attendeesDeclined) && event.startDateTime >= now
+                        let declinedById = containsUser(identifiers, in: event.attendeesDeclined)
+                        let declinedByPhone = !phone.isEmpty && event.declinedPhoneNumbers.contains(phone)
+                        return (declinedById || declinedByPhone) && event.startDateTime >= now
                     }
                     .sorted { $0.startDateTime < $1.startDateTime }
             default:

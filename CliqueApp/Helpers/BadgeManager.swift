@@ -17,6 +17,7 @@ class BadgeManager {
     
     private struct BadgeUserContext {
         let uid: String
+        let canonicalPhone: String
     }
     
     // MARK: - Public Methods
@@ -120,8 +121,11 @@ class BadgeManager {
         do {
             // Attempt to fetch by UID (document ID)
             let directDoc = try await db.collection("users").document(trimmed).getDocument()
-            if directDoc.exists {
-                return BadgeUserContext(uid: directDoc.documentID)
+            if let data = directDoc.data() {
+                let rawPhone = data["phoneNumber"] as? String ?? ""
+                let canonicalPhone = PhoneNumberFormatter.canonical(rawPhone)
+                return BadgeUserContext(uid: directDoc.documentID,
+                                        canonicalPhone: canonicalPhone)
             }
             
             // Fallback: look up by auth UID
@@ -131,7 +135,10 @@ class BadgeManager {
                 .getDocuments()
             
             if let doc = snapshot.documents.first {
-                return BadgeUserContext(uid: doc.documentID)
+                let rawPhone = doc.data()["phoneNumber"] as? String ?? ""
+                let canonicalPhone = PhoneNumberFormatter.canonical(rawPhone)
+                return BadgeUserContext(uid: doc.documentID,
+                                        canonicalPhone: canonicalPhone)
             }
         } catch {
             print("❌ Error resolving user context for \(identifier): \(error.localizedDescription)")
@@ -150,6 +157,16 @@ class BadgeManager {
             .getDocuments()
         for doc in primarySnapshot.documents where seen.insert(doc.documentID).inserted {
             documents.append(doc)
+        }
+        
+        let phone = context.canonicalPhone
+        if !phone.isEmpty {
+            let phoneSnapshot = try await db.collection("events")
+                .whereField("invitedPhoneNumbers", arrayContains: phone)
+                .getDocuments()
+            for doc in phoneSnapshot.documents where seen.insert(doc.documentID).inserted {
+                documents.append(doc)
+            }
         }
         
         return documents
@@ -269,6 +286,17 @@ extension BadgeManager {
                     await self.updateBadge(for: context.uid)
                 }
             }
+        
+        if !context.canonicalPhone.isEmpty {
+            db.collection("events")
+                .whereField("invitedPhoneNumbers", arrayContains: context.canonicalPhone)
+                .addSnapshotListener { [weak self] snapshot, error in
+                    guard let self = self, error == nil else { return }
+                    Task {
+                        await self.updateBadge(for: context.uid)
+                    }
+                }
+        }
         
         // Listen to friend requests
         db.collection("friendRequests")

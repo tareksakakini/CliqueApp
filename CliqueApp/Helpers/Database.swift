@@ -257,10 +257,10 @@ class DatabaseManager {
             }
     }
     
-    func listenToFriends(userEmail: String,
+    func listenToFriends(userId: String,
                          handler: @escaping (Result<[String], Error>) -> Void) -> ListenerRegistration {
         db.collection("friendships")
-            .document(userEmail)
+            .document(userId)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
                     handler(.failure(error))
@@ -272,10 +272,10 @@ class DatabaseManager {
             }
     }
     
-    func listenToFriendRequests(userEmail: String,
+    func listenToFriendRequests(userId: String,
                                 handler: @escaping (Result<[String], Error>) -> Void) -> ListenerRegistration {
         db.collection("friendRequests")
-            .document(userEmail)
+            .document(userId)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
                     handler(.failure(error))
@@ -287,10 +287,10 @@ class DatabaseManager {
             }
     }
     
-    func listenToFriendRequestsSent(userEmail: String,
+    func listenToFriendRequestsSent(userId: String,
                                     handler: @escaping (Result<[String], Error>) -> Void) -> ListenerRegistration {
         db.collection("friendRequestsSent")
-            .document(userEmail)
+            .document(userId)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
                     handler(.failure(error))
