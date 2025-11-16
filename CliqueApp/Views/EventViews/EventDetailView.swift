@@ -45,7 +45,7 @@ struct EventDetailView: View {
     }
     
     private var isEventPast: Bool {
-        currentEvent.startDateTime < Date()
+        currentEvent.startDateTime < Date().toUTCPreservingWallClock()
     }
     
     private var isHost: Bool {

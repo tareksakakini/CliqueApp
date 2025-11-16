@@ -76,7 +76,7 @@ class BadgeManager {
             let snapshots = try await fetchInvitedEventSnapshots(for: context)
             
             // Filter to only count upcoming events (not past)
-            let now = Date()
+            let now = Date().toUTCPreservingWallClock()
             let upcomingInvites = snapshots.filter { document in
                 let data = document.data()
                 guard let startDateTime = (data["startDateTime"] as? Timestamp)?.dateValue() else {
@@ -204,7 +204,7 @@ class BadgeManager {
         do {
             let eventSnapshots = try await fetchInvitedEventSnapshots(for: context)
             
-            let now = Date()
+            let now = Date().toUTCPreservingWallClock()
             let dateFormatter = DateFormatter()
             dateFormatter.dateStyle = .short
             dateFormatter.timeStyle = .short

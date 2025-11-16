@@ -21,7 +21,7 @@ struct MainView: View {
         let identifiers = Set(user.identifierCandidates)
         let canonicalPhone = PhoneNumberFormatter.canonical(user.phoneNumber)
         guard !identifiers.isEmpty || !canonicalPhone.isEmpty else { return 0 }
-        let now = Date()
+        let now = Date().toUTCPreservingWallClock()
         return vm.events.filter { event in
             let invitedById = event.attendeesInvited.contains { identifiers.contains($0) }
             let invitedByPhone = !canonicalPhone.isEmpty && event.invitedPhoneNumbers.contains(canonicalPhone)

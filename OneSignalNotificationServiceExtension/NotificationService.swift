@@ -86,7 +86,7 @@ class NotificationService: UNNotificationServiceExtension {
                     }
                 }
                 
-                let now = Date()
+                let now = floatingWallClockNow()
                 let upcomingInvites = eventDocs.filter { doc in
                     let data = doc.data()
                     guard let timestamp = data["startDateTime"] as? Timestamp else {
@@ -120,6 +120,24 @@ class NotificationService: UNNotificationServiceExtension {
                 handler(content)
             }
         }
+    }
+    
+    private func floatingWallClockNow() -> Date {
+        let now = Date()
+        let calendar = Calendar.current
+        let components = calendar.dateComponents(in: TimeZone.current, from: now)
+        var utcComponents = DateComponents()
+        utcComponents.year = components.year
+        utcComponents.month = components.month
+        utcComponents.day = components.day
+        utcComponents.hour = components.hour
+        utcComponents.minute = components.minute
+        utcComponents.second = components.second
+        utcComponents.timeZone = TimeZone(identifier: "UTC")
+        
+        var utcCalendar = Calendar.current
+        utcCalendar.timeZone = TimeZone(identifier: "UTC")!
+        return utcCalendar.date(from: utcComponents) ?? now
     }
     
     private func canonicalPhoneNumber(_ input: String) -> String {

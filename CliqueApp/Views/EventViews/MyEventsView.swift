@@ -181,7 +181,7 @@ struct MyEventsView: View {
     private var filteredEvents: [EventModel] {
         if isInviteView {
             // For invite view, filter based on pending/declined status and exclude past events
-            let now = Date()
+            let now = Date().toUTCPreservingWallClock()
             let identifiers = userIdentifierSet
             let phone = userCanonicalPhone
             
@@ -213,7 +213,7 @@ struct MyEventsView: View {
                 return containsUser(identifiers, in: checklist)
             }
             
-            let now = Date()
+            let now = Date().toUTCPreservingWallClock()
             
             switch selectedEventType {
             case .upcoming:
@@ -341,7 +341,7 @@ struct ModernEventPillView: View {
     @State private var pendingAutoOpenChat: Bool = false
     
     private var isEventPast: Bool {
-        event.startDateTime < Date()
+        event.startDateTime < Date().toUTCPreservingWallClock()
     }
     
     private var unreadCount: Int {
