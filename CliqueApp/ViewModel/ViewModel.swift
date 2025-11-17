@@ -278,6 +278,7 @@ class ViewModel: ObservableObject {
         do {
             let user = try await firestoreService.getUserByAuthUID(authUID)
             self.signedInUser = user
+            await synchronizePhoneInvites(for: user)
             return user
         } catch {
             print("Failed to fetch signed in user: \(error.localizedDescription)")
@@ -428,6 +429,7 @@ class ViewModel: ObservableObject {
             let user = try await firestoreService.getUserByAuthUID(signedInUser.uid)
             
             print("🔐 User authenticated: \(user.uid)")
+            self.signedInUser = user
             
             // CRITICAL: Clear any existing OneSignal association first
             print("🧹 Clearing any existing OneSignal associations...")
@@ -435,13 +437,17 @@ class ViewModel: ObservableObject {
             
             // Set up OneSignal for this user
             print("🔗 Setting up OneSignal for new user...")
-            await setupOneSignalForUser(userID: user.uid)
+            async let oneSignalSetup: Void = setupOneSignalForUser(userID: user.uid)
+            async let phoneLinkTask: Void = synchronizePhoneInvites(for: user)
+            await oneSignalSetup
             
             // Verify the setup worked
             let verified = await verifyOneSignalState(expectedUserID: user.uid)
             if !verified {
                 print("⚠️ WARNING: OneSignal setup verification failed for user \(user.uid)")
             }
+            
+            await phoneLinkTask
             
             print("User signed in: \(user.uid)")
             return user
@@ -745,6 +751,20 @@ class ViewModel: ObservableObject {
         } catch {
             print("Error linking phone number: \(error.localizedDescription)")
             return (false, 0, "Failed to link phone number. Please try again.")
+        }
+    }
+
+    private func synchronizePhoneInvites(for user: UserModel) async {
+        let trimmedPhone = user.phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedPhone.isEmpty else { return }
+        
+        let result = await linkPhoneNumberToUser(phoneNumber: trimmedPhone)
+        if result.success {
+            if result.linkedEventsCount > 0 {
+                print("📞 Linked \(result.linkedEventsCount) phone-based invite(s) for user \(user.uid)")
+            }
+        } else if let errorMessage = result.errorMessage {
+            print("⚠️ Failed to link phone invitations for user \(user.uid): \(errorMessage)")
         }
     }
 

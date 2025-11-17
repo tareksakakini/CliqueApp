@@ -390,42 +390,65 @@
     // Cache for user data to avoid multiple lookups
     const userCache = {};
 
-    async function getUserByEmail(email) {
-      // Check cache first
-      if (userCache[email]) {
-        return userCache[email];
+    function buildUserFromData(userData = {}, identifier = '') {
+      const normalizedIdentifier = typeof identifier === 'string' ? identifier : '';
+      const fallbackName = userData.fullname 
+        || userData.username 
+        || (normalizedIdentifier.includes('@') ? normalizedIdentifier.split('@')[0] : normalizedIdentifier) 
+        || 'Guest';
+
+      return {
+        fullname: fallbackName,
+        email: userData.email || (normalizedIdentifier.includes('@') ? normalizedIdentifier : ''),
+        username: userData.username || fallbackName,
+        profilePic: userData.profilePic || null
+      };
+    }
+
+    async function getUserByIdentifier(identifier) {
+      const normalizedIdentifier = typeof identifier === 'string' ? identifier : (identifier ? String(identifier) : '');
+
+      if (!normalizedIdentifier) {
+        return buildUserFromData({}, 'Guest');
       }
+
+      if (userCache[normalizedIdentifier]) {
+        return userCache[normalizedIdentifier];
+      }
+
+      const cacheAndReturn = (user) => {
+        userCache[normalizedIdentifier] = user;
+        return user;
+      };
 
       try {
-        // Query users collection by email
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('email', '==', email));
-        const querySnapshot = await getDocs(q);
-        
-        if (!querySnapshot.empty) {
-          const userData = querySnapshot.docs[0].data();
-          const user = {
-            fullname: userData.fullname || email.split('@')[0],
-            email: userData.email || email,
-            username: userData.username || email.split('@')[0],
-            profilePic: userData.profilePic || null
-          };
-          userCache[email] = user;
-          return user;
+        // Attempt to fetch by document ID (UID)
+        const userDocRef = doc(db, 'users', normalizedIdentifier);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          return cacheAndReturn(buildUserFromData(userDoc.data(), normalizedIdentifier));
         }
       } catch (error) {
-        console.error('Error fetching user:', error);
+        console.error('Error fetching user by ID:', error);
       }
 
-      // Fallback to email if user not found
-      const fallbackUser = {
-        fullname: email.split('@')[0],
-        email: email,
-        username: email.split('@')[0],
-        profilePic: null
-      };
-      userCache[email] = fallbackUser;
-      return fallbackUser;
+      // Legacy support: lookup by email if identifier looks like an email
+      if (normalizedIdentifier.includes('@')) {
+        try {
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('email', '==', normalizedIdentifier));
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            return cacheAndReturn(buildUserFromData(querySnapshot.docs[0].data(), normalizedIdentifier));
+          }
+        } catch (error) {
+          console.error('Error fetching user by email:', error);
+        }
+      }
+
+      // Fallback if user not found anywhere
+      return cacheAndReturn(buildUserFromData({}, normalizedIdentifier));
     }
 
     function maskPhoneNumber(phoneNumber) {
@@ -839,12 +862,12 @@
         }
 
         // Fetch user data for attendees and host
-        const hostUser = await getUserByEmail(e.host);
+        const hostUser = await getUserByIdentifier(e.host);
         
-        // Process accepted attendees (both emails and phone numbers)
-        const acceptedEmails = e.attendeesAccepted || [];
+        // Process accepted attendees (both user IDs and phone numbers)
+        const acceptedIdentifiers = e.attendeesAccepted || [];
         const acceptedPhones = e.acceptedPhoneNumbers || [];
-        const acceptedUsers = await Promise.all(acceptedEmails.map(email => getUserByEmail(email)));
+        const acceptedUsers = await Promise.all(acceptedIdentifiers.map(identifier => getUserByIdentifier(identifier)));
         const acceptedPhoneUsers = acceptedPhones.map(phone => ({ 
           fullname: maskPhoneNumber(phone), 
           email: phone, 
@@ -853,10 +876,10 @@
         }));
         const allAccepted = [...acceptedUsers, ...acceptedPhoneUsers];
 
-        // Process invited attendees (both emails and phone numbers)
-        const invitedEmails = e.attendeesInvited || [];
+        // Process invited attendees (both user IDs and phone numbers)
+        const invitedIdentifiers = e.attendeesInvited || [];
         const invitedPhones = e.invitedPhoneNumbers || [];
-        const invitedUsers = await Promise.all(invitedEmails.map(email => getUserByEmail(email)));
+        const invitedUsers = await Promise.all(invitedIdentifiers.map(identifier => getUserByIdentifier(identifier)));
         const invitedPhoneUsers = invitedPhones.map(phone => ({ 
           fullname: maskPhoneNumber(phone), 
           email: phone, 
@@ -866,9 +889,9 @@
         const allInvited = [...invitedUsers, ...invitedPhoneUsers];
 
         // Process declined attendees (from both declinedPhoneNumbers and attendeesDeclined)
-        const declinedEmails = e.attendeesDeclined || [];
+        const declinedIdentifiers = e.attendeesDeclined || [];
         const declinedPhones = e.declinedPhoneNumbers || [];
-        const declinedUsers = await Promise.all(declinedEmails.map(email => getUserByEmail(email)));
+        const declinedUsers = await Promise.all(declinedIdentifiers.map(identifier => getUserByIdentifier(identifier)));
         const declinedPhoneUsers = declinedPhones.map(phone => ({ 
           fullname: maskPhoneNumber(phone), 
           email: phone, 
@@ -1064,4 +1087,3 @@
   </script>
 </body>
 </html>
-
