@@ -921,23 +921,47 @@ class DatabaseManager {
         let usersRef = db.collection("users")
         
         do {
-            // Normalize the phone number to match stored format
+            // Generate all representations we currently store in Firestore
             let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
+            let e164Phone = PhoneNumberFormatter.e164(phoneNumber)
+            let digitsOnly = PhoneNumberFormatter.digitsOnly(from: phoneNumber)
+            let trimmedRaw = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
             
-            // Query for users where phoneNumber field matches the canonical phone
-            let phoneQuery = usersRef.whereField("phoneNumber", isEqualTo: canonicalPhone)
-            let phoneSnapshot = try await phoneQuery.getDocuments()
+            var searchCandidates: [String] = []
+            for value in [canonicalPhone, e164Phone, digitsOnly, trimmedRaw] where !value.isEmpty {
+                if !searchCandidates.contains(value) {
+                    searchCandidates.append(value)
+                }
+            }
             
-            // Check if we found any valid matches
-            let phoneMatches = phoneSnapshot.documents.filter { document in
-                if let phone = document.data()["phoneNumber"] as? String {
-                    return PhoneNumberFormatter.numbersMatch(phone, canonicalPhone)
+            guard !searchCandidates.isEmpty else {
+                print("Phone '\(phoneNumber)' produced no searchable values.")
+                return false
+            }
+            
+            var matchedDocuments: [QueryDocumentSnapshot] = []
+            var seenDocumentIDs = Set<String>()
+            
+            // Query Firestore for each representation and deduplicate any results
+            for candidate in searchCandidates {
+                let query = usersRef.whereField("phoneNumber", isEqualTo: candidate)
+                let snapshot = try await query.getDocuments()
+                
+                for document in snapshot.documents where seenDocumentIDs.insert(document.documentID).inserted {
+                    matchedDocuments.append(document)
+                }
+            }
+            
+            // Run a thorough comparison using our matcher in case formatting differs slightly
+            let phoneMatches = matchedDocuments.filter { document in
+                if let storedPhone = document.data()["phoneNumber"] as? String {
+                    return PhoneNumberFormatter.numbersMatch(storedPhone, phoneNumber)
                 }
                 return false
             }
             
             let isRegistered = !phoneMatches.isEmpty
-            print("Phone '\(phoneNumber)' (canonical: \(canonicalPhone)) check: \(isRegistered ? "REGISTERED" : "AVAILABLE") (matches: \(phoneMatches.count))")
+            print("Phone '\(phoneNumber)' search values \(searchCandidates) -> \(isRegistered ? "REGISTERED" : "AVAILABLE") (matches: \(phoneMatches.count))")
             return isRegistered
         } catch {
             print("Error checking phone number registration: \(error.localizedDescription)")

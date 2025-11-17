@@ -420,9 +420,12 @@ class ViewModel: ObservableObject {
             
             let canonicalPhone = PhoneNumberFormatter.canonical(phoneNumber)
             let normalizedPhone = canonicalPhone.isEmpty ? phoneNumber : canonicalPhone
-            let signedInUser = try await AuthManager.shared.signIn(phoneNumber: normalizedPhone, verificationID: verificationID, smsCode: smsCode)
+            let signedInUser = try await AuthManager.shared.signIn(phoneNumber: normalizedPhone,
+                                                                   verificationID: verificationID,
+                                                                   smsCode: smsCode)
             let firestoreService = DatabaseManager()
-            let user = try await firestoreService.getUserById(signedInUser.uid)
+            // Fetch by authUID because Firestore documents use a UUID as their primary key
+            let user = try await firestoreService.getUserByAuthUID(signedInUser.uid)
             
             print("🔐 User authenticated: \(user.uid)")
             
