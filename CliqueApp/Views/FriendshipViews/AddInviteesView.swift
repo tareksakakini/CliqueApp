@@ -16,6 +16,8 @@ struct AddInviteesView: View {
     @Binding var invitees: [UserModel]
     @Binding var selectedContacts: [ContactInfo]
     @State private var selectedPhoneNumber: String?
+    @State private var alertConfig: AlertConfig?
+    @State private var alertPrimaryAction: (() -> Void)?
     
     @State private var searchEntry: String = ""
     @State private var showContactPicker = false
@@ -43,10 +45,16 @@ struct AddInviteesView: View {
                 message: Text("This contact has multiple numbers"),
                 buttons: contactOptions.map { contactInfo in
                     .default(Text(contactInfo.phoneNumber)) {
-                        selectedContacts.append(contactInfo)
-                        dismiss()
+                        handleContactSelection(contactInfo)
                     }
                 } + [.cancel()]
+            )
+        }
+        .alert(item: $alertConfig) { config in
+            Alert(
+                title: Text(config.title),
+                message: Text(config.message),
+                dismissButton: .default(Text("Dismiss"))
             )
         }
     }
@@ -191,8 +199,7 @@ struct AddInviteesView: View {
             },
             onSelectWithNames: { contactInfos in
                 if contactInfos.count == 1 {
-                    selectedContacts.append(contactInfos[0])
-                    dismiss()
+                    handleContactSelection(contactInfos[0])
                 } else if contactInfos.count > 1 {
                     // For multiple numbers, show action sheet to let user choose
                     self.contactOptions = contactInfos
@@ -201,6 +208,36 @@ struct AddInviteesView: View {
                 showContactPicker = false
             }
         )
+    }
+    
+    private func handleContactSelection(_ contactInfo: ContactInfo) {
+        if let existingUser = ud.getUser(byPhoneNumber: contactInfo.phoneNumber) {
+            let displayName = existingUser.fullname.isEmpty ? (existingUser.username.isEmpty ? "this user" : "@\(existingUser.username)") : existingUser.fullname
+            // Immediately add the in-app user instead of the phone contact
+            if let user = ud.getUser(by: existingUser.stableIdentifier) {
+                if !invitees.contains(where: { $0.stableIdentifier == user.stableIdentifier }) {
+                    invitees.append(user)
+                }
+            } else {
+                invitees.append(existingUser)
+            }
+            selectedContacts.removeAll {
+                PhoneNumberFormatter.numbersMatch($0.phoneNumber, contactInfo.phoneNumber)
+            }
+            alertConfig = AlertConfig(
+                title: "Already on Yalla",
+                message: "\(contactInfo.phoneNumber) already on Yalla as \(displayName). We added their user account instead."
+            )
+            return
+        }
+        
+        let isAlreadyAdded = selectedContacts.contains {
+            PhoneNumberFormatter.numbersMatch($0.phoneNumber, contactInfo.phoneNumber)
+        }
+        guard !isAlreadyAdded else { return }
+        
+        selectedContacts.append(contactInfo)
+        dismiss()
     }
 }
 

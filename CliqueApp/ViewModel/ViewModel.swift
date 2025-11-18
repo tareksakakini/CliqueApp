@@ -181,6 +181,25 @@ class ViewModel: ObservableObject {
         return users.first { $0.username.lowercased() == normalized }
     }
     
+    func getUser(byPhoneNumber phoneNumber: String) -> UserModel? {
+        let trimmed = phoneNumber.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        
+        let canonical = PhoneNumberFormatter.canonical(trimmed)
+        let e164 = PhoneNumberFormatter.e164(trimmed)
+        let digitsOnly = PhoneNumberFormatter.digitsOnly(from: trimmed)
+        let searchValues = [trimmed, canonical, e164, digitsOnly]
+            .filter { !$0.isEmpty }
+        
+        for user in users where !user.phoneNumber.isEmpty {
+            if searchValues.contains(where: { PhoneNumberFormatter.numbersMatch(user.phoneNumber, $0) }) {
+                return user
+            }
+        }
+        
+        return nil
+    }
+    
     func stringMatchUsers(query: String, viewingUser: UserModel, isFriend: Bool = false) -> [UserModel] {
         var to_return: [UserModel] = []
         var users_to_check: [UserModel] = []
