@@ -64,7 +64,7 @@ class NotificationService: UNNotificationServiceExtension {
                     return
                 }
                 
-                let canonicalPhone = canonicalPhoneNumber(data["phoneNumber"] as? String ?? "")
+                let phoneValues = phoneQueryValues(from: data["phoneNumber"] as? String ?? "")
                 
                 // Count upcoming event invites
                 var eventDocs: [QueryDocumentSnapshot] = []
@@ -77,9 +77,9 @@ class NotificationService: UNNotificationServiceExtension {
                     eventDocs.append(doc)
                 }
                 
-                if !canonicalPhone.isEmpty {
+                for phone in phoneValues {
                     let phoneSnapshot = try await db.collection("events")
-                        .whereField("invitedPhoneNumbers", arrayContains: canonicalPhone)
+                        .whereField("invitedPhoneNumbers", arrayContains: phone)
                         .getDocuments()
                     for doc in phoneSnapshot.documents where seen.insert(doc.documentID).inserted {
                         eventDocs.append(doc)
@@ -147,6 +147,47 @@ class NotificationService: UNNotificationServiceExtension {
             return String(digits.dropFirst())
         }
         return digits
+    }
+    
+    private func e164PhoneNumber(_ input: String) -> String {
+        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+        
+        if trimmed.hasPrefix("+") {
+            let normalizedDigits = trimmed.dropFirst().filter { $0.isNumber }
+            return normalizedDigits.isEmpty ? "" : "+\(normalizedDigits)"
+        }
+        
+        if trimmed.hasPrefix("00") {
+            let normalizedDigits = trimmed.dropFirst(2).filter { $0.isNumber }
+            return normalizedDigits.isEmpty ? "" : "+\(normalizedDigits)"
+        }
+        
+        let digits = trimmed.filter { $0.isNumber }
+        guard !digits.isEmpty else { return "" }
+        
+        if digits.count == 10 {
+            return "+1\(digits)"
+        }
+        
+        if digits.count == 11, digits.hasPrefix("1") {
+            return "+\(digits)"
+        }
+        
+        return "+\(digits)"
+    }
+    
+    private func phoneQueryValues(from rawPhone: String) -> [String] {
+        var values = Set<String>()
+        let canonical = canonicalPhoneNumber(rawPhone)
+        if !canonical.isEmpty {
+            values.insert(canonical)
+        }
+        let e164 = e164PhoneNumber(rawPhone)
+        if !e164.isEmpty {
+            values.insert(e164)
+        }
+        return Array(values)
     }
     
     override func serviceExtensionTimeWillExpire() {

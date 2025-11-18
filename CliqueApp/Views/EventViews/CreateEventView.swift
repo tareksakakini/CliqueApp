@@ -879,7 +879,10 @@ struct CreateEventView: View {
                         
                         newPhoneNumbers = []
                         for phoneNumber in event.invitedPhoneNumbers {
-                            if !oldEvent.invitedPhoneNumbers.contains(phoneNumber) {
+                            let alreadyInvited = oldEvent.invitedPhoneNumbers.contains {
+                                PhoneNumberFormatter.numbersMatch($0, phoneNumber)
+                            }
+                            if !alreadyInvited {
                                 newPhoneNumbers.append(phoneNumber)
                             }
                         }
@@ -1041,12 +1044,54 @@ struct CreateEventView: View {
     }
     
     private func canonicalPhoneNumber(_ number: String) -> String {
-        let canonical = PhoneNumberFormatter.canonical(number)
-        if !canonical.isEmpty {
-            return canonical
+        let trimmed = number.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+        
+        if trimmed.hasPrefix("+") {
+            return PhoneNumberFormatter.e164(trimmed)
         }
-        let digits = number.filter { $0.isNumber }
-        return digits
+        
+        if trimmed.hasPrefix("00") {
+            let withoutPrefix = "+" + trimmed.dropFirst(2)
+            return PhoneNumberFormatter.e164(withoutPrefix)
+        }
+        
+        let digits = PhoneNumberFormatter.digitsOnly(from: trimmed)
+        guard !digits.isEmpty else { return "" }
+        
+        if digits.count >= 11 {
+            return "+\(digits)"
+        }
+        
+        return buildPhoneNumberUsingFallbackCountry(digits)
+    }
+    
+    private func buildPhoneNumberUsingFallbackCountry(_ digits: String) -> String {
+        PhoneNumberFormatter.e164(countryCode: fallbackInviteDialDigits, phoneNumber: digits)
+    }
+    
+    private var fallbackInviteDialDigits: String {
+        let dialCode = fallbackInviteDialCode
+        let digits = dialCode.filter { $0.isNumber }
+        return digits.isEmpty ? "1" : digits
+    }
+    
+    private var fallbackInviteDialCode: String {
+        if let userDial = inferDialCode(from: user.phoneNumber) {
+            return userDial
+        }
+        if let regionCode = Locale.current.regionCode,
+           let localeCountry = Country.byCode(regionCode) {
+            return localeCountry.sanitizedDialCode
+        }
+        return Country.default.sanitizedDialCode
+    }
+    
+    private func inferDialCode(from phoneNumber: String) -> String? {
+        let normalized = PhoneNumberFormatter.e164(phoneNumber)
+        guard normalized.hasPrefix("+"),
+              let country = Country.matchCountry(forE164: normalized) else { return nil }
+        return country.sanitizedDialCode
     }
     
     private func downloadAndCropUnsplashImage(from url: URL) async -> UIImage? {

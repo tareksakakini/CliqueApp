@@ -18,6 +18,7 @@ class BadgeManager {
     private struct BadgeUserContext {
         let uid: String
         let canonicalPhone: String
+        let e164Phone: String
     }
     
     // MARK: - Public Methods
@@ -124,8 +125,10 @@ class BadgeManager {
             if let data = directDoc.data() {
                 let rawPhone = data["phoneNumber"] as? String ?? ""
                 let canonicalPhone = PhoneNumberFormatter.canonical(rawPhone)
+                let e164Phone = PhoneNumberFormatter.e164(rawPhone)
                 return BadgeUserContext(uid: directDoc.documentID,
-                                        canonicalPhone: canonicalPhone)
+                                        canonicalPhone: canonicalPhone,
+                                        e164Phone: e164Phone)
             }
             
             // Fallback: look up by auth UID
@@ -137,8 +140,10 @@ class BadgeManager {
             if let doc = snapshot.documents.first {
                 let rawPhone = doc.data()["phoneNumber"] as? String ?? ""
                 let canonicalPhone = PhoneNumberFormatter.canonical(rawPhone)
+                let e164Phone = PhoneNumberFormatter.e164(rawPhone)
                 return BadgeUserContext(uid: doc.documentID,
-                                        canonicalPhone: canonicalPhone)
+                                        canonicalPhone: canonicalPhone,
+                                        e164Phone: e164Phone)
             }
         } catch {
             print("❌ Error resolving user context for \(identifier): \(error.localizedDescription)")
@@ -159,8 +164,8 @@ class BadgeManager {
             documents.append(doc)
         }
         
-        let phone = context.canonicalPhone
-        if !phone.isEmpty {
+        let phoneValues = phoneQueryValues(for: context)
+        for phone in phoneValues {
             let phoneSnapshot = try await db.collection("events")
                 .whereField("invitedPhoneNumbers", arrayContains: phone)
                 .getDocuments()
@@ -287,9 +292,10 @@ extension BadgeManager {
                 }
             }
         
-        if !context.canonicalPhone.isEmpty {
+        let phoneValues = phoneQueryValues(for: context)
+        for phone in phoneValues {
             db.collection("events")
-                .whereField("invitedPhoneNumbers", arrayContains: context.canonicalPhone)
+                .whereField("invitedPhoneNumbers", arrayContains: phone)
                 .addSnapshotListener { [weak self] snapshot, error in
                     guard let self = self, error == nil else { return }
                     Task {
@@ -307,5 +313,18 @@ extension BadgeManager {
                     await self.updateBadge(for: context.uid)
                 }
             }
+    }
+}
+
+private extension BadgeManager {
+    private func phoneQueryValues(for context: BadgeUserContext) -> [String] {
+        var values = Set<String>()
+        if !context.canonicalPhone.isEmpty {
+            values.insert(context.canonicalPhone)
+        }
+        if !context.e164Phone.isEmpty {
+            values.insert(context.e164Phone)
+        }
+        return Array(values)
     }
 }

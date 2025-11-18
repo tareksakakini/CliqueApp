@@ -14,6 +14,13 @@ struct Country: Identifiable, Hashable {
     let code: String // ISO 3166-1 alpha-2 code
     let flag: String
     
+    /// Removes formatting characters so we can compare dial codes reliably.
+    var sanitizedDialCode: String {
+        let digits = dialCode.filter { $0.isNumber }
+        guard !digits.isEmpty else { return dialCode }
+        return "+\(digits)"
+    }
+    
     static let allCountries: [Country] = [
         Country(name: "Afghanistan", dialCode: "+93", code: "AF", flag: "🇦🇫"),
         Country(name: "Albania", dialCode: "+355", code: "AL", flag: "🇦🇱"),
@@ -120,3 +127,25 @@ struct Country: Identifiable, Hashable {
     }
 }
 
+extension Country {
+    /// Countries sorted by dial code length descending for prefix matching.
+    private static let dialCodeLookup: [Country] = {
+        allCountries.sorted { $0.sanitizedDialCode.count > $1.sanitizedDialCode.count }
+    }()
+    
+    /// Attempts to match an E.164 number to a known country.
+    static func matchCountry(forE164 number: String) -> Country? {
+        let sanitized = sanitize(e164: number)
+        guard sanitized.hasPrefix("+") else { return nil }
+        return dialCodeLookup.first { sanitized.hasPrefix($0.sanitizedDialCode) }
+    }
+    
+    /// Returns `sanitized` E.164 string with digits only.
+    private static func sanitize(e164: String) -> String {
+        let filtered = e164.filter { $0 == "+" || $0.isNumber }
+        if filtered.first == "+" {
+            return "+\(filtered.dropFirst().filter { $0.isNumber })"
+        }
+        return "+\(filtered.filter { $0.isNumber })"
+    }
+}

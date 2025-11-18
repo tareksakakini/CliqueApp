@@ -43,8 +43,14 @@ struct MyEventsView: View {
         Set(user.identifierCandidates)
     }
     
-    private var userCanonicalPhone: String {
-        PhoneNumberFormatter.canonical(user.phoneNumber)
+    private var userInvitePhone: String {
+        user.phoneNumber
+    }
+    
+    private func matchesUserPhone(_ list: [String]) -> Bool {
+        let phone = userInvitePhone
+        guard !phone.isEmpty else { return false }
+        return list.contains { PhoneNumberFormatter.numbersMatch($0, phone) }
     }
     
     private func containsUser(_ identifiers: Set<String>, in list: [String]) -> Bool {
@@ -183,14 +189,14 @@ struct MyEventsView: View {
             // For invite view, filter based on pending/declined status and exclude past events
             let now = Date().toUTCPreservingWallClock()
             let identifiers = userIdentifierSet
-            let phone = userCanonicalPhone
+            let phone = userInvitePhone
             
             switch selectedEventType {
             case .pending:
                 return vm.events
                     .filter { event in
                         let invitedById = containsUser(identifiers, in: event.attendeesInvited)
-                        let invitedByPhone = !phone.isEmpty && event.invitedPhoneNumbers.contains(phone)
+                        let invitedByPhone = !phone.isEmpty && matchesUserPhone(event.invitedPhoneNumbers)
                         return (invitedById || invitedByPhone) && event.startDateTime >= now
                     }
                     .sorted { $0.startDateTime < $1.startDateTime }
@@ -198,7 +204,7 @@ struct MyEventsView: View {
                 return vm.events
                     .filter { event in
                         let declinedById = containsUser(identifiers, in: event.attendeesDeclined)
-                        let declinedByPhone = !phone.isEmpty && event.declinedPhoneNumbers.contains(phone)
+                        let declinedByPhone = !phone.isEmpty && matchesUserPhone(event.declinedPhoneNumbers)
                         return (declinedById || declinedByPhone) && event.startDateTime >= now
                     }
                     .sorted { $0.startDateTime < $1.startDateTime }
