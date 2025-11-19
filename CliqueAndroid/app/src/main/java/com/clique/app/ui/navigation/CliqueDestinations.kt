@@ -8,6 +8,7 @@ sealed class CliqueDestination(val route: String) {
     data object AccountInfo : CliqueDestination("account_info")
     data object Main : CliqueDestination("main")
     data object EventDetail : CliqueDestination("event_detail")
+    data object EventChat : CliqueDestination("event_chat")
 }
 
 const val VERIFICATION_ARGS_KEY = "verification_args"
@@ -17,3 +18,4 @@ const val ARG_PHONE = "phone"
 const val ARG_MODE = "mode"
 const val ARG_EVENT_ID = "eventId"
 const val ARG_INVITE_VIEW = "inviteView"
+const val ARG_CHAT_EVENT_ID = "chatEventId"

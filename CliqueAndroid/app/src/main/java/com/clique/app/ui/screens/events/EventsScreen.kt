@@ -65,7 +65,8 @@ fun EventsScreen(
     users: List<User>,
     isInviteScreen: Boolean,
     onRespond: (Event, InviteAction) -> Unit,
-    onEventClick: ((Event) -> Unit)? = null
+    onEventClick: ((Event) -> Unit)? = null,
+    onChatClick: ((Event) -> Unit)? = null
 ) {
     var filter by remember { mutableStateOf(if (isInviteScreen) InviteFilter.Pending else InviteFilter.Upcoming) }
     val filteredEvents = remember(events, user, filter, isInviteScreen) {
@@ -135,16 +136,17 @@ fun EventsScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 8.dp)
             ) {
-                items(filteredEvents) { event ->
-                    ModernEventCard(
-                        event = event,
-                        user = user,
-                        users = users,
-                        isInviteScreen = isInviteScreen,
-                        onRespond = onRespond,
-                        onClick = { onEventClick?.invoke(event) }
-                    )
-                }
+            items(filteredEvents) { event ->
+                ModernEventCard(
+                    event = event,
+                    user = user,
+                    users = users,
+                    isInviteScreen = isInviteScreen,
+                    onRespond = onRespond,
+                    onClick = { onEventClick?.invoke(event) },
+                    onChatClick = { onChatClick?.invoke(event) }
+                )
+            }
             }
         }
     }
@@ -251,7 +253,8 @@ private fun ModernEventCard(
     users: List<User>,
     isInviteScreen: Boolean,
     onRespond: (Event, InviteAction) -> Unit,
-    onClick: (() -> Unit)?
+    onClick: (() -> Unit)?,
+    onChatClick: ((Event) -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
@@ -266,7 +269,8 @@ private fun ModernEventCard(
                 event = event,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(150.dp)
+                    .height(150.dp),
+                onChatClick = onChatClick ?: {}
             )
             
             // Details Section
@@ -282,7 +286,11 @@ private fun ModernEventCard(
 }
 
 @Composable
-private fun EventImageSection(event: Event, modifier: Modifier = Modifier) {
+private fun EventImageSection(
+    event: Event,
+    modifier: Modifier = Modifier,
+    onChatClick: (Event) -> Unit = {}
+) {
     Box(modifier = modifier) {
         // Background Image or Gradient
         if (event.eventPic.isNotEmpty() && event.eventPic != "userDefault") {
@@ -330,15 +338,13 @@ private fun EventImageSection(event: Event, modifier: Modifier = Modifier) {
                 .padding(12.dp)
         )
         
-        // Chat Badge (Top Right) - Placeholder for now
+        // Chat Badge (Top Right)
         ChatBadge(
             unreadCount = 0, // TODO: Implement unread count tracking
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .padding(12.dp),
-            onClick = {
-                // TODO: Handle chat click - could navigate to chat or event detail with chat open
-            }
+            onClick = { onChatClick(event) }
         )
         
         // Title and Location Overlay (Bottom)

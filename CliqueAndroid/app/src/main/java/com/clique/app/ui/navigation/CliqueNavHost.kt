@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -22,6 +23,7 @@ import com.clique.app.ui.screens.account.AccountInfoScreen
 import com.clique.app.ui.screens.auth.LoginScreen
 import com.clique.app.ui.screens.auth.SignUpScreen
 import com.clique.app.ui.screens.auth.VerificationScreen
+import com.clique.app.ui.screens.events.EventChatScreen
 import com.clique.app.ui.screens.events.EventDetailScreen
 import com.clique.app.ui.screens.main.MainScreen
 import com.clique.app.ui.screens.starting.StartingScreen
@@ -178,6 +180,10 @@ fun CliqueNavHost(
                     onEventClick = { event ->
                         val route = "${CliqueDestination.EventDetail.route}?$ARG_EVENT_ID=${Uri.encode(event.id)}&$ARG_INVITE_VIEW=false"
                         navController.navigate(route)
+                    },
+                    onChatClick = { event ->
+                        val route = "${CliqueDestination.EventChat.route}?$ARG_CHAT_EVENT_ID=${Uri.encode(event.id)}"
+                        navController.navigate(route)
                     }
                 )
             }
@@ -215,11 +221,49 @@ fun CliqueNavHost(
                         viewModel.respondToInvite(event.id, action)
                     },
                     onChatClick = { event ->
-                        // TODO: Navigate to chat screen
+                        val route = "${CliqueDestination.EventChat.route}?$ARG_CHAT_EVENT_ID=${Uri.encode(event.id)}"
+                        navController.navigate(route)
                     },
                     onRefreshEvent = { id ->
                         viewModel.refreshEvent(id)
                     }
+                )
+            }
+        }
+        composable(
+            route = "${CliqueDestination.EventChat.route}?$ARG_CHAT_EVENT_ID={$ARG_CHAT_EVENT_ID}",
+            arguments = listOf(
+                navArgument(ARG_CHAT_EVENT_ID) { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString(ARG_CHAT_EVENT_ID).orEmpty()
+            val event = session.events.find { it.id == eventId }
+            
+            if (session.user == null || event == null) {
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            } else {
+                var composerText by remember { mutableStateOf("") }
+                var messages by remember { mutableStateOf<List<com.clique.app.data.model.EventChatMessage>>(emptyList()) }
+                
+                // TODO: Replace with proper ViewModel/Service implementation
+                // For now, using placeholder state
+                EventChatScreen(
+                    event = event,
+                    user = session.user!!,
+                    users = users,
+                    messages = messages,
+                    composerText = composerText,
+                    onComposerTextChange = { composerText = it },
+                    onSendMessage = {
+                        // TODO: Implement send message
+                        if (composerText.trim().isNotEmpty()) {
+                            // Placeholder - will be implemented with proper service
+                            composerText = ""
+                        }
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
         }
