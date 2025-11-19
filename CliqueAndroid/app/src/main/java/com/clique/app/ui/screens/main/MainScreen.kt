@@ -77,14 +77,24 @@ fun MainScreen(
                 MainTab.EVENTS -> EventsScreen(
                     user = session.user,
                     events = session.events,
+                    users = users,
                     isInviteScreen = false,
-                    onRespond = { event, action -> onRespondToInvite(event.id, action) }
+                    onRespond = { event, action -> onRespondToInvite(event.id, action) },
+                    onEventClick = { event ->
+                        // TODO: Navigate to event detail screen
+                        // For now, this is a placeholder
+                    }
                 )
                 MainTab.INVITES -> EventsScreen(
                     user = session.user,
                     events = session.events,
+                    users = users,
                     isInviteScreen = true,
-                    onRespond = { event, action -> onRespondToInvite(event.id, action) }
+                    onRespond = { event, action -> onRespondToInvite(event.id, action) },
+                    onEventClick = { event ->
+                        // TODO: Navigate to event detail screen
+                        // For now, this is a placeholder
+                    }
                 )
                 MainTab.CREATE -> CreateEventScreen(user = session.user, onSave = onSaveEvent)
                 MainTab.FRIENDS -> FriendsScreen(
