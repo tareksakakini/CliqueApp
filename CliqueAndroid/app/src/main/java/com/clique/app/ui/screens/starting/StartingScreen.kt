@@ -1,5 +1,6 @@
 package com.clique.app.ui.screens.starting
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,12 +21,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.painterResource
 import com.clique.app.R
 
 @Composable
@@ -37,11 +38,7 @@ fun StartingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.linearGradient(
-                    listOf(Color(0xFF4C6FFF), Color(0xFF182041))
-                )
-            ),
+            .background(Color(0xFF56B092)),
         contentAlignment = Alignment.Center
     ) {
         if (isLoading) {
@@ -49,46 +46,91 @@ fun StartingScreen(
         } else {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp),
+                    .fillMaxSize()
+                    .padding(horizontal = 32.dp, vertical = 32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                verticalArrangement = Arrangement.Top
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .height(96.dp)
-                        .alpha(0.9f)
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = "Plan your next outing",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color.White,
-                    fontWeight = FontWeight.SemiBold
-                )
                 Spacer(modifier = Modifier.height(48.dp))
-                Button(
-                    onClick = onLogin,
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Log In", color = Color(0xFF4C6FFF), fontWeight = FontWeight.SemiBold)
+                    Image(
+                        painter = painterResource(id = R.drawable.yalla_logo),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(112.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Plan your next outing",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color.White.copy(alpha = 0.9f),
+                        textAlign = TextAlign.Center
+                    )
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(
-                    onClick = onSignUp,
-                    shape = RoundedCornerShape(16.dp),
+                Spacer(modifier = Modifier.weight(1f))
+                val buttonShape = RoundedCornerShape(28.dp)
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    border = ButtonDefaults.outlinedButtonBorder.copy(width = 1.2.dp)
+                        .shadow(
+                            elevation = 18.dp,
+                            shape = buttonShape,
+                            clip = false,
+                            ambientColor = Color.Black.copy(alpha = 0.2f),
+                            spotColor = Color.Black.copy(alpha = 0.2f)
+                        )
                 ) {
-                    Text("Sign Up", color = Color.White, fontWeight = FontWeight.SemiBold)
+                    Button(
+                        onClick = onLogin,
+                        shape = buttonShape,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 0.dp,
+                            pressedElevation = 0.dp,
+                            focusedElevation = 0.dp,
+                            hoveredElevation = 0.dp
+                        )
+                    ) {
+                        Text(
+                            text = "Log In",
+                            color = Color(0xFF4B8E73),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(20.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(
+                            elevation = 12.dp,
+                            shape = buttonShape,
+                            clip = false,
+                            ambientColor = Color.Black.copy(alpha = 0.15f),
+                            spotColor = Color.Black.copy(alpha = 0.15f)
+                        )
+                ) {
+                    OutlinedButton(
+                        onClick = onSignUp,
+                        shape = buttonShape,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(60.dp),
+                        border = BorderStroke(1.4.dp, Color.White.copy(alpha = 0.85f)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White.copy(alpha = 0.08f),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Sign Up", fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
         }
