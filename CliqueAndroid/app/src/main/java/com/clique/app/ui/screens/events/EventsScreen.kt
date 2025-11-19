@@ -47,6 +47,7 @@ import com.clique.app.core.util.PhoneNumberFormatter
 import com.clique.app.data.model.Event
 import com.clique.app.data.model.User
 import com.clique.app.data.repository.model.InviteAction
+import com.clique.app.ui.theme.TealAccent
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -55,9 +56,6 @@ private val dateFormatter = DateTimeFormatter.ofPattern("MMM d, h:mm a")
 private val monthFormatter = DateTimeFormatter.ofPattern("MMM")
 private val dayFormatter = DateTimeFormatter.ofPattern("d")
 private val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
-
-// Teal accent color matching iOS
-val TealAccent = Color(0xFF20B2AA)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -518,27 +516,6 @@ private fun EventDetailsSection(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                }
-            }
-        }
-        
-        // Accept/Decline buttons for invites
-        if (isInviteScreen) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Button(
-                    onClick = { onRespond(event, InviteAction.ACCEPT) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Accept")
-                }
-                OutlinedButton(
-                    onClick = { onRespond(event, InviteAction.DECLINE) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Decline")
                 }
             }
         }

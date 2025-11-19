@@ -349,6 +349,15 @@ class CliqueAppViewModel(
         }
     }
 
+    suspend fun refreshEvent(eventId: String): Event? {
+        return try {
+            repository.getEventById(eventId)
+        } catch (error: Exception) {
+            _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
+            null
+        }
+    }
+
     fun sendFriendRequest(receiver: String) {
         val user = _sessionState.value.user ?: return
         if (receiver == user.uid) return

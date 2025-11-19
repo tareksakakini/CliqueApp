@@ -15,12 +15,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.clique.app.data.model.Event
 import com.clique.app.data.repository.model.FriendshipAction
 import com.clique.app.data.repository.model.InviteAction
 import com.clique.app.ui.screens.account.AccountInfoScreen
 import com.clique.app.ui.screens.auth.LoginScreen
 import com.clique.app.ui.screens.auth.SignUpScreen
 import com.clique.app.ui.screens.auth.VerificationScreen
+import com.clique.app.ui.screens.events.EventDetailScreen
 import com.clique.app.ui.screens.main.MainScreen
 import com.clique.app.ui.screens.starting.StartingScreen
 import com.clique.app.ui.state.AuthMode
@@ -172,7 +174,52 @@ fun CliqueNavHost(
                     onFriendshipUpdate = viewModel::updateFriendship,
                     onUpdateFullName = viewModel::updateFullName,
                     onUpdateUsername = viewModel::updateUsername,
-                    onSignOut = viewModel::signOut
+                    onSignOut = viewModel::signOut,
+                    onEventClick = { event ->
+                        val route = "${CliqueDestination.EventDetail.route}?$ARG_EVENT_ID=${Uri.encode(event.id)}&$ARG_INVITE_VIEW=false"
+                        navController.navigate(route)
+                    }
+                )
+            }
+        }
+        composable(
+            route = "${CliqueDestination.EventDetail.route}?$ARG_EVENT_ID={$ARG_EVENT_ID}&$ARG_INVITE_VIEW={$ARG_INVITE_VIEW}",
+            arguments = listOf(
+                navArgument(ARG_EVENT_ID) { type = NavType.StringType },
+                navArgument(ARG_INVITE_VIEW) { type = NavType.BoolType }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString(ARG_EVENT_ID).orEmpty()
+            val inviteView = backStackEntry.arguments?.getBoolean(ARG_INVITE_VIEW) ?: false
+            
+            if (session.user == null) {
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            } else {
+                EventDetailScreen(
+                    eventId = eventId,
+                    inviteView = inviteView,
+                    user = session.user,
+                    users = users,
+                    events = session.events,
+                    onBack = { navController.popBackStack() },
+                    onEdit = { event ->
+                        // TODO: Navigate to edit screen
+                    },
+                    onDelete = { event ->
+                        viewModel.deleteEvent(event.id)
+                        navController.popBackStack()
+                    },
+                    onRespond = { event, action ->
+                        viewModel.respondToInvite(event.id, action)
+                    },
+                    onChatClick = { event ->
+                        // TODO: Navigate to chat screen
+                    },
+                    onRefreshEvent = { id ->
+                        viewModel.refreshEvent(id)
+                    }
                 )
             }
         }

@@ -48,7 +48,8 @@ fun MainScreen(
     onFriendshipUpdate: (String, FriendshipAction) -> Unit,
     onUpdateFullName: (String) -> Unit,
     onUpdateUsername: (String) -> Unit,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    onEventClick: ((Event) -> Unit)? = null
 ) {
     var selectedTab by remember { mutableStateOf(MainTab.EVENTS) }
     Scaffold(
@@ -80,10 +81,7 @@ fun MainScreen(
                     users = users,
                     isInviteScreen = false,
                     onRespond = { event, action -> onRespondToInvite(event.id, action) },
-                    onEventClick = { event ->
-                        // TODO: Navigate to event detail screen
-                        // For now, this is a placeholder
-                    }
+                    onEventClick = onEventClick
                 )
                 MainTab.INVITES -> EventsScreen(
                     user = session.user,
@@ -91,10 +89,7 @@ fun MainScreen(
                     users = users,
                     isInviteScreen = true,
                     onRespond = { event, action -> onRespondToInvite(event.id, action) },
-                    onEventClick = { event ->
-                        // TODO: Navigate to event detail screen
-                        // For now, this is a placeholder
-                    }
+                    onEventClick = onEventClick
                 )
                 MainTab.CREATE -> CreateEventScreen(user = session.user, onSave = onSaveEvent)
                 MainTab.FRIENDS -> FriendsScreen(
