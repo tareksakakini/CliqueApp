@@ -4,6 +4,7 @@ import android.app.Activity
 import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -247,8 +248,33 @@ fun CliqueNavHost(
                 var composerText by remember { mutableStateOf("") }
                 var messages by remember { mutableStateOf<List<com.clique.app.data.model.EventChatMessage>>(emptyList()) }
                 
-                // TODO: Replace with proper ViewModel/Service implementation
-                // For now, using placeholder state
+                // Listen to chat messages
+                LaunchedEffect(eventId) {
+                    viewModel.listenToEventChatMessages(eventId) { newMessages ->
+                        messages = newMessages
+                        // Mark chat as read when new messages arrive
+                        if (newMessages.isNotEmpty()) {
+                            viewModel.markEventChatAsRead(eventId)
+                        }
+                    }
+                    // Mark chat as read when entering
+                    viewModel.markEventChatAsRead(eventId)
+                }
+                
+                // Mark as read when messages change
+                LaunchedEffect(messages.size) {
+                    if (messages.isNotEmpty()) {
+                        viewModel.markEventChatAsRead(eventId)
+                    }
+                }
+                
+                // Stop listening when leaving
+                DisposableEffect(eventId) {
+                    onDispose {
+                        viewModel.stopListeningToEventChatMessages(eventId)
+                    }
+                }
+                
                 EventChatScreen(
                     event = event,
                     user = session.user!!,
@@ -257,9 +283,9 @@ fun CliqueNavHost(
                     composerText = composerText,
                     onComposerTextChange = { composerText = it },
                     onSendMessage = {
-                        // TODO: Implement send message
-                        if (composerText.trim().isNotEmpty()) {
-                            // Placeholder - will be implemented with proper service
+                        val trimmed = composerText.trim()
+                        if (trimmed.isNotEmpty()) {
+                            viewModel.sendEventChatMessage(eventId, trimmed)
                             composerText = ""
                         }
                     },

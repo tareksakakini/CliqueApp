@@ -1,6 +1,7 @@
 package com.clique.app.data.repository
 
 import com.clique.app.data.model.Event
+import com.clique.app.data.model.EventChatMessage
 import com.clique.app.data.model.User
 import com.clique.app.data.repository.model.FriendshipAction
 import com.clique.app.data.repository.model.InviteAction
@@ -31,4 +32,9 @@ interface CliqueRepository {
     suspend fun updateUsername(uid: String, username: String)
     suspend fun removeProfilePhoto(uid: String)
     suspend fun uploadProfilePhoto(uid: String, bytes: ByteArray): String
+    
+    // Chat methods
+    fun listenToEventChatMessages(eventId: String, onMessagesChanged: (List<EventChatMessage>) -> Unit): ListenerRegistration
+    suspend fun sendEventChatMessage(eventId: String, senderId: String, senderName: String, text: String)
+    suspend fun markEventChatAsRead(eventId: String, userId: String)
 }

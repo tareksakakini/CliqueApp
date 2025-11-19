@@ -10,6 +10,7 @@ import com.clique.app.core.notifications.OneSignalManager
 import com.clique.app.core.util.PhoneNumberFormatter
 import com.clique.app.data.model.Country
 import com.clique.app.data.model.Event
+import com.clique.app.data.model.EventChatMessage
 import com.clique.app.data.model.User
 import com.clique.app.data.repository.CliqueRepository
 import com.clique.app.data.repository.model.FriendshipAction
@@ -56,6 +57,7 @@ class CliqueAppViewModel(
     private var friendsListener: ListenerRegistration? = null
     private var friendRequestsListener: ListenerRegistration? = null
     private var friendRequestsSentListener: ListenerRegistration? = null
+    private var chatMessageListeners = mutableMapOf<String, ListenerRegistration>()
 
     private var routerJob: Job? = null
     private var countdownJob: Job? = null
@@ -355,6 +357,38 @@ class CliqueAppViewModel(
         } catch (error: Exception) {
             _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
             null
+        }
+    }
+
+    fun listenToEventChatMessages(eventId: String, onMessagesChanged: (List<EventChatMessage>) -> Unit) {
+        chatMessageListeners[eventId]?.remove()
+        chatMessageListeners[eventId] = repository.listenToEventChatMessages(eventId, onMessagesChanged)
+    }
+
+    fun stopListeningToEventChatMessages(eventId: String) {
+        chatMessageListeners[eventId]?.remove()
+        chatMessageListeners.remove(eventId)
+    }
+
+    fun sendEventChatMessage(eventId: String, text: String) {
+        val user = _sessionState.value.user ?: return
+        viewModelScope.launch {
+            try {
+                repository.sendEventChatMessage(eventId, user.uid, user.fullName, text)
+            } catch (error: Exception) {
+                _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
+            }
+        }
+    }
+
+    fun markEventChatAsRead(eventId: String) {
+        val user = _sessionState.value.user ?: return
+        viewModelScope.launch {
+            try {
+                repository.markEventChatAsRead(eventId, user.uid)
+            } catch (error: Exception) {
+                // Silently fail for read marking
+            }
         }
     }
 

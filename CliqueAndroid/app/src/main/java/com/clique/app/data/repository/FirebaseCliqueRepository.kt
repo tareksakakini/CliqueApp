@@ -2,6 +2,7 @@ package com.clique.app.data.repository
 
 import com.clique.app.core.util.PhoneNumberFormatter
 import com.clique.app.data.model.Event
+import com.clique.app.data.model.EventChatMessage
 import com.clique.app.data.model.User
 import com.clique.app.data.repository.model.FriendshipAction
 import com.clique.app.data.repository.model.InviteAction
@@ -16,12 +17,19 @@ import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.util.Date
 import java.util.UUID
+import java.time.Instant
 
 class FirebaseCliqueRepository(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance(),
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 ) : CliqueRepository {
+    
+    // Helper function to convert Instant to Timestamp (API 24+ compatible with desugaring)
+    private fun instantToTimestamp(instant: Instant): Timestamp {
+        return Timestamp(Date.from(instant))
+    }
 
     private val usersCollection = firestore.collection("users")
     private val eventsCollection = firestore.collection("events")
@@ -259,8 +267,8 @@ class FirebaseCliqueRepository(
             "title" to event.title,
             "location" to event.location,
             "description" to event.description,
-            "startDateTime" to Timestamp(event.startDateTime.epochSecond, event.startDateTime.nano),
-            "endDateTime" to Timestamp(event.endDateTime.epochSecond, event.endDateTime.nano),
+            "startDateTime" to instantToTimestamp(event.startDateTime),
+            "endDateTime" to instantToTimestamp(event.endDateTime),
             "noEndTime" to event.noEndTime,
             "attendeesAccepted" to event.attendeesAccepted,
             "attendeesInvited" to event.attendeesInvited,
@@ -343,5 +351,132 @@ class FirebaseCliqueRepository(
             val url = ref.downloadUrl.await().toString()
             reference.update("eventPic", url).await()
         }
+    }
+
+    // Chat methods
+    override fun listenToEventChatMessages(eventId: String, onMessagesChanged: (List<EventChatMessage>) -> Unit): ListenerRegistration {
+        return chatMessagesCollection(eventId)
+            .orderBy("createdAt")
+            .limitToLast(200)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    error.printStackTrace()
+                    onMessagesChanged(emptyList())
+                    return@addSnapshotListener
+                }
+                val messages = snapshot?.documents?.mapNotNull { doc ->
+                    EventChatMessage.fromSnapshot(doc)
+                }?.sortedBy { it.createdAt } ?: emptyList()
+                onMessagesChanged(messages)
+            }
+    }
+
+    override suspend fun sendEventChatMessage(eventId: String, senderId: String, senderName: String, text: String) {
+        val trimmedText = text.trim()
+        if (trimmedText.isEmpty() || eventId.isEmpty()) return
+
+        val messageRef = chatMessagesCollection(eventId).document()
+        val timestamp = Timestamp.now()
+
+        val payload = mapOf(
+            "id" to messageRef.id,
+            "eventId" to eventId,
+            "senderId" to senderId,
+            "senderEmail" to senderId,
+            "senderName" to senderName,
+            "text" to trimmedText,
+            "createdAt" to timestamp
+        )
+
+        messageRef.set(payload).await()
+        
+        // Update metadata
+        updateChatMetadata(eventId, senderId, senderName, timestamp, trimmedText)
+    }
+
+    override suspend fun markEventChatAsRead(eventId: String, userId: String) {
+        if (eventId.isEmpty() || userId.isEmpty()) return
+
+        val chatDocRef = chatDocument(eventId)
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(chatDocRef)
+            val data = snapshot.data ?: emptyMap<String, Any>()
+            
+            val unreadCounts = HashMap<String, Any>()
+            val readStates = HashMap<String, Any>()
+            
+            // Copy existing values
+            (data["unreadCounts"] as? Map<*, *>)?.forEach { (k, v) ->
+                if (k is String) unreadCounts[k] = v ?: 0
+            }
+            (data["readStates"] as? Map<*, *>)?.forEach { (k, v) ->
+                if (k is String) readStates[k] = v ?: Timestamp.now()
+            }
+            
+            unreadCounts[userId] = 0
+            readStates[userId] = Timestamp.now()
+            
+            transaction.update(chatDocRef, mapOf(
+                "unreadCounts" to unreadCounts,
+                "readStates" to readStates
+            ))
+            null
+        }.await()
+    }
+
+    private fun chatDocument(eventId: String): DocumentReference {
+        return firestore.collection("eventChats").document(eventId)
+    }
+
+    private fun chatMessagesCollection(eventId: String): com.google.firebase.firestore.CollectionReference {
+        return chatDocument(eventId).collection("messages")
+    }
+
+    private suspend fun updateChatMetadata(eventId: String, senderId: String, senderName: String, timestamp: Timestamp, messageText: String) {
+        val chatDocRef = chatDocument(eventId)
+        
+        firestore.runTransaction { transaction ->
+            val snapshot = transaction.get(chatDocRef)
+            val data = snapshot.data ?: emptyMap<String, Any>()
+            
+            val participants = ((data["participants"] as? List<*>)?.mapNotNull { it as? String }?.toSet() ?: emptySet()).toMutableSet()
+            participants.add(senderId)
+            
+            val unreadCounts = HashMap<String, Any>()
+            val readStates = HashMap<String, Any>()
+            
+            // Copy existing values
+            (data["unreadCounts"] as? Map<*, *>)?.forEach { (k, v) ->
+                if (k is String) unreadCounts[k] = v ?: 0
+            }
+            (data["readStates"] as? Map<*, *>)?.forEach { (k, v) ->
+                if (k is String) readStates[k] = v ?: timestamp
+            }
+            
+            // Update unread counts - sender gets 0, others get +1
+            participants.forEach { participant ->
+                if (participant == senderId) {
+                    unreadCounts[participant] = 0
+                } else {
+                    val currentCount = (unreadCounts[participant] as? Number)?.toInt() ?: 0
+                    unreadCounts[participant] = currentCount + 1
+                }
+            }
+            
+            readStates[senderId] = timestamp
+            
+            transaction.set(chatDocRef, mapOf(
+                "eventId" to eventId,
+                "lastMessage" to messageText,
+                "lastMessageSender" to senderName,
+                "lastMessageSenderId" to senderId,
+                "lastMessageSenderEmail" to senderId,
+                "lastMessageAt" to timestamp,
+                "participants" to participants.toList(),
+                "unreadCounts" to unreadCounts,
+                "readStates" to readStates
+            ), SetOptions.merge())
+            null
+        }.await()
     }
 }

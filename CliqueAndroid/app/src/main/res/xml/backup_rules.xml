@@ -2,8 +2,8 @@
 <data-extraction-rules>
     <cloud-backup>
         <include domain="root" />
-        <exclude domain="database" path="/" />
-        <exclude domain="sharedpref" path="/" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
     </cloud-backup>
     <device-transfer>
         <include domain="root" />
