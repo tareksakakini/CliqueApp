@@ -110,7 +110,7 @@ fun SignUpScreen(
         footerPrompt = "Already have an account?"
     ) {
         TextButton(onClick = onLogin, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) {
-            Text("Already have an account?", color = MaterialTheme.colorScheme.primary)
+            Text("Log In", color = MaterialTheme.colorScheme.primary)
         }
     }
 
