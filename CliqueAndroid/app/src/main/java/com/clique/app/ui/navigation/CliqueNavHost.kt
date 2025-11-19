@@ -1,5 +1,6 @@
 package com.clique.app.ui.navigation
 
+import android.app.Activity
 import android.net.Uri
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -7,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -101,6 +103,7 @@ fun CliqueNavHost(
                 navArgument(ARG_MODE) { type = NavType.StringType }
             )
         ) { backStackEntry ->
+            val context = LocalContext.current
             val verificationId = backStackEntry.arguments?.getString(ARG_VERIFICATION_ID).orEmpty()
             val phone = backStackEntry.arguments?.getString(ARG_PHONE).orEmpty()
             val mode = backStackEntry.arguments?.getString(ARG_MODE)?.let { AuthMode.valueOf(it) } ?: AuthMode.SIGN_IN
@@ -108,6 +111,12 @@ fun CliqueNavHost(
                 state = verificationState.copy(phoneNumber = phone, mode = mode),
                 onVerify = { code, authMode ->
                     viewModel.verifyCode(verificationId, code, authMode)
+                },
+                onBack = {
+                    navController.popBackStack()
+                },
+                onResendCode = { activity ->
+                    viewModel.resendVerificationCode(activity)
                 }
             )
             if (pendingAccount != null && mode == AuthMode.SIGN_UP) {

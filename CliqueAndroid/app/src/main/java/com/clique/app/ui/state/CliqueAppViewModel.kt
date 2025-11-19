@@ -16,8 +16,10 @@ import com.clique.app.data.repository.model.FriendshipAction
 import com.clique.app.data.repository.model.InviteAction
 import com.clique.app.data.repository.model.UserProfilePayload
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -56,6 +58,8 @@ class CliqueAppViewModel(
     private var friendRequestsSentListener: ListenerRegistration? = null
 
     private var routerJob: Job? = null
+    private var countdownJob: Job? = null
+    private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
 
     val pendingRoute: StateFlow<NotificationRouter.Destination?> = notificationRouter.pendingRoute
 
@@ -138,10 +142,12 @@ class CliqueAppViewModel(
                         }
                     }
                 }
-                val verificationId = phoneAuthManager.sendVerificationCode(activity, formatted)
+                val result = phoneAuthManager.sendVerificationCode(activity, formatted)
+                resendToken = result.resendToken
+                startResendCountdown()
                 _verificationState.update {
                     it.copy(
-                        verificationId = verificationId,
+                        verificationId = result.verificationId,
                         isSendingCode = false,
                         errorMessage = null,
                         phoneNumber = formatted,
@@ -157,7 +163,46 @@ class CliqueAppViewModel(
     }
 
     fun resetVerificationState() {
+        countdownJob?.cancel()
+        resendToken = null
         _verificationState.value = VerificationUiState()
+    }
+
+    fun resendVerificationCode(activity: Activity) {
+        val token = resendToken ?: return
+        val phoneNumber = _verificationState.value.phoneNumber
+        if (phoneNumber.isBlank()) return
+
+        viewModelScope.launch {
+            _verificationState.update { it.copy(isSendingCode = true, errorMessage = null) }
+            try {
+                val result = phoneAuthManager.resendVerificationCode(activity, phoneNumber, token)
+                resendToken = result.resendToken
+                startResendCountdown()
+                _verificationState.update {
+                    it.copy(
+                        verificationId = result.verificationId,
+                        isSendingCode = false,
+                        errorMessage = null
+                    )
+                }
+            } catch (error: Exception) {
+                _verificationState.update {
+                    it.copy(isSendingCode = false, errorMessage = error.localizedMessage ?: "Failed to resend code")
+                }
+            }
+        }
+    }
+
+    private fun startResendCountdown() {
+        countdownJob?.cancel()
+        _verificationState.update { it.copy(resendCountdown = 60) }
+        countdownJob = viewModelScope.launch {
+            for (i in 60 downTo 0) {
+                delay(1000)
+                _verificationState.update { it.copy(resendCountdown = i) }
+            }
+        }
     }
 
     fun verifyCode(verificationId: String, smsCode: String, mode: AuthMode) {

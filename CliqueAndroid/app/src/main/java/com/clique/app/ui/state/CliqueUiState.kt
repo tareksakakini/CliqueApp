@@ -26,7 +26,8 @@ data class VerificationUiState(
     val mode: AuthMode = AuthMode.SIGN_IN,
     val isSendingCode: Boolean = false,
     val isVerifyingCode: Boolean = false,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val resendCountdown: Int = 0
 )
 
 data class PendingAccount(

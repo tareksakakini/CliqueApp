@@ -12,9 +12,14 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
+data class VerificationResult(
+    val verificationId: String,
+    val resendToken: PhoneAuthProvider.ForceResendingToken
+)
+
 class PhoneAuthManager(private val auth: FirebaseAuth) {
 
-    suspend fun sendVerificationCode(activity: Activity, phoneNumber: String): String =
+    suspend fun sendVerificationCode(activity: Activity, phoneNumber: String): VerificationResult =
         suspendCancellableCoroutine { continuation ->
             val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
                 override fun onVerificationCompleted(credential: PhoneAuthCredential) {
@@ -29,7 +34,7 @@ class PhoneAuthManager(private val auth: FirebaseAuth) {
 
                 override fun onCodeSent(verificationId: String, token: PhoneAuthProvider.ForceResendingToken) {
                     if (continuation.isActive) {
-                        continuation.resume(verificationId)
+                        continuation.resume(VerificationResult(verificationId, token))
                     }
                 }
             }
@@ -39,6 +44,45 @@ class PhoneAuthManager(private val auth: FirebaseAuth) {
                 .setTimeout(60L, TimeUnit.SECONDS)
                 .setActivity(activity)
                 .setCallbacks(callbacks)
+                .build()
+
+            PhoneAuthProvider.verifyPhoneNumber(options)
+
+            continuation.invokeOnCancellation {
+                // No-op; Firebase SDK handles cleanup.
+            }
+        }
+
+    suspend fun resendVerificationCode(
+        activity: Activity,
+        phoneNumber: String,
+        token: PhoneAuthProvider.ForceResendingToken
+    ): VerificationResult =
+        suspendCancellableCoroutine { continuation ->
+            val callbacks = object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                    // Auto-retrieval is better handled by asking the caller to use the returned credential manually
+                }
+
+                override fun onVerificationFailed(e: FirebaseException) {
+                    if (continuation.isActive) {
+                        continuation.resumeWithException(e)
+                    }
+                }
+
+                override fun onCodeSent(verificationId: String, newToken: PhoneAuthProvider.ForceResendingToken) {
+                    if (continuation.isActive) {
+                        continuation.resume(VerificationResult(verificationId, newToken))
+                    }
+                }
+            }
+
+            val options = PhoneAuthOptions.newBuilder(auth)
+                .setPhoneNumber(phoneNumber)
+                .setTimeout(60L, TimeUnit.SECONDS)
+                .setActivity(activity)
+                .setCallbacks(callbacks)
+                .setForceResendingToken(token)
                 .build()
 
             PhoneAuthProvider.verifyPhoneNumber(options)
