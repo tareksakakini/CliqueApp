@@ -19,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Delete
@@ -107,16 +106,12 @@ fun EventDetailScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            // Custom Navigation Bar
-            CustomNavigationBar(
-                onBack = onBack,
-                onEdit = if (isHost && !isEventPast && onEdit != null) {
-                    { onEdit(currentEvent!!) }
-                } else null
-            )
-            
             // Hero Image Section
-            HeroImageSection(event = currentEvent!!)
+            HeroImageSection(
+                event = currentEvent!!,
+                showEditButton = isHost && !isEventPast && onEdit != null,
+                onEdit = { onEdit?.invoke(currentEvent!!) }
+            )
             
             // Location Card
             LocationCard(event = currentEvent!!)
@@ -168,58 +163,13 @@ fun EventDetailScreen(
     }
 }
 
-@Composable
-private fun CustomNavigationBar(
-    onBack: () -> Unit,
-    onEdit: (() -> Unit)?
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 20.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        // Back Button
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.9f))
-                .clickable { onBack() },
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBack,
-                contentDescription = "Back",
-                modifier = Modifier.size(18.dp),
-                tint = Color.Black
-            )
-        }
-        
-        // Edit Button (if host)
-        if (onEdit != null) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.9f))
-                    .clickable { onEdit() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = "Edit",
-                    modifier = Modifier.size(18.dp),
-                    tint = Color.Black
-                )
-            }
-        }
-    }
-}
 
 @Composable
-private fun HeroImageSection(event: Event) {
+private fun HeroImageSection(
+    event: Event,
+    showEditButton: Boolean = false,
+    onEdit: (() -> Unit)? = null
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -270,6 +220,31 @@ private fun HeroImageSection(event: Event) {
                         )
                     )
             )
+            
+            // Edit Button (top right overlay)
+            if (showEditButton && onEdit != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.9f))
+                            .clickable { onEdit() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit",
+                            modifier = Modifier.size(18.dp),
+                            tint = Color.Black
+                        )
+                    }
+                }
+            }
             
             // Title and Date/Time
             Column(
