@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "798737564089",
+    "project_id": "cliqueapp-3834b",
+    "storage_bucket": "cliqueapp-3834b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:798737564089:android:c18fe55ccce0de11e73668",
+        "android_client_info": {
+          "package_name": "com.clique.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAFhhkvZ5vm2FMTk6-paC_L24Yqt9aq16I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

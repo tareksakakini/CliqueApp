@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Clique</string>
+    <string name="onesignal_app_id">CHANGE_ME_IN_SECRETS</string>
+</resources>

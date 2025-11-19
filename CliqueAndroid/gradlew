@@ -1,0 +1,7 @@
+#!/bin/sh
+
+cat <<'MSG' 1>&2
+The Gradle wrapper JAR is intentionally not committed.
+Run 'gradle wrapper' inside CliqueAndroid/ (or let Android Studio do it) to regenerate gradle-wrapper.jar before building.
+MSG
+exit 1
