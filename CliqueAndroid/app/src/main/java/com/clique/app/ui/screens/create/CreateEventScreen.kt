@@ -650,7 +650,7 @@ fun CreateEventScreen(
                                     endDateTime = if (noEndTime) start.atZone(ZoneId.systemDefault()).toInstant() else end.atZone(ZoneId.systemDefault()).toInstant(),
                                     noEndTime = noEndTime,
                                     attendeesInvited = selectedInvitees,
-                                    attendeesAccepted = listOfNotNull(user?.uid),
+                                    attendeesAccepted = emptyList(), // Host is not included in attendees
                                     host = user?.uid ?: ""
                                 )
                                 Log.d("CreateEvent", "Calling onSave with event: ${event.title}")
