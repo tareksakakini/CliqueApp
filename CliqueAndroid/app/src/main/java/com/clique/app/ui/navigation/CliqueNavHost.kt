@@ -185,7 +185,8 @@ fun CliqueNavHost(
                     onChatClick = { event ->
                         val route = "${CliqueDestination.EventChat.route}?$ARG_CHAT_EVENT_ID=${Uri.encode(event.id)}"
                         navController.navigate(route)
-                    }
+                    },
+                    onRefresh = viewModel::refreshAll
                 )
             }
         }

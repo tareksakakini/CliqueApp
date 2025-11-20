@@ -50,7 +50,8 @@ fun MainScreen(
     onUpdateUsername: (String) -> Unit,
     onSignOut: () -> Unit,
     onEventClick: ((Event) -> Unit)? = null,
-    onChatClick: ((Event) -> Unit)? = null
+    onChatClick: ((Event) -> Unit)? = null,
+    onRefresh: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(MainTab.EVENTS) }
     Scaffold(
@@ -83,7 +84,8 @@ fun MainScreen(
                     isInviteScreen = false,
                     onRespond = { event, action -> onRespondToInvite(event.id, action) },
                     onEventClick = onEventClick,
-                    onChatClick = onChatClick
+                    onChatClick = onChatClick,
+                    onRefresh = onRefresh
                 )
                 MainTab.INVITES -> EventsScreen(
                     user = session.user,
@@ -92,7 +94,8 @@ fun MainScreen(
                     isInviteScreen = true,
                     onRespond = { event, action -> onRespondToInvite(event.id, action) },
                     onEventClick = onEventClick,
-                    onChatClick = onChatClick
+                    onChatClick = onChatClick,
+                    onRefresh = onRefresh
                 )
                 MainTab.CREATE -> CreateEventScreen(user = session.user, onSave = onSaveEvent)
                 MainTab.FRIENDS -> FriendsScreen(
@@ -103,7 +106,8 @@ fun MainScreen(
                     friendRequestsSent = session.friendRequestsSent,
                     onSendRequest = onSendFriendRequest,
                     onRemoveRequest = onRemoveRequest,
-                    onUpdateFriendship = onFriendshipUpdate
+                    onUpdateFriendship = onFriendshipUpdate,
+                    onRefresh = onRefresh
                 )
                 MainTab.SETTINGS -> SettingsScreen(
                     user = session.user,

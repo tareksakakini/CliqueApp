@@ -318,6 +318,23 @@ class CliqueAppViewModel(
             }
         }
     }
+    
+    fun refreshAll() {
+        viewModelScope.launch {
+            try {
+                // Refresh events
+                val events = repository.fetchAllEvents()
+                _sessionState.update { it.copy(events = events.sortedBy { event -> event.startDateTime }) }
+                
+                // Refresh users
+                _users.value = repository.getAllUsers()
+                
+                // Friendship data is automatically updated via listeners
+            } catch (error: Exception) {
+                _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
+            }
+        }
+    }
 
     fun respondToInvite(eventId: String, action: InviteAction) {
         val user = _sessionState.value.user ?: return

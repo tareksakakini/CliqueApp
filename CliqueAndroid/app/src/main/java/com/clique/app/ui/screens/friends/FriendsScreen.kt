@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -32,22 +33,30 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clique.app.data.model.User
 import com.clique.app.data.repository.model.FriendshipAction
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendsScreen(
     currentUserId: String?,
@@ -57,10 +66,24 @@ fun FriendsScreen(
     friendRequestsSent: List<String>,
     onSendRequest: (String) -> Unit,
     onRemoveRequest: (String) -> Unit,
-    onUpdateFriendship: (String, FriendshipAction) -> Unit
+    onUpdateFriendship: (String, FriendshipAction) -> Unit,
+    onRefresh: () -> Unit = {}
 ) {
     var selectedFilter by remember { mutableStateOf(0) } // 0=Friends, 1=Requests, 2=Sent
     var showAddFriendDialog by remember { mutableStateOf(false) }
+    var selectedUser by remember { mutableStateOf<User?>(null) }
+    val pullRefreshState = rememberPullToRefreshState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    if (pullRefreshState.isRefreshing) {
+        LaunchedEffect(true) {
+            coroutineScope.launch {
+                onRefresh()
+                delay(500) // Small delay for better UX
+                pullRefreshState.endRefresh()
+            }
+        }
+    }
     
     val map = users.associateBy { it.uid }
     val friendsList = remember(friendships) { friendships.mapNotNull { map[it] } }
@@ -75,9 +98,26 @@ fun FriendsScreen(
         }
     }
 
+    // Show detail screen if user is selected
+    if (selectedUser != null) {
+        UserDetailScreen(
+            user = selectedUser!!,
+            currentUserId = currentUserId,
+            friendships = friendships,
+            friendRequests = friendRequests,
+            friendRequestsSent = friendRequestsSent,
+            onBack = { selectedUser = null },
+            onSendRequest = onSendRequest,
+            onRemoveRequest = onRemoveRequest,
+            onUpdateFriendship = onUpdateFriendship
+        )
+        return
+    }
+    
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .nestedScroll(pullRefreshState.nestedScrollConnection)
             .background(Color(0xFFF5F5F5))
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -186,6 +226,7 @@ fun FriendsScreen(
                     FriendCard(
                         user = user,
                         section = selectedFilter,
+                        onClick = { selectedUser = user },
                         onAcceptRequest = {
                             onUpdateFriendship(user.uid, FriendshipAction.ADD)
                             onRemoveRequest(user.uid)
@@ -212,6 +253,11 @@ fun FriendsScreen(
                 }
             )
         }
+        
+        PullToRefreshContainer(
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter)
+        )
     }
 }
 
@@ -266,12 +312,15 @@ private fun NetworkFilterItem(
 private fun FriendCard(
     user: User,
     section: Int,
+    onClick: () -> Unit,
     onAcceptRequest: () -> Unit,
     onRemoveRequest: () -> Unit,
     onRemoveFriend: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
