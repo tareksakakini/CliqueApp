@@ -554,6 +554,42 @@ class CliqueAppViewModel(
         }
     }
 
+    fun uploadProfilePhoto(imageBytes: ByteArray, onResult: (UpdateResult) -> Unit) {
+        val user = _sessionState.value.user ?: run {
+            onResult(UpdateResult.Error("User not found"))
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val url = repository.uploadProfilePhoto(user.uid, imageBytes)
+                _sessionState.update { it.copy(user = user.copy(profilePic = url)) }
+                onResult(UpdateResult.Success)
+            } catch (error: Exception) {
+                val errorMsg = error.localizedMessage ?: "Failed to upload profile picture"
+                _sessionState.update { it.copy(errorMessage = errorMsg) }
+                onResult(UpdateResult.Error(errorMsg))
+            }
+        }
+    }
+
+    fun removeProfilePhoto(onResult: (UpdateResult) -> Unit) {
+        val user = _sessionState.value.user ?: run {
+            onResult(UpdateResult.Error("User not found"))
+            return
+        }
+        viewModelScope.launch {
+            try {
+                repository.removeProfilePhoto(user.uid)
+                _sessionState.update { it.copy(user = user.copy(profilePic = "userDefault")) }
+                onResult(UpdateResult.Success)
+            } catch (error: Exception) {
+                val errorMsg = error.localizedMessage ?: "Failed to remove profile picture"
+                _sessionState.update { it.copy(errorMessage = errorMsg) }
+                onResult(UpdateResult.Error(errorMsg))
+            }
+        }
+    }
+
     fun signOut() {
         viewModelScope.launch {
             try {

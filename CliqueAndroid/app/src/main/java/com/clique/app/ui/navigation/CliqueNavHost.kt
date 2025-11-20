@@ -178,6 +178,8 @@ fun CliqueNavHost(
                     onUpdateFullName = { name, callback -> viewModel.updateFullName(name, callback) },
                     onUpdateUsername = { username, callback -> viewModel.updateUsername(username, callback) },
                     onDeleteAccount = { callback -> viewModel.deleteAccount(callback) },
+                    onUploadProfilePhoto = { bytes, callback -> viewModel.uploadProfilePhoto(bytes, callback) },
+                    onRemoveProfilePhoto = { callback -> viewModel.removeProfilePhoto(callback) },
                     onSignOut = viewModel::signOut,
                     onEventClick = { event ->
                         val route = "${CliqueDestination.EventDetail.route}?$ARG_EVENT_ID=${Uri.encode(event.id)}&$ARG_INVITE_VIEW=false"

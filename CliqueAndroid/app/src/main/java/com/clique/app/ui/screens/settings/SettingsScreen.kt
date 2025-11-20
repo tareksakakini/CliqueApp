@@ -51,7 +51,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import coil.compose.AsyncImage
 import com.clique.app.data.model.User
 import com.clique.app.ui.state.DeleteAccountResult
 import com.clique.app.ui.state.UpdateResult
@@ -62,6 +66,8 @@ fun SettingsScreen(
     onUpdateFullName: (String, (UpdateResult) -> Unit) -> Unit,
     onUpdateUsername: (String, (UpdateResult) -> Unit) -> Unit,
     onDeleteAccount: ((DeleteAccountResult) -> Unit) -> Unit,
+    onUploadProfilePhoto: (ByteArray, (UpdateResult) -> Unit) -> Unit,
+    onRemoveProfilePhoto: ((UpdateResult) -> Unit) -> Unit,
     onSignOut: () -> Unit
 ) {
     if (user == null) {
@@ -69,7 +75,7 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            Text("Please sign in")
+        Text("Please sign in")
         }
         return
     }
@@ -77,7 +83,35 @@ fun SettingsScreen(
     var showEditFullNameDialog by remember { mutableStateOf(false) }
     var showEditUsernameDialog by remember { mutableStateOf(false) }
     var showDeleteAccountDialog by remember { mutableStateOf(false) }
+    var showProfilePictureOptionsDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val context = LocalContext.current
+    
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        uri?.let {
+            try {
+                val inputStream = context.contentResolver.openInputStream(it)
+                val imageBytes = inputStream?.readBytes()
+                inputStream?.close()
+                if (imageBytes != null) {
+                    onUploadProfilePhoto(imageBytes) { result ->
+                        when (result) {
+                            is UpdateResult.Success -> {
+                                errorMessage = null
+                            }
+                            is UpdateResult.Error -> {
+                                errorMessage = result.message
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                errorMessage = "Failed to load image: ${e.localizedMessage}"
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -109,7 +143,7 @@ fun SettingsScreen(
         Box(
             contentAlignment = Alignment.BottomEnd
         ) {
-            // Profile picture placeholder
+            // Profile picture
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -117,12 +151,23 @@ fun SettingsScreen(
                     .background(Color(0xFFE0E0E0)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.AccountCircle,
-                    contentDescription = "Profile Picture",
-                    modifier = Modifier.size(80.dp),
-                    tint = Color.Gray
-                )
+                if (user.profilePic.isNotEmpty() && user.profilePic != "userDefault") {
+                    AsyncImage(
+                        model = user.profilePic,
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Outlined.AccountCircle,
+                        contentDescription = "Profile Picture",
+                        modifier = Modifier.size(80.dp),
+                        tint = Color.Gray
+                    )
+                }
             }
             
             // Camera icon overlay
@@ -131,7 +176,8 @@ fun SettingsScreen(
                     .size(36.dp)
                     .clip(CircleShape)
                     .background(Color.White)
-                    .border(2.dp, Color.White, CircleShape),
+                    .border(2.dp, Color.White, CircleShape)
+                    .clickable { showProfilePictureOptionsDialog = true },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -292,13 +338,13 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFFFEBEE)),
+                            .background(Color(0xFFF5F5F5)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete Account",
-                            tint = Color(0xFFD32F2F),
+                            tint = Color.Black,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -309,7 +355,7 @@ fun SettingsScreen(
                         text = "Delete Account",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
-                        color = Color(0xFFD32F2F)
+                        color = Color.Black
                     )
                 }
                 
@@ -384,6 +430,31 @@ fun SettingsScreen(
                         is DeleteAccountResult.Error -> {
                             errorMessage = result.message
                             showDeleteAccountDialog = false
+                        }
+                    }
+                }
+            }
+        )
+    }
+    
+    // Profile Picture Options Dialog
+    if (showProfilePictureOptionsDialog) {
+        ProfilePictureOptionsDialog(
+            hasProfilePicture = user.profilePic.isNotEmpty() && user.profilePic != "userDefault",
+            onDismiss = { showProfilePictureOptionsDialog = false },
+            onSelectImage = {
+                showProfilePictureOptionsDialog = false
+                imagePickerLauncher.launch("image/*")
+            },
+            onRemovePicture = {
+                showProfilePictureOptionsDialog = false
+                onRemoveProfilePhoto { result ->
+                    when (result) {
+                        is UpdateResult.Success -> {
+                            errorMessage = null
+                        }
+                        is UpdateResult.Error -> {
+                            errorMessage = result.message
                         }
                     }
                 }
@@ -582,6 +653,51 @@ private fun DeleteAccountDialog(
                 Text("Delete", color = Color.White)
             }
         },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun ProfilePictureOptionsDialog(
+    hasProfilePicture: Boolean,
+    onDismiss: () -> Unit,
+    onSelectImage: () -> Unit,
+    onRemovePicture: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Profile Picture") },
+        text = {
+            Column {
+                if (hasProfilePicture) {
+                    TextButton(
+                        onClick = onSelectImage,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Change Picture")
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    TextButton(
+                        onClick = onRemovePicture,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Remove Picture", color = Color(0xFFD32F2F))
+                    }
+                } else {
+                    TextButton(
+                        onClick = onSelectImage,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Add Picture")
+                    }
+                }
+            }
+        },
+        confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("Cancel")

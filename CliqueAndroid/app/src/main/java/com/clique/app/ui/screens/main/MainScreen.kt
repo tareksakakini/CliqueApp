@@ -49,6 +49,8 @@ fun MainScreen(
     onUpdateFullName: (String, (com.clique.app.ui.state.UpdateResult) -> Unit) -> Unit,
     onUpdateUsername: (String, (com.clique.app.ui.state.UpdateResult) -> Unit) -> Unit,
     onDeleteAccount: ((com.clique.app.ui.state.DeleteAccountResult) -> Unit) -> Unit,
+    onUploadProfilePhoto: (ByteArray, (com.clique.app.ui.state.UpdateResult) -> Unit) -> Unit,
+    onRemoveProfilePhoto: ((com.clique.app.ui.state.UpdateResult) -> Unit) -> Unit,
     onSignOut: () -> Unit,
     onEventClick: ((Event) -> Unit)? = null,
     onChatClick: ((Event) -> Unit)? = null,
@@ -115,6 +117,8 @@ fun MainScreen(
                     onUpdateFullName = onUpdateFullName,
                     onUpdateUsername = onUpdateUsername,
                     onDeleteAccount = onDeleteAccount,
+                    onUploadProfilePhoto = onUploadProfilePhoto,
+                    onRemoveProfilePhoto = onRemoveProfilePhoto,
                     onSignOut = onSignOut
                 )
             }
