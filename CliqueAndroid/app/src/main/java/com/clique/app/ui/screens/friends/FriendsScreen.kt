@@ -21,7 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,6 +74,7 @@ fun FriendsScreen(
     var selectedFilter by remember { mutableStateOf(0) } // 0=Friends, 1=Requests, 2=Sent
     var showAddFriendDialog by remember { mutableStateOf(false) }
     var selectedUser by remember { mutableStateOf<User?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
     val pullRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
     
@@ -90,11 +93,19 @@ fun FriendsScreen(
     val requestsList = remember(friendRequests) { friendRequests.mapNotNull { map[it] } }
     val sentList = remember(friendRequestsSent) { friendRequestsSent.mapNotNull { map[it] } }
     
-    val displayedUsers = remember(selectedFilter, friendsList, requestsList, sentList) {
-        when (selectedFilter) {
+    val displayedUsers = remember(selectedFilter, friendsList, requestsList, sentList, searchQuery) {
+        val baseList = when (selectedFilter) {
             0 -> friendsList
             1 -> requestsList
             else -> sentList
+        }
+        
+        if (searchQuery.isBlank()) {
+            baseList
+        } else {
+            baseList.filter { 
+                it.fullName.contains(searchQuery, ignoreCase = true)
+            }
         }
     }
 
@@ -196,7 +207,7 @@ fun FriendsScreen(
                             onClick = { selectedFilter = 1 }
                         )
                         NetworkFilterItem(
-                            icon = Icons.Default.Send,
+                            icon = Icons.AutoMirrored.Filled.Send,
                             count = friendRequestsSent.size,
                             label = "SENT",
                             isSelected = selectedFilter == 2,
@@ -208,12 +219,43 @@ fun FriendsScreen(
 
             // Friends Section
             Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                "Friends",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                fontSize = 24.sp,
-                modifier = Modifier.padding(horizontal = 20.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "Friends",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 24.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Search Field
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                placeholder = { Text("Search by name...") },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Search",
+                        tint = Color.Gray
+                    )
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF6BBFA8),
+                    unfocusedBorderColor = Color(0xFFE0E0E0)
+                )
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -246,8 +288,8 @@ fun FriendsScreen(
                 friendships = friendships,
                 friendRequestsSent = friendRequestsSent,
                 onDismiss = { showAddFriendDialog = false },
-                onSendRequest = { userId ->
-                    onSendRequest(userId)
+                onUserSelected = { user ->
+                    selectedUser = user
                     showAddFriendDialog = false
                 }
             )
@@ -312,9 +354,9 @@ private fun FriendCard(
     user: User,
     section: Int,
     onClick: () -> Unit,
-    onAcceptRequest: () -> Unit,
-    onRemoveRequest: () -> Unit,
-    onRemoveFriend: () -> Unit
+    onAcceptRequest: () -> Unit = {},
+    onRemoveRequest: () -> Unit = {},
+    onRemoveFriend: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier
@@ -361,34 +403,12 @@ private fun FriendCard(
                     color = Color.Gray,
                     fontSize = 14.sp
                 )
-                
-                // Action buttons for Requests section
-                if (section == 1) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Row {
-                        Button(
-                            onClick = onAcceptRequest,
-                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF6BBFA8)
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Accept")
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        OutlinedButton(
-                            onClick = onRemoveRequest,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text("Dismiss")
-                        }
-                    }
-                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddFriendDialog(
     users: List<User>,
@@ -396,16 +416,22 @@ private fun AddFriendDialog(
     friendships: List<String>,
     friendRequestsSent: List<String>,
     onDismiss: () -> Unit,
-    onSendRequest: (String) -> Unit
+    onUserSelected: (User) -> Unit
 ) {
     var inviteHandle by remember { mutableStateOf("") }
-    val inviteCandidate = remember(inviteHandle, users) {
-        users.firstOrNull { it.username.equals(inviteHandle.trim(), ignoreCase = true) }
+    val searchQuery = inviteHandle.trim()
+    val inviteCandidates = remember(searchQuery, users, currentUserId, friendships, friendRequestsSent) {
+        if (searchQuery.isBlank()) {
+            emptyList()
+        } else {
+            users.filter { user ->
+                user.fullName.contains(searchQuery, ignoreCase = true) &&
+                user.uid != currentUserId &&
+                !friendships.contains(user.uid) &&
+                !friendRequestsSent.contains(user.uid)
+            }.take(3)
+        }
     }
-    val canInvite = inviteCandidate != null &&
-        inviteCandidate.uid != currentUserId &&
-        !friendships.contains(inviteCandidate.uid) &&
-        !friendRequestsSent.contains(inviteCandidate.uid)
 
     Box(
         modifier = Modifier
@@ -434,54 +460,84 @@ private fun AddFriendDialog(
                     value = inviteHandle,
                     onValueChange = { inviteHandle = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Username") },
-                    placeholder = { Text("Enter username") },
+                    label = { Text("Name") },
+                    placeholder = { Text("Search by name...") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = Color.Gray
+                        )
+                    },
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFF6BBFA8),
+                        unfocusedBorderColor = Color(0xFFE0E0E0)
+                    )
                 )
                 
-                if (inviteCandidate != null) {
+                if (inviteCandidates.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Card(
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (canInvite) Color(0xFFF0F9F7) else Color(0xFFF5F5F5)
-                        ),
-                        shape = RoundedCornerShape(12.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
+                        inviteCandidates.forEach { candidate ->
+                            Card(
                                 modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFFE0E0E0)),
-                                contentAlignment = Alignment.Center
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onUserSelected(candidate)
+                                    },
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color(0xFFF0F9F7)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = "Profile",
-                                    tint = Color.White
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    inviteCandidate.fullName,
-                                    fontWeight = FontWeight.SemiBold
-                                )
-                                Text(
-                                    "@${inviteCandidate.username}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray
-                                )
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .clip(CircleShape)
+                                            .background(Color(0xFFE0E0E0)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Person,
+                                            contentDescription = "Profile",
+                                            tint = Color.White
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            candidate.fullName,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                        Text(
+                                            "@${candidate.username}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
+                } else if (searchQuery.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "No users found",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
                 }
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -491,21 +547,6 @@ private fun AddFriendDialog(
                 ) {
                     TextButton(onClick = onDismiss) {
                         Text("Cancel")
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(
-                        onClick = {
-                            if (canInvite && inviteCandidate != null) {
-                                onSendRequest(inviteCandidate.uid)
-                            }
-                        },
-                        enabled = canInvite,
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6BBFA8)
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text("Send Request")
                     }
                 }
             }
