@@ -19,9 +19,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +47,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,7 +78,8 @@ fun EventsScreen(
     onRespond: (Event, InviteAction) -> Unit,
     onEventClick: ((Event) -> Unit)? = null,
     onChatClick: ((Event) -> Unit)? = null,
-    onRefresh: () -> Unit = {}
+    onRefresh: () -> Unit = {},
+    onProfileClick: (() -> Unit)? = null
 ) {
     var filter by remember { mutableStateOf(if (isInviteScreen) InviteFilter.Pending else InviteFilter.Upcoming) }
     val pullRefreshState = rememberPullToRefreshState()
@@ -136,7 +141,8 @@ fun EventsScreen(
             // Header Section
             HeaderSection(
                 title = if (isInviteScreen) "My Invites" else "My Events",
-                user = user
+                user = user,
+                onProfileClick = onProfileClick
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -152,23 +158,43 @@ fun EventsScreen(
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            // Events List
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 8.dp)
-            ) {
-            items(filteredEvents) { event ->
-                ModernEventCard(
-                    event = event,
-                    user = user,
-                    users = users,
-                    isInviteScreen = isInviteScreen,
-                    onRespond = onRespond,
-                    onClick = { onEventClick?.invoke(event) },
-                    onChatClick = { onChatClick?.invoke(event) }
+            // Events List or Empty State
+            if (filteredEvents.isEmpty()) {
+                EmptyStateCard(
+                    title = when {
+                        isInviteScreen && filter == InviteFilter.Pending -> "No Pending Invites"
+                        isInviteScreen && filter == InviteFilter.Declined -> "No Declined Invites"
+                        !isInviteScreen && filter == InviteFilter.Upcoming -> "No Upcoming Events"
+                        !isInviteScreen && filter == InviteFilter.Past -> "No Past Events"
+                        else -> "No Events"
+                    },
+                    message = when {
+                        isInviteScreen && filter == InviteFilter.Pending -> "Invites you receive will be shown here"
+                        isInviteScreen && filter == InviteFilter.Declined -> "Events you've declined will be shown here"
+                        !isInviteScreen && filter == InviteFilter.Upcoming -> "Events you're attending will be shown here"
+                        !isInviteScreen && filter == InviteFilter.Past -> "Past events you attended will be shown here"
+                        else -> ""
+                    },
+                    icon = if (isInviteScreen) Icons.Default.Mail else Icons.Default.Event
                 )
-            }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    items(filteredEvents) { event ->
+                        ModernEventCard(
+                            event = event,
+                            user = user,
+                            users = users,
+                            isInviteScreen = isInviteScreen,
+                            onRespond = onRespond,
+                            onClick = { onEventClick?.invoke(event) },
+                            onChatClick = { onChatClick?.invoke(event) }
+                        )
+                    }
+                }
             }
         }
         
@@ -180,7 +206,7 @@ fun EventsScreen(
 }
 
 @Composable
-private fun HeaderSection(title: String, user: User?) {
+private fun HeaderSection(title: String, user: User?, onProfileClick: (() -> Unit)? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -196,18 +222,29 @@ private fun HeaderSection(title: String, user: User?) {
         )
         
         if (user != null) {
-            ProfilePicture(user = user, size = 50.dp)
+            ProfilePicture(
+                user = user, 
+                size = 50.dp,
+                onClick = onProfileClick
+            )
         }
     }
 }
 
 @Composable
-private fun ProfilePicture(user: User, size: androidx.compose.ui.unit.Dp) {
+private fun ProfilePicture(user: User, size: androidx.compose.ui.unit.Dp, onClick: (() -> Unit)? = null) {
     Box(
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
             .background(Color.LightGray)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable { onClick() }
+                } else {
+                    Modifier
+                }
+            )
     ) {
         if (user.profilePic.isNotEmpty() && user.profilePic != "userDefault") {
             AsyncImage(
@@ -551,6 +588,61 @@ private fun EventDetailsSection(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun EmptyStateCard(
+    title: String,
+    message: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF5F5F5)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = Color(0xFFD0D0D0)
+                )
+            }
+            
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = Color.Black
+            )
+            
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

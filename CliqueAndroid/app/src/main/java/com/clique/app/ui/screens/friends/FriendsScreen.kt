@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.clique.app.data.model.User
@@ -226,23 +227,43 @@ fun FriendsScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Friends List
-            LazyColumn(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 8.dp)
-            ) {
-                items(displayedUsers) { user ->
-                    FriendCard(
-                        user = user,
-                        section = selectedFilter,
-                        onClick = { selectedUser = user },
-                        onAcceptRequest = {
-                            onUpdateFriendship(user.uid, FriendshipAction.ADD)
-                        },
-                        onRemoveRequest = { onRemoveRequest(user.uid) },
-                        onRemoveFriend = { onUpdateFriendship(user.uid, FriendshipAction.REMOVE) }
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
+            // Friends List or Empty State
+            if (displayedUsers.isEmpty()) {
+                EmptyStateCard(
+                    title = when (selectedFilter) {
+                        0 -> "No Friends"
+                        1 -> "No Friend Requests"
+                        else -> "No Sent Requests"
+                    },
+                    message = when (selectedFilter) {
+                        0 -> "Your friends will be shown here"
+                        1 -> "Friend requests you receive will be shown here"
+                        else -> "Friend requests you've sent will be shown here"
+                    },
+                    icon = when (selectedFilter) {
+                        0 -> Icons.Default.Person
+                        1 -> Icons.Default.Email
+                        else -> Icons.AutoMirrored.Filled.Send
+                    }
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                ) {
+                    items(displayedUsers) { user ->
+                        FriendCard(
+                            user = user,
+                            section = selectedFilter,
+                            onClick = { selectedUser = user },
+                            onAcceptRequest = {
+                                onUpdateFriendship(user.uid, FriendshipAction.ADD)
+                            },
+                            onRemoveRequest = { onRemoveRequest(user.uid) },
+                            onRemoveFriend = { onUpdateFriendship(user.uid, FriendshipAction.REMOVE) }
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
                 }
             }
         }
@@ -517,6 +538,61 @@ private fun AddFriendDialog(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun EmptyStateCard(
+    title: String,
+    message: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF5F5F5)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(64.dp),
+                    tint = Color(0xFFD0D0D0)
+                )
+            }
+            
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                color = Color.Black
+            )
+            
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.Gray,
+                fontSize = 14.sp,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

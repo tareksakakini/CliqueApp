@@ -89,7 +89,8 @@ fun MainScreen(
                     onRespond = { event, action -> onRespondToInvite(event.id, action) },
                     onEventClick = onEventClick,
                     onChatClick = onChatClick,
-                    onRefresh = onRefresh
+                    onRefresh = onRefresh,
+                    onProfileClick = { selectedTab = MainTab.SETTINGS }
                 )
                 MainTab.INVITES -> EventsScreen(
                     user = session.user,
@@ -99,7 +100,8 @@ fun MainScreen(
                     onRespond = { event, action -> onRespondToInvite(event.id, action) },
                     onEventClick = onEventClick,
                     onChatClick = onChatClick,
-                    onRefresh = onRefresh
+                    onRefresh = onRefresh,
+                    onProfileClick = { selectedTab = MainTab.SETTINGS }
                 )
                 MainTab.CREATE -> CreateEventScreen(
                     user = session.user,

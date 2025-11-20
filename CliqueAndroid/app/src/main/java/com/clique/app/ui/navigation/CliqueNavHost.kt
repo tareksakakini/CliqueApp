@@ -24,6 +24,7 @@ import com.clique.app.ui.screens.account.AccountInfoScreen
 import com.clique.app.ui.screens.auth.LoginScreen
 import com.clique.app.ui.screens.auth.SignUpScreen
 import com.clique.app.ui.screens.auth.VerificationScreen
+import com.clique.app.ui.screens.create.CreateEventScreen
 import com.clique.app.ui.screens.events.EventChatScreen
 import com.clique.app.ui.screens.events.EventDetailScreen
 import com.clique.app.ui.screens.main.MainScreen
@@ -222,7 +223,10 @@ fun CliqueNavHost(
                     events = session.events,
                     onBack = { navController.popBackStack() },
                     onEdit = { event ->
-                        // TODO: Navigate to edit screen
+                        android.util.Log.d("Navigation", "Edit button clicked for event: ${event.id}")
+                        val route = "${CliqueDestination.EditEvent.route}?$ARG_EDIT_EVENT_ID=${Uri.encode(event.id)}"
+                        android.util.Log.d("Navigation", "Navigating to route: $route")
+                        navController.navigate(route)
                     },
                     onDelete = { event ->
                         viewModel.deleteEvent(event.id)
@@ -300,6 +304,60 @@ fun CliqueNavHost(
                         }
                     },
                     onBack = { navController.popBackStack() }
+                )
+            }
+        }
+        composable(
+            route = "${CliqueDestination.EditEvent.route}?$ARG_EDIT_EVENT_ID={$ARG_EDIT_EVENT_ID}",
+            arguments = listOf(
+                navArgument(ARG_EDIT_EVENT_ID) { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString(ARG_EDIT_EVENT_ID).orEmpty()
+            android.util.Log.d("Navigation", "EditEvent route - eventId: $eventId")
+            
+            var eventToEdit by remember { mutableStateOf<Event?>(null) }
+            var isLoadingEvent by remember { mutableStateOf(true) }
+            
+            // Try to find event in session first
+            LaunchedEffect(eventId, session.events) {
+                eventToEdit = session.events.find { it.id == eventId }
+                if (eventToEdit == null) {
+                    // If not found, try to refresh it
+                    android.util.Log.d("Navigation", "Event not in session, refreshing...")
+                    val refreshed = viewModel.refreshEvent(eventId)
+                    eventToEdit = refreshed
+                }
+                isLoadingEvent = false
+                android.util.Log.d("Navigation", "Event found: ${eventToEdit != null}")
+            }
+            
+            if (session.user == null) {
+                android.util.Log.d("Navigation", "No user, popping back")
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            } else if (!isLoadingEvent && eventToEdit == null) {
+                android.util.Log.d("Navigation", "Event not found after refresh, popping back")
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            } else if (!isLoadingEvent && eventToEdit != null) {
+                android.util.Log.d("Navigation", "Showing CreateEventScreen for editing")
+                CreateEventScreen(
+                    user = session.user,
+                    users = users,
+                    friendships = session.friendships,
+                    onSave = { event, imageBytes ->
+                        android.util.Log.d("Navigation", "Saving edited event: ${event.id}")
+                        viewModel.saveEvent(event, isNew = false, imageBytes = imageBytes)
+                        navController.popBackStack()
+                    },
+                    eventToEdit = eventToEdit,
+                    onBack = {
+                        android.util.Log.d("Navigation", "Back button pressed in edit screen")
+                        navController.popBackStack()
+                    }
                 )
             }
         }

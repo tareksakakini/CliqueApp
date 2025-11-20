@@ -80,18 +80,37 @@ fun CreateEventScreen(
     user: User?,
     users: List<User> = emptyList(),
     friendships: List<String> = emptyList(),
-    onSave: (Event, ByteArray?) -> Unit
+    onSave: (Event, ByteArray?) -> Unit,
+    eventToEdit: Event? = null,
+    onBack: (() -> Unit)? = null
 ) {
-    var title by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var start by remember { mutableStateOf(LocalDateTime.now()) }
-    var end by remember { mutableStateOf(LocalDateTime.now().plusHours(2)) }
-    var noEndTime by remember { mutableStateOf(false) }
+    val isEditing = eventToEdit != null
+    
+    // Initialize state with event data if editing, otherwise empty
+    var title by remember { mutableStateOf(eventToEdit?.title ?: "") }
+    var location by remember { mutableStateOf(eventToEdit?.location ?: "") }
+    var description by remember { mutableStateOf(eventToEdit?.description ?: "") }
+    var start by remember { 
+        mutableStateOf(
+            eventToEdit?.startDateTime?.atZone(ZoneId.systemDefault())?.toLocalDateTime() 
+                ?: LocalDateTime.now()
+        )
+    }
+    var end by remember { 
+        mutableStateOf(
+            if (eventToEdit?.noEndTime == true) {
+                eventToEdit.startDateTime.atZone(ZoneId.systemDefault()).toLocalDateTime()
+            } else {
+                eventToEdit?.endDateTime?.atZone(ZoneId.systemDefault())?.toLocalDateTime() 
+                    ?: LocalDateTime.now().plusHours(2)
+            }
+        )
+    }
+    var noEndTime by remember { mutableStateOf(eventToEdit?.noEndTime ?: false) }
     var selectedImageUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var selectedImageBytes by remember { mutableStateOf<ByteArray?>(null) }
     var showAddInviteesDialog by remember { mutableStateOf(false) }
-    var selectedInvitees by remember { mutableStateOf<List<String>>(emptyList()) }
+    var selectedInvitees by remember { mutableStateOf(eventToEdit?.attendeesInvited ?: emptyList()) }
     var isSaving by remember { mutableStateOf(false) }
     var saveSuccess by remember { mutableStateOf(false) }
     var showErrorDialog by remember { mutableStateOf(false) }
@@ -101,9 +120,12 @@ fun CreateEventScreen(
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
     
-    // Clear form after successful save
+    // Load existing event image if editing
+    val existingImageUrl = eventToEdit?.eventPic
+    
+    // Clear form after successful save (only for create, not edit)
     LaunchedEffect(saveSuccess) {
-        if (saveSuccess) {
+        if (saveSuccess && !isEditing) {
             title = ""
             location = ""
             description = ""
@@ -178,7 +200,7 @@ fun CreateEventScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Create Event",
+                text = if (isEditing) "Edit Event" else "Create Event",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 fontSize = 32.sp,
@@ -186,7 +208,7 @@ fun CreateEventScreen(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Plan something amazing with your friends",
+                text = if (isEditing) "Update your event details" else "Plan something amazing with your friends",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray,
                 fontSize = 16.sp
@@ -226,6 +248,13 @@ fun CreateEventScreen(
                     if (selectedImageUri != null) {
                         AsyncImage(
                             model = selectedImageUri,
+                            contentDescription = "Event Photo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else if (existingImageUrl != null && existingImageUrl.isNotEmpty() && existingImageUrl != "userDefault") {
+                        AsyncImage(
+                            model = existingImageUrl,
                             contentDescription = "Event Photo",
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop
@@ -594,18 +623,22 @@ fun CreateEventScreen(
                 ) {
                     Button(
                         onClick = {
-                            Log.d("CreateEvent", "Cancel button clicked")
-                            // Clear form
-                            title = ""
-                            location = ""
-                            description = ""
-                            start = LocalDateTime.now()
-                            end = LocalDateTime.now().plusHours(2)
-                            noEndTime = false
-                            selectedImageUri = null
-                            selectedImageBytes = null
-                            selectedInvitees = emptyList()
-                            Toast.makeText(context, "Form cleared", Toast.LENGTH_SHORT).show()
+                            Log.d("CreateEvent", "Cancel button clicked, isEditing: $isEditing")
+                            if (isEditing && onBack != null) {
+                                onBack()
+                            } else {
+                                // Clear form (only for create mode)
+                                title = ""
+                                location = ""
+                                description = ""
+                                start = LocalDateTime.now()
+                                end = LocalDateTime.now().plusHours(2)
+                                noEndTime = false
+                                selectedImageUri = null
+                                selectedImageBytes = null
+                                selectedInvitees = emptyList()
+                                Toast.makeText(context, "Form cleared", Toast.LENGTH_SHORT).show()
+                            }
                         },
                         modifier = Modifier
                             .weight(1f)
@@ -631,7 +664,8 @@ fun CreateEventScreen(
                                 location = location,
                                 startDateTime = start,
                                 endDateTime = end,
-                                noEndTime = noEndTime
+                                noEndTime = noEndTime,
+                                isEditing = isEditing
                             )
                             
                             if (validationError != null) {
@@ -643,6 +677,7 @@ fun CreateEventScreen(
                             if (!isSaving) {
                                 isSaving = true
                                 val event = Event(
+                                    id = eventToEdit?.id ?: "",
                                     title = title,
                                     location = location,
                                     description = description,
@@ -650,12 +685,17 @@ fun CreateEventScreen(
                                     endDateTime = if (noEndTime) start.atZone(ZoneId.systemDefault()).toInstant() else end.atZone(ZoneId.systemDefault()).toInstant(),
                                     noEndTime = noEndTime,
                                     attendeesInvited = selectedInvitees,
-                                    attendeesAccepted = emptyList(), // Host is not included in attendees
-                                    host = user?.uid ?: ""
+                                    attendeesAccepted = eventToEdit?.attendeesAccepted ?: emptyList(),
+                                    attendeesDeclined = eventToEdit?.attendeesDeclined ?: emptyList(),
+                                    host = eventToEdit?.host ?: user?.uid ?: "",
+                                    eventPic = eventToEdit?.eventPic ?: "",
+                                    invitedPhoneNumbers = eventToEdit?.invitedPhoneNumbers ?: emptyList(),
+                                    acceptedPhoneNumbers = eventToEdit?.acceptedPhoneNumbers ?: emptyList(),
+                                    declinedPhoneNumbers = eventToEdit?.declinedPhoneNumbers ?: emptyList()
                                 )
-                                Log.d("CreateEvent", "Calling onSave with event: ${event.title}")
+                                Log.d("CreateEvent", "Calling onSave with event: ${event.title}, isEditing: $isEditing")
                                 onSave(event, selectedImageBytes)
-                                Toast.makeText(context, "Event created successfully!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, if (isEditing) "Event updated successfully!" else "Event created successfully!", Toast.LENGTH_SHORT).show()
                                 // Mark as successful after a short delay to allow save to process
                                 coroutineScope.launch {
                                     kotlinx.coroutines.delay(500)
@@ -680,7 +720,7 @@ fun CreateEventScreen(
                             )
                         } else {
                             Text(
-                                text = "Create Event",
+                                text = if (isEditing) "Update Event" else "Create Event",
                                 fontWeight = FontWeight.Medium
                             )
                         }
@@ -716,7 +756,7 @@ fun CreateEventScreen(
             },
             title = { 
                 Text(
-                    "Cannot Create Event",
+                    if (isEditing) "Cannot Update Event" else "Cannot Create Event",
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFD32F2F)
                 )
@@ -746,7 +786,8 @@ private fun validateEvent(
     location: String,
     startDateTime: LocalDateTime,
     endDateTime: LocalDateTime,
-    noEndTime: Boolean
+    noEndTime: Boolean,
+    isEditing: Boolean = false
 ): String? {
     // Check title length
     if (title.trim().length <= 3) {
@@ -758,10 +799,12 @@ private fun validateEvent(
         return "Please provide a location for the event."
     }
     
-    // Check if start time is in the past
-    val now = LocalDateTime.now()
-    if (startDateTime.isBefore(now)) {
-        return "The event start date and time cannot be in the past."
+    // Check if start time is in the past (only for new events, not when editing)
+    if (!isEditing) {
+        val now = LocalDateTime.now()
+        if (startDateTime.isBefore(now)) {
+            return "The event start date and time cannot be in the past."
+        }
     }
     
     // Check if end time is before start time (only if end time is set)
