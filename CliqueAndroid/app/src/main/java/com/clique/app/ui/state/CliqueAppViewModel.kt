@@ -421,11 +421,26 @@ class CliqueAppViewModel(
         }
     }
 
-    fun removeFriendRequest(receiver: String) {
+    fun removeFriendRequest(otherUserId: String) {
         val user = _sessionState.value.user ?: return
         viewModelScope.launch {
             try {
-                repository.removeFriendRequest(user.uid, receiver)
+                // When declining: otherUserId is the sender, user.uid is the receiver
+                // When unsending: otherUserId is the receiver, user.uid is the sender
+                // The repository expects: removeFriendRequest(sender, receiver)
+                // So we need to determine which is which based on context
+                // Since friendRequests contains otherUserId, it means otherUserId sent to current user
+                // Since friendRequestsSent contains otherUserId, it means current user sent to otherUserId
+                val friendRequests = _sessionState.value.friendRequests
+                val friendRequestsSent = _sessionState.value.friendRequestsSent
+                
+                if (friendRequests.contains(otherUserId)) {
+                    // Current user received request from otherUserId, so otherUserId is sender
+                    repository.removeFriendRequest(otherUserId, user.uid)
+                } else if (friendRequestsSent.contains(otherUserId)) {
+                    // Current user sent request to otherUserId, so user.uid is sender
+                    repository.removeFriendRequest(user.uid, otherUserId)
+                }
             } catch (error: Exception) {
                 _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
             }
