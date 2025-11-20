@@ -171,7 +171,7 @@ fun CliqueNavHost(
                     session = session,
                     users = users,
                     onRespondToInvite = { eventId, action -> viewModel.respondToInvite(eventId, action) },
-                    onSaveEvent = { event -> viewModel.saveEvent(event, isNew = true, imageBytes = null) },
+                    onSaveEvent = { event, imageBytes -> viewModel.saveEvent(event, isNew = true, imageBytes = imageBytes) },
                     onSendFriendRequest = viewModel::sendFriendRequest,
                     onRemoveRequest = viewModel::removeFriendRequest,
                     onFriendshipUpdate = viewModel::updateFriendship,

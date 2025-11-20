@@ -42,7 +42,7 @@ fun MainScreen(
     session: SessionState,
     users: List<User>,
     onRespondToInvite: (String, InviteAction) -> Unit,
-    onSaveEvent: (Event) -> Unit,
+    onSaveEvent: (Event, ByteArray?) -> Unit,
     onSendFriendRequest: (String) -> Unit,
     onRemoveRequest: (String) -> Unit,
     onFriendshipUpdate: (String, FriendshipAction) -> Unit,
@@ -100,7 +100,12 @@ fun MainScreen(
                     onChatClick = onChatClick,
                     onRefresh = onRefresh
                 )
-                MainTab.CREATE -> CreateEventScreen(user = session.user, onSave = onSaveEvent)
+                MainTab.CREATE -> CreateEventScreen(
+                    user = session.user,
+                    users = users,
+                    friendships = session.friendships,
+                    onSave = onSaveEvent
+                )
                 MainTab.FRIENDS -> FriendsScreen(
                     currentUserId = session.user?.uid,
                     users = users,
