@@ -34,10 +34,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -78,6 +80,15 @@ fun UserDetailScreen(
             friendRequests.contains(user.uid) -> RelationshipStatus.REQUEST_RECEIVED
             friendRequestsSent.contains(user.uid) -> RelationshipStatus.REQUEST_SENT
             else -> RelationshipStatus.NONE
+        }
+    }
+
+    // Handle Android back button
+    BackHandler(enabled = true) {
+        if (showActionSheet) {
+            showActionSheet = false
+        } else {
+            onBack()
         }
     }
 
