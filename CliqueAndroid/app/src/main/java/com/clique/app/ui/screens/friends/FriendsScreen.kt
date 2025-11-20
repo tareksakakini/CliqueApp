@@ -74,7 +74,6 @@ fun FriendsScreen(
     var selectedFilter by remember { mutableStateOf(0) } // 0=Friends, 1=Requests, 2=Sent
     var showAddFriendDialog by remember { mutableStateOf(false) }
     var selectedUser by remember { mutableStateOf<User?>(null) }
-    var searchQuery by remember { mutableStateOf("") }
     val pullRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
     
@@ -93,19 +92,11 @@ fun FriendsScreen(
     val requestsList = remember(friendRequests) { friendRequests.mapNotNull { map[it] } }
     val sentList = remember(friendRequestsSent) { friendRequestsSent.mapNotNull { map[it] } }
     
-    val displayedUsers = remember(selectedFilter, friendsList, requestsList, sentList, searchQuery) {
-        val baseList = when (selectedFilter) {
+    val displayedUsers = remember(selectedFilter, friendsList, requestsList, sentList) {
+        when (selectedFilter) {
             0 -> friendsList
             1 -> requestsList
             else -> sentList
-        }
-        
-        if (searchQuery.isBlank()) {
-            baseList
-        } else {
-            baseList.filter { 
-                it.fullName.contains(searchQuery, ignoreCase = true)
-            }
         }
     }
 
@@ -233,30 +224,6 @@ fun FriendsScreen(
                     fontSize = 24.sp
                 )
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Search Field
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
-                placeholder = { Text("Search by name...") },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = "Search",
-                        tint = Color.Gray
-                    )
-                },
-                singleLine = true,
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF6BBFA8),
-                    unfocusedBorderColor = Color(0xFFE0E0E0)
-                )
-            )
             Spacer(modifier = Modifier.height(16.dp))
 
             // Friends List
