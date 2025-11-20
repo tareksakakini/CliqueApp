@@ -1,20 +1,35 @@
 package com.clique.app.ui.screens.friends
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,9 +37,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.clique.app.data.model.User
 import com.clique.app.data.repository.model.FriendshipAction
 
@@ -39,72 +59,206 @@ fun FriendsScreen(
     onRemoveRequest: (String) -> Unit,
     onUpdateFriendship: (String, FriendshipAction) -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
-    var query by remember { mutableStateOf("") }
-    val sections = listOf("Friends", "Requests", "Sent")
-    var inviteHandle by remember { mutableStateOf("") }
-    val inviteCandidate = remember(inviteHandle, users) {
-        users.firstOrNull { it.username.equals(inviteHandle.trim(), ignoreCase = true) }
-    }
+    var selectedFilter by remember { mutableStateOf(0) } // 0=Friends, 1=Requests, 2=Sent
+    var showAddFriendDialog by remember { mutableStateOf(false) }
+    
     val map = users.associateBy { it.uid }
-    val results = remember(selectedTab, friendships, friendRequests, friendRequestsSent, query) {
-        val source = when (selectedTab) {
-            0 -> friendships.mapNotNull { map[it] }
-            1 -> friendRequests.mapNotNull { map[it] }
-            else -> friendRequestsSent.mapNotNull { map[it] }
-        }
-        if (query.isBlank()) source else source.filter {
-            it.fullName.contains(query, ignoreCase = true) || it.username.contains(query, ignoreCase = true)
+    val friendsList = remember(friendships) { friendships.mapNotNull { map[it] } }
+    val requestsList = remember(friendRequests) { friendRequests.mapNotNull { map[it] } }
+    val sentList = remember(friendRequestsSent) { friendRequestsSent.mapNotNull { map[it] } }
+    
+    val displayedUsers = remember(selectedFilter, friendsList, requestsList, sentList) {
+        when (selectedFilter) {
+            0 -> friendsList
+            1 -> requestsList
+            else -> sentList
         }
     }
 
-    Column(modifier = Modifier.padding(16.dp)) {
-        Text("My Friends", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(12.dp))
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Search") }
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = inviteHandle,
-            onValueChange = { inviteHandle = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Add friend by username") }
-        )
-        val canInvite = inviteCandidate != null &&
-            inviteCandidate.uid != currentUserId &&
-            !friendships.contains(inviteCandidate.uid) &&
-            !friendRequestsSent.contains(inviteCandidate.uid)
-        if (canInvite && inviteCandidate != null) {
-            TextButton(onClick = { onSendRequest(inviteCandidate.uid) }) {
-                Text("Send invite to @${inviteCandidate.username}")
-            }
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        TabRow(selectedTabIndex = selectedTab) {
-            sections.forEachIndexed { index, title ->
-                Tab(selected = selectedTab == index, onClick = { selectedTab = index }, text = { Text(title) })
-            }
-        }
-        Spacer(modifier = Modifier.height(12.dp))
-        LazyColumn {
-            items(results) { user ->
-                FriendCard(
-                    user = user,
-                    section = selectedTab,
-                    onAcceptRequest = {
-                        onUpdateFriendship(user.uid, FriendshipAction.ADD)
-                        onRemoveRequest(user.uid)
-                    },
-                    onRemoveRequest = { onRemoveRequest(user.uid) },
-                    onRemoveFriend = { onUpdateFriendship(user.uid, FriendshipAction.REMOVE) }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F5))
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "My Friends",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 32.sp
                 )
-                Spacer(modifier = Modifier.height(12.dp))
+                Button(
+                    onClick = { showAddFriendDialog = true },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF6BBFA8)
+                    ),
+                    modifier = Modifier.height(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = "Add",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add Friend", fontWeight = FontWeight.SemiBold)
+                }
+            }
+
+            // Your Network Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        "Your Network",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Tap to filter your connections",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(20.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        NetworkFilterItem(
+                            icon = Icons.Default.Person,
+                            count = friendships.size,
+                            label = "FRIENDS",
+                            isSelected = selectedFilter == 0,
+                            onClick = { selectedFilter = 0 }
+                        )
+                        NetworkFilterItem(
+                            icon = Icons.Default.Email,
+                            count = friendRequests.size,
+                            label = "REQUESTS",
+                            isSelected = selectedFilter == 1,
+                            onClick = { selectedFilter = 1 }
+                        )
+                        NetworkFilterItem(
+                            icon = Icons.Default.Send,
+                            count = friendRequestsSent.size,
+                            label = "SENT",
+                            isSelected = selectedFilter == 2,
+                            onClick = { selectedFilter = 2 }
+                        )
+                    }
+                }
+            }
+
+            // Friends Section
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                "Friends",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 24.sp,
+                modifier = Modifier.padding(horizontal = 20.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Friends List
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+            ) {
+                items(displayedUsers) { user ->
+                    FriendCard(
+                        user = user,
+                        section = selectedFilter,
+                        onAcceptRequest = {
+                            onUpdateFriendship(user.uid, FriendshipAction.ADD)
+                            onRemoveRequest(user.uid)
+                        },
+                        onRemoveRequest = { onRemoveRequest(user.uid) },
+                        onRemoveFriend = { onUpdateFriendship(user.uid, FriendshipAction.REMOVE) }
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
         }
+
+        // Add Friend Dialog
+        if (showAddFriendDialog) {
+            AddFriendDialog(
+                users = users,
+                currentUserId = currentUserId,
+                friendships = friendships,
+                friendRequestsSent = friendRequestsSent,
+                onDismiss = { showAddFriendDialog = false },
+                onSendRequest = { userId ->
+                    onSendRequest(userId)
+                    showAddFriendDialog = false
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun NetworkFilterItem(
+    icon: ImageVector,
+    count: Int,
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .clickable(onClick = onClick)
+            .padding(8.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(64.dp)
+                .clip(CircleShape)
+                .background(
+                    if (isSelected) Color(0xFF6BBFA8) else Color(0xFFE8F5F1)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = if (isSelected) Color.White else Color(0xFF6BBFA8),
+                modifier = Modifier.size(28.dp)
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            count.toString(),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            fontSize = 28.sp
+        )
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            color = Color(0xFF6BBFA8),
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold
+        )
     }
 }
 
@@ -116,23 +270,196 @@ private fun FriendCard(
     onRemoveRequest: () -> Unit,
     onRemoveFriend: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(12.dp)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Text(user.fullName, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Text("@${user.username}", style = MaterialTheme.typography.bodySmall)
-        Spacer(modifier = Modifier.height(8.dp))
-        Row {
-            when (section) {
-                0 -> OutlinedButton(onClick = onRemoveFriend) { Text("Remove") }
-                1 -> {
-                    Button(onClick = onAcceptRequest) { Text("Accept") }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    OutlinedButton(onClick = onRemoveRequest) { Text("Dismiss") }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Profile Image Placeholder
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFE0E0E0)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Profile",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    user.fullName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp
+                )
+                Text(
+                    "@${user.username}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray,
+                    fontSize = 14.sp
+                )
+                
+                // Action buttons for Requests section
+                if (section == 1) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row {
+                        Button(
+                            onClick = onAcceptRequest,
+                            colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF6BBFA8)
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Accept")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        OutlinedButton(
+                            onClick = onRemoveRequest,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Dismiss")
+                        }
+                    }
                 }
-                2 -> OutlinedButton(onClick = onRemoveRequest) { Text("Cancel") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AddFriendDialog(
+    users: List<User>,
+    currentUserId: String?,
+    friendships: List<String>,
+    friendRequestsSent: List<String>,
+    onDismiss: () -> Unit,
+    onSendRequest: (String) -> Unit
+) {
+    var inviteHandle by remember { mutableStateOf("") }
+    val inviteCandidate = remember(inviteHandle, users) {
+        users.firstOrNull { it.username.equals(inviteHandle.trim(), ignoreCase = true) }
+    }
+    val canInvite = inviteCandidate != null &&
+        inviteCandidate.uid != currentUserId &&
+        !friendships.contains(inviteCandidate.uid) &&
+        !friendRequestsSent.contains(inviteCandidate.uid)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable(onClick = onDismiss),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .clickable(enabled = false) { }, // Prevent dismiss when clicking card
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp)
+            ) {
+                Text(
+                    "Add Friend",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = inviteHandle,
+                    onValueChange = { inviteHandle = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Username") },
+                    placeholder = { Text("Enter username") },
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                
+                if (inviteCandidate != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (canInvite) Color(0xFFF0F9F7) else Color(0xFFF5F5F5)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFE0E0E0)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Profile",
+                                    tint = Color.White
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    inviteCandidate.fullName,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                Text(
+                                    "@${inviteCandidate.username}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("Cancel")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Button(
+                        onClick = {
+                            if (canInvite && inviteCandidate != null) {
+                                onSendRequest(inviteCandidate.uid)
+                            }
+                        },
+                        enabled = canInvite,
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF6BBFA8)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Send Request")
+                    }
+                }
             }
         }
     }
