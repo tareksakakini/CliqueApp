@@ -54,7 +54,8 @@ fun MainScreen(
     onSignOut: () -> Unit,
     onEventClick: ((Event) -> Unit)? = null,
     onChatClick: ((Event) -> Unit)? = null,
-    onRefresh: () -> Unit = {}
+    onRefresh: () -> Unit = {},
+    onCheckUsernameAvailability: ((String, String?, (Boolean) -> Unit) -> Unit)? = null
 ) {
     var selectedTab by remember { mutableStateOf(MainTab.EVENTS) }
     Scaffold(
@@ -128,7 +129,8 @@ fun MainScreen(
                     onDeleteAccount = onDeleteAccount,
                     onUploadProfilePhoto = onUploadProfilePhoto,
                     onRemoveProfilePhoto = onRemoveProfilePhoto,
-                    onSignOut = onSignOut
+                    onSignOut = onSignOut,
+                    onCheckUsernameAvailability = onCheckUsernameAvailability
                 )
             }
         }

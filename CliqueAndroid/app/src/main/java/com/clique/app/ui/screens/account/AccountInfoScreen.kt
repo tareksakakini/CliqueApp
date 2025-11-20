@@ -26,6 +26,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,10 +43,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 
 // Teal color matching iOS design
 val TealColor = Color(0xFF20B2AA)
 val LightGreenColor = Color(0xFF90EE90)
+
+private enum class UsernameAvailabilityStatus {
+    None,
+    Checking,
+    Available,
+    Taken
+}
 
 @Composable
 fun AccountInfoScreen(
@@ -53,13 +62,43 @@ fun AccountInfoScreen(
     errorMessage: String?,
     isSubmitting: Boolean,
     onSubmit: (String, String, String) -> Unit,
-    onViewPolicy: () -> Unit
+    onViewPolicy: () -> Unit,
+    onCheckUsernameAvailability: ((String, (Boolean) -> Unit) -> Unit)? = null
 ) {
     var fullName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var gender by remember { mutableStateOf("Male") }
     var confirmedAge by remember { mutableStateOf(false) }
     var acceptedPolicy by remember { mutableStateOf(false) }
+    
+    // Username availability state
+    var usernameAvailabilityStatus by remember { mutableStateOf<UsernameAvailabilityStatus>(UsernameAvailabilityStatus.None) }
+    
+    // Debounced username availability check
+    LaunchedEffect(username) {
+        val trimmed = username.trim()
+        if (trimmed.length < 3) {
+            usernameAvailabilityStatus = UsernameAvailabilityStatus.None
+            return@LaunchedEffect
+        }
+        
+        usernameAvailabilityStatus = UsernameAvailabilityStatus.Checking
+        delay(500) // Debounce 500ms
+        
+        // Only check if username hasn't changed during delay
+        if (username.trim() == trimmed && onCheckUsernameAvailability != null) {
+            onCheckUsernameAvailability(trimmed) { isAvailable ->
+                // Only update if username still matches
+                if (username.trim() == trimmed) {
+                    usernameAvailabilityStatus = if (isAvailable) {
+                        UsernameAvailabilityStatus.Available
+                    } else {
+                        UsernameAvailabilityStatus.Taken
+                    }
+                }
+            }
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -182,9 +221,39 @@ fun AccountInfoScreen(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = TealColor,
-                    unfocusedBorderColor = Color.LightGray
-                )
+                    focusedBorderColor = when (usernameAvailabilityStatus) {
+                        UsernameAvailabilityStatus.Available -> Color(0xFF4CAF50)
+                        UsernameAvailabilityStatus.Taken -> MaterialTheme.colorScheme.error
+                        else -> TealColor
+                    },
+                    unfocusedBorderColor = when (usernameAvailabilityStatus) {
+                        UsernameAvailabilityStatus.Available -> Color(0xFF4CAF50)
+                        UsernameAvailabilityStatus.Taken -> MaterialTheme.colorScheme.error
+                        else -> Color.LightGray
+                    },
+                    errorBorderColor = MaterialTheme.colorScheme.error
+                ),
+                isError = usernameAvailabilityStatus == UsernameAvailabilityStatus.Taken,
+                supportingText = {
+                    when (usernameAvailabilityStatus) {
+                        UsernameAvailabilityStatus.Checking -> {
+                            Text("Checking availability...", color = Color.Gray, fontSize = 12.sp)
+                        }
+                        UsernameAvailabilityStatus.Available -> {
+                            Text("Username is available", color = Color(0xFF4CAF50), fontSize = 12.sp)
+                        }
+                        UsernameAvailabilityStatus.Taken -> {
+                            Text("Username is already taken", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                        }
+                        UsernameAvailabilityStatus.None -> {
+                            if (username.isNotBlank() && username.length < 3) {
+                                Text("Username must be at least 3 characters", color = Color.Gray, fontSize = 12.sp)
+                            } else {
+                                null
+                            }
+                        }
+                    }
+                }
             )
             
             Spacer(modifier = Modifier.height(20.dp))
@@ -233,7 +302,12 @@ fun AccountInfoScreen(
             }
             
             // Create Account Button
-            val isButtonEnabled = fullName.isNotBlank() && username.length >= 3 && confirmedAge && acceptedPolicy && !isSubmitting
+            val isButtonEnabled = fullName.isNotBlank() && 
+                username.length >= 3 && 
+                usernameAvailabilityStatus == UsernameAvailabilityStatus.Available &&
+                confirmedAge && 
+                acceptedPolicy && 
+                !isSubmitting
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

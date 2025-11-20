@@ -483,6 +483,27 @@ class CliqueAppViewModel(
         }
     }
 
+    fun checkUsernameAvailability(username: String, excludeUid: String? = null, onResult: (Boolean) -> Unit) {
+        val normalizedUsername = username.lowercase().trim()
+        if (normalizedUsername.isBlank() || normalizedUsername.length < 3) {
+            onResult(false)
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val isTaken = if (excludeUid != null) {
+                    repository.isUsernameTakenByOtherUser(normalizedUsername, excludeUid)
+                } else {
+                    repository.isUsernameTaken(normalizedUsername)
+                }
+                onResult(!isTaken)
+            } catch (error: Exception) {
+                // On error, assume unavailable to be safe
+                onResult(false)
+            }
+        }
+    }
+
     fun updateUsername(username: String, onResult: (UpdateResult) -> Unit) {
         val user = _sessionState.value.user ?: run {
             onResult(UpdateResult.Error("User not found"))

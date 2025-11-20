@@ -38,10 +38,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,7 +70,8 @@ fun SettingsScreen(
     onDeleteAccount: ((DeleteAccountResult) -> Unit) -> Unit,
     onUploadProfilePhoto: (ByteArray, (UpdateResult) -> Unit) -> Unit,
     onRemoveProfilePhoto: ((UpdateResult) -> Unit) -> Unit,
-    onSignOut: () -> Unit
+    onSignOut: () -> Unit,
+    onCheckUsernameAvailability: ((String, String?, (Boolean) -> Unit) -> Unit)? = null
 ) {
     if (user == null) {
         Box(
@@ -86,6 +89,9 @@ fun SettingsScreen(
     var showProfilePictureOptionsDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val context = LocalContext.current
+    
+    // Capture the callback to avoid shadowing
+    val checkUsernameCallback = onCheckUsernameAvailability
     
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -413,7 +419,19 @@ fun SettingsScreen(
                     }
                 }
             },
-            errorMessage = errorMessage
+            errorMessage = errorMessage,
+            onCheckUsernameAvailability = { username, excludeUid, callback ->
+                // If username is the same as current, it's available
+                if (username.lowercase().trim() == user.username.lowercase().trim()) {
+                    callback(true)
+                } else if (checkUsernameCallback != null) {
+                    // Check availability excluding current user
+                    checkUsernameCallback(username, user.uid, callback)
+                } else {
+                    callback(false)
+                }
+            },
+            currentUserUid = user.uid
         )
     }
     
@@ -582,14 +600,58 @@ private fun EditFullNameDialog(
     )
 }
 
+private enum class UsernameAvailabilityStatus {
+    None,
+    Checking,
+    Available,
+    Taken
+}
+
 @Composable
 private fun EditUsernameDialog(
     currentUsername: String,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
-    errorMessage: String?
+    errorMessage: String?,
+    onCheckUsernameAvailability: ((String, String?, (Boolean) -> Unit) -> Unit)? = null,
+    currentUserUid: String? = null
 ) {
     var username by remember { mutableStateOf(currentUsername) }
+    var usernameAvailabilityStatus by remember { mutableStateOf<UsernameAvailabilityStatus>(UsernameAvailabilityStatus.None) }
+    
+    // Debounced username availability check
+    LaunchedEffect(username) {
+        val trimmed = username.trim().lowercase()
+        val currentTrimmed = currentUsername.trim().lowercase()
+        
+        // If username is the same as current, it's available
+        if (trimmed == currentTrimmed) {
+            usernameAvailabilityStatus = UsernameAvailabilityStatus.Available
+            return@LaunchedEffect
+        }
+        
+        if (trimmed.length < 3) {
+            usernameAvailabilityStatus = UsernameAvailabilityStatus.None
+            return@LaunchedEffect
+        }
+        
+        usernameAvailabilityStatus = UsernameAvailabilityStatus.Checking
+        delay(500) // Debounce 500ms
+        
+        // Only check if username hasn't changed during delay
+        if (username.trim().lowercase() == trimmed && onCheckUsernameAvailability != null) {
+            onCheckUsernameAvailability(trimmed, currentUserUid) { isAvailable ->
+                // Only update if username still matches
+                if (username.trim().lowercase() == trimmed) {
+                    usernameAvailabilityStatus = if (isAvailable) {
+                        UsernameAvailabilityStatus.Available
+                    } else {
+                        UsernameAvailabilityStatus.Taken
+                    }
+                }
+            }
+        }
+    }
     
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -602,10 +664,39 @@ private fun EditUsernameDialog(
                     label = { Text("Username") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    isError = errorMessage != null,
-                    supportingText = if (errorMessage != null) {
-                        { Text(errorMessage!!, color = Color(0xFFD32F2F)) }
-                    } else null
+                    isError = errorMessage != null || usernameAvailabilityStatus == UsernameAvailabilityStatus.Taken,
+                    colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = when (usernameAvailabilityStatus) {
+                            UsernameAvailabilityStatus.Available -> Color(0xFF4CAF50)
+                            UsernameAvailabilityStatus.Taken -> MaterialTheme.colorScheme.error
+                            else -> MaterialTheme.colorScheme.primary
+                        },
+                        unfocusedBorderColor = when (usernameAvailabilityStatus) {
+                            UsernameAvailabilityStatus.Available -> Color(0xFF4CAF50)
+                            UsernameAvailabilityStatus.Taken -> MaterialTheme.colorScheme.error
+                            else -> MaterialTheme.colorScheme.outline
+                        }
+                    ),
+                    supportingText = {
+                        when {
+                            errorMessage != null -> {
+                                Text(errorMessage!!, color = Color(0xFFD32F2F))
+                            }
+                            usernameAvailabilityStatus == UsernameAvailabilityStatus.Checking -> {
+                                Text("Checking availability...", color = Color.Gray, fontSize = 12.sp)
+                            }
+                            usernameAvailabilityStatus == UsernameAvailabilityStatus.Available -> {
+                                Text("Username is available", color = Color(0xFF4CAF50), fontSize = 12.sp)
+                            }
+                            usernameAvailabilityStatus == UsernameAvailabilityStatus.Taken -> {
+                                Text("Username is already taken", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                            }
+                            username.isNotBlank() && username.length < 3 -> {
+                                Text("Username must be at least 3 characters", color = Color.Gray, fontSize = 12.sp)
+                            }
+                            else -> null
+                        }
+                    }
                 )
             }
         },
@@ -617,7 +708,9 @@ private fun EditUsernameDialog(
                         onSave(trimmed)
                     }
                 },
-                enabled = username.isNotBlank() && username.trim() != currentUsername
+                enabled = username.isNotBlank() && 
+                    username.trim() != currentUsername && 
+                    usernameAvailabilityStatus == UsernameAvailabilityStatus.Available
             ) {
                 Text("Save")
             }

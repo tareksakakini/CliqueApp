@@ -158,7 +158,10 @@ fun CliqueNavHost(
                         }
                     }
                 },
-                onViewPolicy = { }
+                onViewPolicy = { },
+                onCheckUsernameAvailability = { username, callback ->
+                    viewModel.checkUsernameAvailability(username, excludeUid = null, callback)
+                }
             )
         }
         composable(CliqueDestination.Main.route) {
@@ -189,7 +192,10 @@ fun CliqueNavHost(
                         val route = "${CliqueDestination.EventChat.route}?$ARG_CHAT_EVENT_ID=${Uri.encode(event.id)}"
                         navController.navigate(route)
                     },
-                    onRefresh = viewModel::refreshAll
+                    onRefresh = viewModel::refreshAll,
+                    onCheckUsernameAvailability = { username, excludeUid, callback ->
+                        viewModel.checkUsernameAvailability(username, excludeUid, callback)
+                    }
                 )
             }
         }
