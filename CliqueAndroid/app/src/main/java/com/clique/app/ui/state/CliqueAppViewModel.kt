@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.clique.app.core.auth.PhoneAuthManager
 import com.clique.app.core.network.NetworkMonitor
 import com.clique.app.core.notifications.NotificationRouter
+import com.clique.app.core.notifications.NotificationRouteBuilder
 import com.clique.app.core.notifications.OneSignalManager
 import com.clique.app.core.util.PhoneNumberFormatter
 import com.clique.app.data.model.Country
@@ -343,7 +344,31 @@ class CliqueAppViewModel(
         val user = _sessionState.value.user ?: return
         viewModelScope.launch {
             try {
+                val event = repository.getEventById(eventId)
                 repository.respondToInvite(eventId, user.uid, action)
+                
+                // Send notification to host
+                if (event != null && event.host.isNotBlank() && event.host != user.uid && event.id.isNotBlank()) {
+                    val host = _users.value.find { it.uid == event.host }
+                    if (host != null) {
+                        val notificationText = when (action) {
+                            InviteAction.ACCEPT -> "${user.fullName} is coming to your event!"
+                            InviteAction.DECLINE -> "${user.fullName} cannot make it to your event."
+                            InviteAction.LEAVE -> "${user.fullName} cannot make it anymore to your event."
+                            InviteAction.ACCEPT_DECLINED -> "${user.fullName} has accepted your event invitation!"
+                        }
+                        val route = NotificationRouteBuilder.eventDetail(
+                            eventId = event.id,
+                            inviteView = false,
+                            preferredTab = NotificationRouter.NotificationTab.MY_EVENTS
+                        )
+                        oneSignalManager.sendPushNotification(
+                            message = notificationText,
+                            receiverUid = host.uid,
+                            route = route
+                        )
+                    }
+                }
             } catch (error: Exception) {
                 _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
             }
@@ -354,9 +379,152 @@ class CliqueAppViewModel(
         val user = _sessionState.value.user ?: return
         viewModelScope.launch {
             try {
-                repository.upsertEvent(event, hostId = user.uid, selectedImage = imageBytes, isNewEvent = isNew)
+                // Generate event ID for new events if not already set
+                val finalEventId = if (isNew && event.id.isBlank()) {
+                    UUID.randomUUID().toString()
+                } else {
+                    event.id
+                }
+                
+                // Create event with final ID
+                val eventWithId = event.copy(id = finalEventId)
+                
+                // Get old event if updating
+                val oldEvent = if (!isNew && finalEventId.isNotBlank()) {
+                    repository.getEventById(finalEventId)
+                } else {
+                    null
+                }
+                
+                repository.upsertEvent(eventWithId, hostId = user.uid, selectedImage = imageBytes, isNewEvent = isNew)
+                
+                if (isNew) {
+                    // Send invitations to new invitees
+                    val newInvitees = eventWithId.attendeesInvited
+                    
+                    if (newInvitees.isNotEmpty() && finalEventId.isNotBlank()) {
+                        val invitationText = "${user.fullName} just invited you to an event!"
+                        newInvitees.forEach { inviteeId ->
+                            val invitee = _users.value.find { it.uid == inviteeId }
+                            if (invitee != null) {
+                                val route = NotificationRouteBuilder.eventDetail(
+                                    eventId = finalEventId,
+                                    inviteView = true,
+                                    preferredTab = NotificationRouter.NotificationTab.INVITES
+                                )
+                                oneSignalManager.sendPushNotification(
+                                    message = invitationText,
+                                    receiverUid = inviteeId,
+                                    route = route
+                                )
+                            }
+                        }
+                    }
+                } else if (oldEvent != null) {
+                    // Send update notifications for existing invitees
+                    sendEventUpdateNotifications(user, oldEvent, eventWithId)
+                }
             } catch (error: Exception) {
                 _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
+            }
+        }
+    }
+    
+    private suspend fun sendEventUpdateNotifications(user: User, oldEvent: Event, newEvent: Event) {
+        // Collect all changes
+        val changes = mutableListOf<String>()
+        
+        if (oldEvent.title != newEvent.title) {
+            changes.add("title")
+        }
+        if (oldEvent.location != newEvent.location) {
+            changes.add("location")
+        }
+        if (oldEvent.description != newEvent.description) {
+            changes.add("description")
+        }
+        if (oldEvent.startDateTime != newEvent.startDateTime) {
+            changes.add("start time")
+        }
+        if (oldEvent.endDateTime != newEvent.endDateTime) {
+            changes.add("end time")
+        }
+        
+        // If no relevant changes, don't send notifications
+        if (changes.isEmpty()) {
+            return
+        }
+        
+        // Create notification message
+        val notificationText = createEventUpdateNotificationText(
+            hostName = user.fullName,
+            oldEventTitle = oldEvent.title,
+            newEventTitle = newEvent.title,
+            changes = changes
+        )
+        
+        // Get all invitees (accepted, invited, and declined)
+        val allInvitees = (oldEvent.attendeesAccepted + oldEvent.attendeesInvited + oldEvent.attendeesDeclined).toSet()
+        
+        // Send notifications to all invitees except the host
+        allInvitees.forEach { inviteeId ->
+            if (inviteeId != user.uid && newEvent.id.isNotBlank()) {
+                val invitee = _users.value.find { it.uid == inviteeId }
+                if (invitee != null) {
+                    val inviteView = newEvent.attendeesInvited.contains(inviteeId) || 
+                                     newEvent.attendeesDeclined.contains(inviteeId)
+                    val preferredTab = if (inviteView) {
+                        NotificationRouter.NotificationTab.INVITES
+                    } else {
+                        NotificationRouter.NotificationTab.MY_EVENTS
+                    }
+                    val route = NotificationRouteBuilder.eventDetail(
+                        eventId = newEvent.id,
+                        inviteView = inviteView,
+                        preferredTab = preferredTab
+                    )
+                    oneSignalManager.sendPushNotification(
+                        message = notificationText,
+                        receiverUid = inviteeId,
+                        route = route
+                    )
+                }
+            }
+        }
+    }
+    
+    private fun createEventUpdateNotificationText(
+        hostName: String,
+        oldEventTitle: String,
+        newEventTitle: String,
+        changes: List<String>
+    ): String {
+        val titleChanged = changes.contains("title")
+        val displayTitle = oldEventTitle // Always use old title so users know which event
+        
+        return when {
+            changes.size == 1 -> {
+                if (titleChanged) {
+                    "$hostName changed the title of $oldEventTitle (now $newEventTitle)"
+                } else {
+                    "$hostName changed the ${changes[0]} of $displayTitle"
+                }
+            }
+            changes.size == 2 -> {
+                if (titleChanged) {
+                    val otherChange = changes.firstOrNull { it != "title" } ?: ""
+                    "$hostName changed the title and $otherChange of $oldEventTitle (now $newEventTitle)"
+                } else {
+                    "$hostName changed the ${changes[0]} and ${changes[1]} of $displayTitle"
+                }
+            }
+            else -> {
+                // For 3+ changes
+                if (titleChanged) {
+                    "$hostName changed the title and other details of $oldEventTitle (now $newEventTitle)"
+                } else {
+                    "$hostName changed multiple details of $displayTitle"
+                }
             }
         }
     }
@@ -394,7 +562,40 @@ class CliqueAppViewModel(
         val user = _sessionState.value.user ?: return
         viewModelScope.launch {
             try {
+                val event = repository.getEventById(eventId)
                 repository.sendEventChatMessage(eventId, user.uid, user.fullName, text)
+                
+                // Send notifications to all participants except sender
+                if (event != null && event.id.isNotBlank()) {
+                    val recipients = event.chatParticipantUserIds.filter { it != user.uid }
+                    if (recipients.isNotEmpty()) {
+                        val snippet = if (text.length > 120) text.take(117) + "..." else text
+                        
+                        recipients.forEach { recipientId ->
+                            val recipient = _users.value.find { it.uid == recipientId }
+                            if (recipient != null) {
+                                val inviteView = event.isInviteContextFor(recipientId, recipient.phoneNumber)
+                                val preferredTab = if (inviteView) {
+                                    NotificationRouter.NotificationTab.INVITES
+                                } else {
+                                    NotificationRouter.NotificationTab.MY_EVENTS
+                                }
+                                val route = NotificationRouteBuilder.eventDetail(
+                                    eventId = event.id,
+                                    inviteView = inviteView,
+                                    preferredTab = preferredTab,
+                                    openChat = true
+                                )
+                                oneSignalManager.sendPushNotification(
+                                    message = "${user.fullName}: $snippet",
+                                    receiverUid = recipientId,
+                                    route = route,
+                                    title = event.title
+                                )
+                            }
+                        }
+                    }
+                }
             } catch (error: Exception) {
                 _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
             }
@@ -417,8 +618,21 @@ class CliqueAppViewModel(
         if (receiver == user.uid) return
         viewModelScope.launch {
             try {
+                android.util.Log.d("CliqueAppViewModel", "📤 Sending friend request from ${user.uid} to $receiver")
                 repository.sendFriendRequest(user.uid, receiver)
+                android.util.Log.d("CliqueAppViewModel", "✅ Friend request saved to database")
+                
+                // Send notification to receiver
+                val route = NotificationRouteBuilder.friends(NotificationRouter.FriendSectionShortcut.REQUESTS)
+                android.util.Log.d("CliqueAppViewModel", "📤 Sending notification with route: $route")
+                oneSignalManager.sendPushNotification(
+                    message = "${user.fullName} just sent you a friend request!",
+                    receiverUid = receiver,
+                    route = route
+                )
+                android.util.Log.d("CliqueAppViewModel", "✅ Notification send attempt completed")
             } catch (error: Exception) {
+                android.util.Log.e("CliqueAppViewModel", "❌ Error sending friend request: ${error.message}", error)
                 _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
             }
         }
@@ -455,6 +669,16 @@ class CliqueAppViewModel(
         viewModelScope.launch {
             try {
                 repository.updateFriendship(user.uid, viewedUser, action)
+                
+                // Send notification when accepting friendship
+                if (action == FriendshipAction.ADD) {
+                    val route = NotificationRouteBuilder.friends(NotificationRouter.FriendSectionShortcut.FRIENDS)
+                    oneSignalManager.sendPushNotification(
+                        message = "${user.fullName} just accepted your friend request!",
+                        receiverUid = viewedUser,
+                        route = route
+                    )
+                }
             } catch (error: Exception) {
                 _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
             }

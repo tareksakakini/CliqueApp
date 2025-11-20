@@ -11,6 +11,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -66,34 +67,83 @@ class OneSignalManager(
         val restApiKey = BuildConfig.ONESIGNAL_REST_KEY
         val appId = BuildConfig.ONESIGNAL_APP_ID
         if (restApiKey.isBlank() || restApiKey.contains("REPLACE") || appId.isBlank() || appId.contains("REPLACE")) {
+            android.util.Log.e("OneSignalManager", "❌ Cannot send notification: OneSignal not configured (API key or App ID missing or placeholder)")
             return
         }
+        
+        android.util.Log.d("OneSignalManager", "📤 Sending notification:")
+        android.util.Log.d("OneSignalManager", "   Receiver UID: $receiverUid")
+        android.util.Log.d("OneSignalManager", "   Message: $message")
+        android.util.Log.d("OneSignalManager", "   Title: ${title ?: "Yalla"}")
+        android.util.Log.d("OneSignalManager", "   Route: $route")
+        
         val payload = JSONObject().apply {
             put("app_id", appId)
-            put("include_external_user_ids", listOf(receiverUid))
-            put("contents", mapOf("en" to message))
-            title?.let { put("headings", mapOf("en" to it)) }
-            route?.let {
+            put("include_external_user_ids", JSONArray().apply {
+                put(receiverUid)
+            })
+            put("contents", JSONObject().apply {
+                put("en", message)
+            })
+            title?.let { 
+                put("headings", JSONObject().apply {
+                    put("en", it)
+                })
+            }
+            if (route != null) {
                 val data = JSONObject()
-                data.put("route", JSONObject(it))
+                val routeJson = JSONObject()
+                route.forEach { (key, value) ->
+                    when (value) {
+                        is String -> routeJson.put(key, value)
+                        is Boolean -> routeJson.put(key, value)
+                        is Number -> routeJson.put(key, value)
+                        null -> routeJson.put(key, JSONObject.NULL)
+                        else -> routeJson.put(key, value.toString())
+                    }
+                }
+                data.put("route", routeJson)
+                data.put("receiverId", receiverUid)
+                put("data", data)
+                android.util.Log.d("OneSignalManager", "   Route JSON: ${routeJson.toString(2)}")
+            } else {
+                // Even without route, add receiverId to data
+                val data = JSONObject()
                 data.put("receiverId", receiverUid)
                 put("data", data)
             }
             put("mutable_content", true)
         }
+        
+        android.util.Log.d("OneSignalManager", "📦 Notification payload: ${payload.toString(2)}")
+        
         withContext(Dispatchers.IO) {
-            val url = URL("https://onesignal.com/api/v1/notifications")
-            (url.openConnection() as? HttpURLConnection)?.run {
-                requestMethod = "POST"
-                setRequestProperty("Authorization", "Basic $restApiKey")
-                setRequestProperty("Content-Type", "application/json")
-                doOutput = true
-                outputStream.use { it.write(payload.toString().toByteArray()) }
-                val responseCode = responseCode
-                if (responseCode !in 200..299) {
-                    errorStream?.bufferedReader()?.use { println(it.readText()) }
+            try {
+                val url = URL("https://onesignal.com/api/v1/notifications")
+                (url.openConnection() as? HttpURLConnection)?.run {
+                    requestMethod = "POST"
+                    setRequestProperty("Authorization", "Basic $restApiKey")
+                    setRequestProperty("Content-Type", "application/json")
+                    doOutput = true
+                    outputStream.use { it.write(payload.toString().toByteArray()) }
+                    val responseCode = responseCode
+                    if (responseCode in 200..299) {
+                        android.util.Log.d("OneSignalManager", "✅ Notification sent successfully (HTTP $responseCode)")
+                        inputStream?.bufferedReader()?.use { reader ->
+                            val response = reader.readText()
+                            android.util.Log.d("OneSignalManager", "📡 OneSignal response: $response")
+                        }
+                    } else {
+                        android.util.Log.e("OneSignalManager", "❌ Failed to send notification (HTTP $responseCode)")
+                        errorStream?.bufferedReader()?.use { reader ->
+                            val errorResponse = reader.readText()
+                            android.util.Log.e("OneSignalManager", "❌ Error response: $errorResponse")
+                        }
+                    }
+                    disconnect()
                 }
-                disconnect()
+            } catch (e: Exception) {
+                android.util.Log.e("OneSignalManager", "❌ Exception sending notification: ${e.message}", e)
             }
         }
     }

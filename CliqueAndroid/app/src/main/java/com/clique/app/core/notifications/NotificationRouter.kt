@@ -20,7 +20,7 @@ class NotificationRouter {
 
     enum class FriendSectionShortcut { FRIENDS, REQUESTS, SENT }
 
-    private object Key {
+    object Key {
         const val SCREEN = "screen"
         const val EVENT_ID = "eventId"
         const val INVITE_VIEW = "inviteView"
