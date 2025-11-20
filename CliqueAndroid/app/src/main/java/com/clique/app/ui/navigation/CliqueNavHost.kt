@@ -175,8 +175,9 @@ fun CliqueNavHost(
                     onSendFriendRequest = viewModel::sendFriendRequest,
                     onRemoveRequest = viewModel::removeFriendRequest,
                     onFriendshipUpdate = viewModel::updateFriendship,
-                    onUpdateFullName = viewModel::updateFullName,
-                    onUpdateUsername = viewModel::updateUsername,
+                    onUpdateFullName = { name, callback -> viewModel.updateFullName(name, callback) },
+                    onUpdateUsername = { username, callback -> viewModel.updateUsername(username, callback) },
+                    onDeleteAccount = { callback -> viewModel.deleteAccount(callback) },
                     onSignOut = viewModel::signOut,
                     onEventClick = { event ->
                         val route = "${CliqueDestination.EventDetail.route}?$ARG_EVENT_ID=${Uri.encode(event.id)}&$ARG_INVITE_VIEW=false"

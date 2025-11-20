@@ -46,8 +46,9 @@ fun MainScreen(
     onSendFriendRequest: (String) -> Unit,
     onRemoveRequest: (String) -> Unit,
     onFriendshipUpdate: (String, FriendshipAction) -> Unit,
-    onUpdateFullName: (String) -> Unit,
-    onUpdateUsername: (String) -> Unit,
+    onUpdateFullName: (String, (com.clique.app.ui.state.UpdateResult) -> Unit) -> Unit,
+    onUpdateUsername: (String, (com.clique.app.ui.state.UpdateResult) -> Unit) -> Unit,
+    onDeleteAccount: ((com.clique.app.ui.state.DeleteAccountResult) -> Unit) -> Unit,
     onSignOut: () -> Unit,
     onEventClick: ((Event) -> Unit)? = null,
     onChatClick: ((Event) -> Unit)? = null,
@@ -113,6 +114,7 @@ fun MainScreen(
                     user = session.user,
                     onUpdateFullName = onUpdateFullName,
                     onUpdateUsername = onUpdateUsername,
+                    onDeleteAccount = onDeleteAccount,
                     onSignOut = onSignOut
                 )
             }

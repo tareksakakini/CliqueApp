@@ -73,6 +73,14 @@ class FirebaseCliqueRepository(
         return snapshot.documents.any { (it.get("username") as? String)?.isNotBlank() == true }
     }
 
+    override suspend fun isUsernameTakenByOtherUser(username: String, excludeUid: String): Boolean {
+        if (username.isBlank()) return false
+        val snapshot = usersCollection.whereEqualTo("username", username).get().await()
+        return snapshot.documents.any { doc ->
+            doc.id != excludeUid && (doc.get("username") as? String)?.isNotBlank() == true
+        }
+    }
+
     override suspend fun isPhoneRegistered(phoneNumber: String): Boolean {
         if (phoneNumber.isBlank()) return false
         val canonical = PhoneNumberFormatter.canonical(phoneNumber)
@@ -345,6 +353,53 @@ class FirebaseCliqueRepository(
 
     override suspend fun removeProfilePhoto(uid: String) {
         usersCollection.document(uid).update("profilePic", "userDefault").await()
+    }
+
+    override suspend fun deleteAccount(uid: String, authUid: String) {
+        // Delete user document
+        usersCollection.document(uid).delete().await()
+        
+        // Delete friendships
+        firestore.collection("friendships").document(uid).delete().await()
+        
+        // Delete friend requests
+        firestore.collection("friendRequests").document(uid).delete().await()
+        firestore.collection("friendRequestsSent").document(uid).delete().await()
+        
+        // Remove user from other users' friend lists
+        val allFriendships = firestore.collection("friendships").get().await()
+        firestore.runBatch { batch ->
+            allFriendships.documents.forEach { doc ->
+                val friends = doc.get("friends") as? List<String> ?: emptyList()
+                if (friends.contains(uid)) {
+                    batch.update(doc.reference, "friends", FieldValue.arrayRemove(uid))
+                }
+            }
+        }.await()
+        
+        // Remove user from friend requests of other users
+        val allFriendRequests = firestore.collection("friendRequests").get().await()
+        firestore.runBatch { batch ->
+            allFriendRequests.documents.forEach { doc ->
+                val requests = doc.get("requests") as? List<String> ?: emptyList()
+                if (requests.contains(uid)) {
+                    batch.update(doc.reference, "requests", FieldValue.arrayRemove(uid))
+                }
+            }
+        }.await()
+        
+        val allFriendRequestsSent = firestore.collection("friendRequestsSent").get().await()
+        firestore.runBatch { batch ->
+            allFriendRequestsSent.documents.forEach { doc ->
+                val requests = doc.get("requests") as? List<String> ?: emptyList()
+                if (requests.contains(uid)) {
+                    batch.update(doc.reference, "requests", FieldValue.arrayRemove(uid))
+                }
+            }
+        }.await()
+        
+        // Note: Firebase Auth user deletion should be handled in the ViewModel
+        // as it requires FirebaseAuth instance
     }
 
     override suspend fun uploadProfilePhoto(uid: String, bytes: ByteArray): String {

@@ -19,6 +19,8 @@ import com.clique.app.data.repository.model.UserProfilePayload
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthProvider
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,6 +29,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
 class CliqueAppViewModel(
@@ -458,26 +461,95 @@ class CliqueAppViewModel(
         }
     }
 
-    fun updateFullName(fullName: String) {
-        val user = _sessionState.value.user ?: return
+    fun updateFullName(fullName: String, onResult: (UpdateResult) -> Unit) {
+        val user = _sessionState.value.user ?: run {
+            onResult(UpdateResult.Error("User not found"))
+            return
+        }
+        if (fullName.isBlank()) {
+            onResult(UpdateResult.Error("Full name cannot be empty"))
+            return
+        }
         viewModelScope.launch {
             try {
                 repository.updateFullName(user.uid, fullName)
                 _sessionState.update { it.copy(user = user.copy(fullName = fullName)) }
+                onResult(UpdateResult.Success)
             } catch (error: Exception) {
-                _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
+                val errorMsg = error.localizedMessage ?: "Failed to update full name"
+                _sessionState.update { it.copy(errorMessage = errorMsg) }
+                onResult(UpdateResult.Error(errorMsg))
             }
         }
     }
 
-    fun updateUsername(username: String) {
-        val user = _sessionState.value.user ?: return
+    fun updateUsername(username: String, onResult: (UpdateResult) -> Unit) {
+        val user = _sessionState.value.user ?: run {
+            onResult(UpdateResult.Error("User not found"))
+            return
+        }
+        val normalizedUsername = username.lowercase().trim()
+        if (normalizedUsername.isBlank()) {
+            onResult(UpdateResult.Error("Username cannot be empty"))
+            return
+        }
+        // If username hasn't changed, no need to update
+        if (normalizedUsername == user.username) {
+            onResult(UpdateResult.Success)
+            return
+        }
         viewModelScope.launch {
             try {
-                repository.updateUsername(user.uid, username)
-                _sessionState.update { it.copy(user = user.copy(username = username)) }
+                // Check if username is already taken by another user
+                if (repository.isUsernameTakenByOtherUser(normalizedUsername, user.uid)) {
+                    onResult(UpdateResult.Error("Username already taken"))
+                    return@launch
+                }
+                repository.updateUsername(user.uid, normalizedUsername)
+                _sessionState.update { it.copy(user = user.copy(username = normalizedUsername)) }
+                onResult(UpdateResult.Success)
             } catch (error: Exception) {
-                _sessionState.update { it.copy(errorMessage = error.localizedMessage) }
+                val errorMsg = error.localizedMessage ?: "Failed to update username"
+                _sessionState.update { it.copy(errorMessage = errorMsg) }
+                onResult(UpdateResult.Error(errorMsg))
+            }
+        }
+    }
+
+    fun deleteAccount(onResult: (DeleteAccountResult) -> Unit) {
+        val user = _sessionState.value.user ?: run {
+            onResult(DeleteAccountResult.Error("User not found"))
+            return
+        }
+        viewModelScope.launch {
+            try {
+                // Delete from Firestore
+                repository.deleteAccount(user.uid, user.authUid)
+                
+                // Delete Firebase Auth user
+                val currentUser = firebaseAuth.currentUser
+                if (currentUser != null && currentUser.uid == user.authUid) {
+                    currentUser.delete().await()
+                }
+                
+                // Clean up listeners
+                eventsListener?.remove()
+                friendsListener?.remove()
+                friendRequestsListener?.remove()
+                friendRequestsSentListener?.remove()
+                
+                // Sign out and clear state
+                oneSignalManager.logout()
+                _sessionState.value = SessionState(isLoading = false)
+                _users.value = emptyList()
+                _pendingAccount.value = null
+                resetVerificationState()
+                
+                onResult(DeleteAccountResult.Success)
+            } catch (error: Exception) {
+                val errorMsg = error.localizedMessage ?: "Failed to delete account"
+                _sessionState.update { it.copy(errorMessage = errorMsg) }
+                onResult(DeleteAccountResult.Error(errorMsg))
             }
         }
     }

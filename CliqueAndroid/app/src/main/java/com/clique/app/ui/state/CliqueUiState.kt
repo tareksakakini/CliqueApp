@@ -39,3 +39,13 @@ sealed interface AccountCreationResult {
     data class Success(val user: User) : AccountCreationResult
     data class Error(val message: String) : AccountCreationResult
 }
+
+sealed interface UpdateResult {
+    object Success : UpdateResult
+    data class Error(val message: String) : UpdateResult
+}
+
+sealed interface DeleteAccountResult {
+    object Success : DeleteAccountResult
+    data class Error(val message: String) : DeleteAccountResult
+}

@@ -13,6 +13,7 @@ interface CliqueRepository {
     suspend fun fetchUserByUid(uid: String): User?
     suspend fun createUserProfile(payload: UserProfilePayload): User
     suspend fun isUsernameTaken(username: String): Boolean
+    suspend fun isUsernameTakenByOtherUser(username: String, excludeUid: String): Boolean
     suspend fun isPhoneRegistered(phoneNumber: String): Boolean
     suspend fun linkPhoneNumberToUser(uid: String, phoneNumber: String): Int
     suspend fun getAllUsers(): List<User>
@@ -32,6 +33,7 @@ interface CliqueRepository {
     suspend fun updateUsername(uid: String, username: String)
     suspend fun removeProfilePhoto(uid: String)
     suspend fun uploadProfilePhoto(uid: String, bytes: ByteArray): String
+    suspend fun deleteAccount(uid: String, authUid: String)
     
     // Chat methods
     fun listenToEventChatMessages(eventId: String, onMessagesChanged: (List<EventChatMessage>) -> Unit): ListenerRegistration
