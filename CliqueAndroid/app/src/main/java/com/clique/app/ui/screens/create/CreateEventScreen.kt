@@ -294,17 +294,25 @@ fun CreateEventScreen(
         OutlinedTextField(
             value = title,
             onValueChange = { title = it },
-                    placeholder = { Text("Aa What's the event called?") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = Color(0xFFF5F5F5),
-                        unfocusedContainerColor = Color(0xFFF5F5F5)
-                    )
+            placeholder = { Text("What's the event called?") },
+            leadingIcon = {
+                Text(
+                    text = "Aa",
+                    color = Color.Gray,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(start = 4.dp)
                 )
+            },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                focusedContainerColor = Color(0xFFF5F5F5),
+                unfocusedContainerColor = Color(0xFFF5F5F5)
+            )
+        )
                 
                 Spacer(modifier = Modifier.height(24.dp))
                 
