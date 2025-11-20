@@ -46,7 +46,10 @@ fastlane/test_output/
 
 AuthKey_S6T7UJJRWA.p8
 
+# OneSignal Secrets (DO NOT COMMIT)
 RestAPIKey.txt
+*OneSignal*Key*.txt
+*onesignal*key*.txt
 
 CliqueApp/Views/Signup_SampleView.swift
 

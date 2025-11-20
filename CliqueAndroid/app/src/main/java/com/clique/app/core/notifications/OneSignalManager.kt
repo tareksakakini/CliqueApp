@@ -2,7 +2,6 @@ package com.clique.app.core.notifications
 
 import android.content.Context
 import com.clique.app.BuildConfig
-import com.clique.app.R
 import com.onesignal.OneSignal
 import com.onesignal.debug.LogLevel
 import com.onesignal.notifications.INotificationClickEvent
@@ -24,8 +23,8 @@ class OneSignalManager(
     private var initialized = false
 
     fun initialize() {
-        val appId = context.getString(R.string.onesignal_app_id)
-        if (appId.isBlank() || appId.contains("CHANGE_ME")) {
+        val appId = BuildConfig.ONESIGNAL_APP_ID
+        if (appId.isBlank() || appId.contains("REPLACE")) {
             return
         }
         OneSignal.initWithContext(context, appId)
@@ -65,8 +64,8 @@ class OneSignalManager(
         title: String? = null
     ) {
         val restApiKey = BuildConfig.ONESIGNAL_REST_KEY
-        val appId = context.getString(R.string.onesignal_app_id)
-        if (restApiKey.isBlank() || restApiKey.contains("REPLACE") || appId.isBlank()) {
+        val appId = BuildConfig.ONESIGNAL_APP_ID
+        if (restApiKey.isBlank() || restApiKey.contains("REPLACE") || appId.isBlank() || appId.contains("REPLACE")) {
             return
         }
         val payload = JSONObject().apply {

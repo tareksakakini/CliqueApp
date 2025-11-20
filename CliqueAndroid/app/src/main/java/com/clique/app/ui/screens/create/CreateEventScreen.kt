@@ -25,9 +25,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -832,61 +834,109 @@ private fun AddInviteesDialog(
     onDismiss: () -> Unit,
     onInviteesSelected: (List<String>) -> Unit
 ) {
-    val friendsList = remember(users, friendships, currentUserId) {
+    val allFriends = remember(users, friendships, currentUserId) {
         users.filter { user ->
             user.uid != currentUserId && friendships.contains(user.uid)
         }
     }
     
     var tempSelected by remember { mutableStateOf(selectedInvitees.toSet()) }
+    var searchQuery by remember { mutableStateOf("") }
+    
+    val filteredFriends = remember(allFriends, searchQuery) {
+        if (searchQuery.isBlank()) {
+            allFriends
+        } else {
+            allFriends.filter { friend ->
+                friend.fullName.contains(searchQuery, ignoreCase = true) ||
+                friend.username.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
     
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add People") },
         text = {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(400.dp)
-            ) {
-                items(friendsList) { friend ->
-                    val isSelected = tempSelected.contains(friend.uid)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                tempSelected = if (isSelected) {
-                                    tempSelected - friend.uid
-                                } else {
-                                    tempSelected + friend.uid
-                                }
-                            }
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(20.dp))
-                                .background(Color(0xFFE0E0E0)),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = null,
-                                tint = Color.Gray
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = friend.fullName,
-                            modifier = Modifier.weight(1f)
+            Column {
+                // Search Bar
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search friends...") },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search",
+                            tint = Color.Gray
                         )
-                        if (isSelected) {
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = greenAccent,
+                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    )
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Friends List
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(400.dp)
+                ) {
+                    items(filteredFriends) { friend ->
+                        val isSelected = tempSelected.contains(friend.uid)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    tempSelected = if (isSelected) {
+                                        tempSelected - friend.uid
+                                    } else {
+                                        tempSelected + friend.uid
+                                    }
+                                }
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .background(Color(0xFFE0E0E0)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = null,
+                                    tint = Color.Gray
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = friend.fullName,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "@${friend.username}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            // Plus icon for unselected, Checkmark for selected
                             Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Selected",
-                                tint = greenAccent
+                                imageVector = if (isSelected) Icons.Default.Check else Icons.Default.Add,
+                                contentDescription = if (isSelected) "Selected" else "Add",
+                                tint = if (isSelected) greenAccent else Color.Gray,
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }

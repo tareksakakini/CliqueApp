@@ -1,4 +1,6 @@
 <resources>
-    <string name="app_name">Clique</string>
-    <string name="onesignal_app_id">CHANGE_ME_IN_SECRETS</string>
+    <string name="app_name">Yalla</string>
+    <!-- OneSignal App ID is now loaded from local.properties via BuildConfig -->
+    <!-- This placeholder is kept for AndroidManifest compatibility but not used in code -->
+    <string name="onesignal_app_id">REPLACE_WITH_ONESIGNAL_APP_ID</string>
 </resources>

@@ -1,8 +1,18 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-parcelize")
     id("com.google.gms.google-services")
+}
+
+// Load local.properties for secrets
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
 }
 
 android {
@@ -20,7 +30,11 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-        buildConfigField("String", "ONESIGNAL_REST_KEY", "\"REPLACE_WITH_ONESIGNAL_REST_API_KEY\"")
+        // Read OneSignal credentials from local.properties, fallback to placeholder
+        val onesignalRestKey = localProperties.getProperty("ONESIGNAL_REST_KEY", "REPLACE_WITH_ONESIGNAL_REST_API_KEY")
+        val onesignalAppId = localProperties.getProperty("ONESIGNAL_APP_ID", "REPLACE_WITH_ONESIGNAL_APP_ID")
+        buildConfigField("String", "ONESIGNAL_REST_KEY", "\"$onesignalRestKey\"")
+        buildConfigField("String", "ONESIGNAL_APP_ID", "\"$onesignalAppId\"")
     }
 
     buildTypes {
