@@ -310,11 +310,22 @@ class FirebaseCliqueRepository(
     override suspend fun updateFriendship(viewingUser: String, viewedUser: String, action: FriendshipAction) {
         val viewingRef = firestore.collection("friendships").document(viewingUser)
         val viewedRef = firestore.collection("friendships").document(viewedUser)
+        val viewingRequestsRef = firestore.collection("friendRequests").document(viewingUser)
+        val viewedRequestsRef = firestore.collection("friendRequests").document(viewedUser)
+        val viewingRequestsSentRef = firestore.collection("friendRequestsSent").document(viewingUser)
+        val viewedRequestsSentRef = firestore.collection("friendRequestsSent").document(viewedUser)
+        
         firestore.runBatch { batch ->
             when (action) {
                 FriendshipAction.ADD -> {
+                    // Add both users to each other's friends list
                     batch.set(viewingRef, mapOf("friends" to FieldValue.arrayUnion(viewedUser)), SetOptions.merge())
                     batch.set(viewedRef, mapOf("friends" to FieldValue.arrayUnion(viewingUser)), SetOptions.merge())
+                    // Remove friend requests from both sides
+                    batch.update(viewingRequestsRef, "requests", FieldValue.arrayRemove(viewedUser))
+                    batch.update(viewedRequestsRef, "requests", FieldValue.arrayRemove(viewingUser))
+                    batch.update(viewingRequestsSentRef, "requests", FieldValue.arrayRemove(viewedUser))
+                    batch.update(viewedRequestsSentRef, "requests", FieldValue.arrayRemove(viewingUser))
                 }
                 FriendshipAction.REMOVE -> {
                     batch.update(viewingRef, "friends", FieldValue.arrayRemove(viewedUser))

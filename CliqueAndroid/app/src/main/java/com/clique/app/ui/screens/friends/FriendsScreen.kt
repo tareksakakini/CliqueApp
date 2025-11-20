@@ -229,7 +229,6 @@ fun FriendsScreen(
                         onClick = { selectedUser = user },
                         onAcceptRequest = {
                             onUpdateFriendship(user.uid, FriendshipAction.ADD)
-                            onRemoveRequest(user.uid)
                         },
                         onRemoveRequest = { onRemoveRequest(user.uid) },
                         onRemoveFriend = { onUpdateFriendship(user.uid, FriendshipAction.REMOVE) }

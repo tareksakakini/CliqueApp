@@ -201,7 +201,6 @@ fun UserDetailScreen(
                 },
                 onAcceptRequest = {
                     onUpdateFriendship(user.uid, FriendshipAction.ADD)
-                    onRemoveRequest(user.uid)
                     showActionSheet = false
                 },
                 onDeclineRequest = {
