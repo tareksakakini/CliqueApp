@@ -29,20 +29,26 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +59,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.util.Log
+import android.widget.Toast
 import coil.compose.AsyncImage
 import com.clique.app.data.model.Event
 import com.clique.app.data.model.User
@@ -61,6 +69,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.time.ZonedDateTime
 
 private val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 private val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
@@ -83,9 +92,31 @@ fun CreateEventScreen(
     var selectedImageBytes by remember { mutableStateOf<ByteArray?>(null) }
     var showAddInviteesDialog by remember { mutableStateOf(false) }
     var selectedInvitees by remember { mutableStateOf<List<String>>(emptyList()) }
+    var isSaving by remember { mutableStateOf(false) }
+    var saveSuccess by remember { mutableStateOf(false) }
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
     
     val context = LocalContext.current
     val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Clear form after successful save
+    LaunchedEffect(saveSuccess) {
+        if (saveSuccess) {
+            title = ""
+            location = ""
+            description = ""
+            start = LocalDateTime.now()
+            end = LocalDateTime.now().plusHours(2)
+            noEndTime = false
+            selectedImageUri = null
+            selectedImageBytes = null
+            selectedInvitees = emptyList()
+            isSaving = false
+            saveSuccess = false
+        }
+    }
     
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -563,6 +594,7 @@ fun CreateEventScreen(
                 ) {
                     Button(
                         onClick = {
+                            Log.d("CreateEvent", "Cancel button clicked")
                             // Clear form
                             title = ""
                             location = ""
@@ -573,6 +605,7 @@ fun CreateEventScreen(
                             selectedImageUri = null
                             selectedImageBytes = null
                             selectedInvitees = emptyList()
+                            Toast.makeText(context, "Form cleared", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
                             .weight(1f)
@@ -588,22 +621,49 @@ fun CreateEventScreen(
                             fontWeight = FontWeight.Medium
                         )
                     }
-        Button(
-            onClick = {
-                val event = Event(
-                    title = title,
-                    location = location,
-                    description = description,
-                    startDateTime = start.atZone(ZoneId.systemDefault()).toInstant(),
-                                endDateTime = if (noEndTime) start.atZone(ZoneId.systemDefault()).toInstant() else end.atZone(ZoneId.systemDefault()).toInstant(),
-                                noEndTime = noEndTime,
-                                attendeesInvited = selectedInvitees,
-                    attendeesAccepted = listOfNotNull(user?.uid),
-                    host = user?.uid ?: ""
-                )
-                            onSave(event, selectedImageBytes)
-            },
-            enabled = title.isNotBlank() && location.isNotBlank(),
+                    Button(
+                        onClick = {
+                            Log.d("CreateEvent", "Create Event button clicked - title: $title, location: $location, isSaving: $isSaving")
+                            
+                            // Validation
+                            val validationError = validateEvent(
+                                title = title,
+                                location = location,
+                                startDateTime = start,
+                                endDateTime = end,
+                                noEndTime = noEndTime
+                            )
+                            
+                            if (validationError != null) {
+                                errorMessage = validationError
+                                showErrorDialog = true
+                                return@Button
+                            }
+                            
+                            if (!isSaving) {
+                                isSaving = true
+                                val event = Event(
+                                    title = title,
+                                    location = location,
+                                    description = description,
+                                    startDateTime = start.atZone(ZoneId.systemDefault()).toInstant(),
+                                    endDateTime = if (noEndTime) start.atZone(ZoneId.systemDefault()).toInstant() else end.atZone(ZoneId.systemDefault()).toInstant(),
+                                    noEndTime = noEndTime,
+                                    attendeesInvited = selectedInvitees,
+                                    attendeesAccepted = listOfNotNull(user?.uid),
+                                    host = user?.uid ?: ""
+                                )
+                                Log.d("CreateEvent", "Calling onSave with event: ${event.title}")
+                                onSave(event, selectedImageBytes)
+                                Toast.makeText(context, "Event created successfully!", Toast.LENGTH_SHORT).show()
+                                // Mark as successful after a short delay to allow save to process
+                                coroutineScope.launch {
+                                    kotlinx.coroutines.delay(500)
+                                    saveSuccess = true
+                                }
+                            }
+                        },
+                        enabled = !isSaving,
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
@@ -612,10 +672,18 @@ fun CreateEventScreen(
                             containerColor = greenAccent
                         )
                     ) {
-                        Text(
-                            text = "Create Event",
-                            fontWeight = FontWeight.Medium
-                        )
+                        if (isSaving) {
+                            androidx.compose.material3.CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Create Event",
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
                 }
             }
@@ -638,6 +706,70 @@ fun CreateEventScreen(
             }
         )
     }
+    
+    // Error Dialog
+    if (showErrorDialog && errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { 
+                showErrorDialog = false
+                errorMessage = null
+            },
+            title = { 
+                Text(
+                    "Cannot Create Event",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFFD32F2F)
+                )
+            },
+            text = { 
+                Text(errorMessage!!)
+            },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        showErrorDialog = false
+                        errorMessage = null
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFD32F2F)
+                    )
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
+}
+
+private fun validateEvent(
+    title: String,
+    location: String,
+    startDateTime: LocalDateTime,
+    endDateTime: LocalDateTime,
+    noEndTime: Boolean
+): String? {
+    // Check title length
+    if (title.trim().length <= 3) {
+        return "Event title must be longer than 3 characters."
+    }
+    
+    // Check location
+    if (location.isBlank()) {
+        return "Please provide a location for the event."
+    }
+    
+    // Check if start time is in the past
+    val now = LocalDateTime.now()
+    if (startDateTime.isBefore(now)) {
+        return "The event start date and time cannot be in the past."
+    }
+    
+    // Check if end time is before start time (only if end time is set)
+    if (!noEndTime && endDateTime.isBefore(startDateTime)) {
+        return "The end time cannot be before the start time."
+    }
+    
+    return null
 }
 
 @Composable

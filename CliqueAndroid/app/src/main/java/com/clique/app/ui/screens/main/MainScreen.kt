@@ -104,7 +104,11 @@ fun MainScreen(
                     user = session.user,
                     users = users,
                     friendships = session.friendships,
-                    onSave = onSaveEvent
+                    onSave = { event, imageBytes ->
+                        onSaveEvent(event, imageBytes)
+                        // Switch to Events tab after successful creation
+                        selectedTab = MainTab.EVENTS
+                    }
                 )
                 MainTab.FRIENDS -> FriendsScreen(
                     currentUserId = session.user?.uid,
