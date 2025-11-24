@@ -1,0 +1,7 @@
+<resources>
+    <color name="md_theme_primary">#FF4C6FFF</color>
+    <color name="md_theme_onPrimary">#FFFFFFFF</color>
+    <color name="md_theme_secondary">#FF1F2333</color>
+    <color name="md_theme_surface">#FFF8F9FB</color>
+    <color name="ic_launcher_background">#FF4C6FFF</color>
+</resources>

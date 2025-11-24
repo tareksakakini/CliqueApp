@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.Clique" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/md_theme_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
+    </style>
+</resources>
