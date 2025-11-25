@@ -77,3 +77,4 @@ Even though the app code is correct, you need to:
 - Both need to be configured: one in code (AndroidManifest), one in dashboard (OneSignal)
 - The app must be reinstalled after any manifest changes for them to take effect
 
+

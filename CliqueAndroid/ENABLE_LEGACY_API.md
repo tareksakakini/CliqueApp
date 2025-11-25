@@ -39,3 +39,4 @@ Since OneSignal may still require the Legacy Server Key, here's how to enable it
 
 ⚠️ **Legacy API is deprecated** and will stop working on June 20, 2024. However, OneSignal may still require it for now. You can migrate to V1 API later when OneSignal fully supports it.
 
+

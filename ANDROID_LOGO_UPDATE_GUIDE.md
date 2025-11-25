@@ -94,3 +94,4 @@ CliqueAndroid/app/src/main/res/
 - The same foreground is used for both regular and round icons
 - Legacy icons (for Android < 8.0) are not currently configured but can be added if needed
 
+
