@@ -110,7 +110,8 @@ class ViewModel: ObservableObject {
         let firestoreService = DatabaseManager()
         do {
             let fetchedRequests = try await firestoreService.retrieveFriendRequest(userId: userId)
-            self.friendInviteReceived = fetchedRequests
+            // Theory 3: Filter out anyone who is already a friend
+            self.friendInviteReceived = fetchedRequests.filter { !self.friendship.contains($0) }
         } catch {
             print("Failed to fetch friend requests: \(error.localizedDescription)")
             throw error
@@ -121,7 +122,8 @@ class ViewModel: ObservableObject {
         let firestoreService = DatabaseManager()
         do {
             let fetchedRequests = try await firestoreService.retrieveFriendRequestSent(userId: userId)
-            self.friendInviteSent = fetchedRequests
+            // Theory 3: Filter out anyone who is already a friend
+            self.friendInviteSent = fetchedRequests.filter { !self.friendship.contains($0) }
         } catch {
             print("Failed to fetch sent friend requests: \(error.localizedDescription)")
             throw error
@@ -940,6 +942,8 @@ class ViewModel: ObservableObject {
                 switch result {
                 case .success(let friends):
                     self.friendship = friends
+                    // Theory 3: When friends list updates, filter out any friends from request lists
+                    self.filterFriendsFromRequests()
                 case .failure(let error):
                     print("Failed to listen for friends: \(error.localizedDescription)")
                 }
@@ -951,7 +955,8 @@ class ViewModel: ObservableObject {
                 guard let self = self else { return }
                 switch result {
                 case .success(let requests):
-                    self.friendInviteReceived = requests
+                    // Theory 3: Filter out anyone who is already a friend
+                    self.friendInviteReceived = requests.filter { !self.friendship.contains($0) }
                 case .failure(let error):
                     print("Failed to listen for friend requests: \(error.localizedDescription)")
                 }
@@ -963,12 +968,21 @@ class ViewModel: ObservableObject {
                 guard let self = self else { return }
                 switch result {
                 case .success(let requests):
-                    self.friendInviteSent = requests
+                    // Theory 3: Filter out anyone who is already a friend
+                    self.friendInviteSent = requests.filter { !self.friendship.contains($0) }
                 case .failure(let error):
                     print("Failed to listen for sent friend requests: \(error.localizedDescription)")
                 }
             }
         }
+    }
+    
+    /// Theory 3: Ensures friend requests don't contain users who are already friends.
+    /// This handles the race condition where listeners fire at different times.
+    private func filterFriendsFromRequests() {
+        let friendSet = Set(friendship)
+        friendInviteReceived = friendInviteReceived.filter { !friendSet.contains($0) }
+        friendInviteSent = friendInviteSent.filter { !friendSet.contains($0) }
     }
     
     private func stopRealtimeListeners() {

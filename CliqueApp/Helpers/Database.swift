@@ -388,39 +388,85 @@ class DatabaseManager {
         // Check network connection before attempting operation
         try ErrorHandler.shared.validateNetworkConnection()
         
-        let user1Ref = db.collection("friendships").document(viewing_user)
-        let user2Ref = db.collection("friendships").document(viewed_user)
+        let user1FriendshipRef = db.collection("friendships").document(viewing_user)
+        let user2FriendshipRef = db.collection("friendships").document(viewed_user)
+        
+        // For friend request cleanup (Theory 4: clean up BOTH directions)
+        let user1FriendRequestsRef = db.collection("friendRequests").document(viewing_user)
+        let user2FriendRequestsRef = db.collection("friendRequests").document(viewed_user)
+        let user1FriendRequestsSentRef = db.collection("friendRequestsSent").document(viewing_user)
+        let user2FriendRequestsSentRef = db.collection("friendRequestsSent").document(viewed_user)
         
         do {
-            // Fetch both users' current friend lists in parallel
-            async let user1Snapshot = user1Ref.getDocument()
-            async let user2Snapshot = user2Ref.getDocument()
-            let (user1Data, user2Data) = try await (user1Snapshot, user2Snapshot)
-            
-            var user1Friends = user1Data.data()?["friends"] as? [String] ?? []
-            var user2Friends = user2Data.data()?["friends"] as? [String] ?? []
-            
-            if action == "add" {
-                if !user1Friends.contains(viewed_user) {
-                    user1Friends.append(viewed_user)
+            // Theory 2: Use a Firestore transaction for atomicity
+            _ = try await db.runTransaction { transaction, errorPointer in
+                // Read all documents within the transaction
+                let user1FriendshipSnapshot: DocumentSnapshot
+                let user2FriendshipSnapshot: DocumentSnapshot
+                let user1FriendRequestsSnapshot: DocumentSnapshot
+                let user2FriendRequestsSnapshot: DocumentSnapshot
+                let user1FriendRequestsSentSnapshot: DocumentSnapshot
+                let user2FriendRequestsSentSnapshot: DocumentSnapshot
+                
+                do {
+                    user1FriendshipSnapshot = try transaction.getDocument(user1FriendshipRef)
+                    user2FriendshipSnapshot = try transaction.getDocument(user2FriendshipRef)
+                    user1FriendRequestsSnapshot = try transaction.getDocument(user1FriendRequestsRef)
+                    user2FriendRequestsSnapshot = try transaction.getDocument(user2FriendRequestsRef)
+                    user1FriendRequestsSentSnapshot = try transaction.getDocument(user1FriendRequestsSentRef)
+                    user2FriendRequestsSentSnapshot = try transaction.getDocument(user2FriendRequestsSentRef)
+                } catch let fetchError as NSError {
+                    errorPointer?.pointee = fetchError
+                    return nil
                 }
-                if !user2Friends.contains(viewing_user) {
-                    user2Friends.append(viewing_user)
+                
+                var user1Friends = user1FriendshipSnapshot.data()?["friends"] as? [String] ?? []
+                var user2Friends = user2FriendshipSnapshot.data()?["friends"] as? [String] ?? []
+                var user1FriendRequests = user1FriendRequestsSnapshot.data()?["requests"] as? [String] ?? []
+                var user2FriendRequests = user2FriendRequestsSnapshot.data()?["requests"] as? [String] ?? []
+                var user1FriendRequestsSent = user1FriendRequestsSentSnapshot.data()?["requests"] as? [String] ?? []
+                var user2FriendRequestsSent = user2FriendRequestsSentSnapshot.data()?["requests"] as? [String] ?? []
+                
+                if action == "add" {
+                    // Add to friends lists
+                    if !user1Friends.contains(viewed_user) {
+                        user1Friends.append(viewed_user)
+                    }
+                    if !user2Friends.contains(viewing_user) {
+                        user2Friends.append(viewing_user)
+                    }
+                    
+                    // Theory 4: Clean up BOTH directions of friend requests
+                    // Direction 1: viewed_user sent request to viewing_user
+                    user1FriendRequests.removeAll { $0 == viewed_user }
+                    user2FriendRequestsSent.removeAll { $0 == viewing_user }
+                    
+                    // Direction 2: viewing_user may have also sent request to viewed_user (mutual request scenario)
+                    user2FriendRequests.removeAll { $0 == viewing_user }
+                    user1FriendRequestsSent.removeAll { $0 == viewed_user }
+                    
+                } else if action == "remove" {
+                    user1Friends.removeAll { $0 == viewed_user }
+                    user2Friends.removeAll { $0 == viewing_user }
                 }
-                try? await self.removeFriendRequest(sender: viewed_user, receiver: viewing_user)
-            } else if action == "remove" {
-                if user1Friends.contains(viewed_user) {
-                    user1Friends.removeAll() { $0 == viewed_user }
+                
+                // Write all updates atomically within the transaction
+                transaction.setData(["friends": user1Friends], forDocument: user1FriendshipRef, merge: true)
+                transaction.setData(["friends": user2Friends], forDocument: user2FriendshipRef, merge: true)
+                
+                if action == "add" {
+                    // Update friend requests atomically (Theory 1: no silent failures)
+                    transaction.setData(["requests": user1FriendRequests], forDocument: user1FriendRequestsRef, merge: true)
+                    transaction.setData(["requests": user2FriendRequests], forDocument: user2FriendRequestsRef, merge: true)
+                    transaction.setData(["requests": user1FriendRequestsSent], forDocument: user1FriendRequestsSentRef, merge: true)
+                    transaction.setData(["requests": user2FriendRequestsSent], forDocument: user2FriendRequestsSentRef, merge: true)
                 }
-                if user2Friends.contains(viewing_user) {
-                    user2Friends.removeAll() { $0 == viewing_user }
-                }
+                
+                return nil
             }
-            
-            // Update Firestore in parallel
-            try? await user1Ref.setData(["friends": user1Friends], merge: true)
-            try? await user2Ref.setData(["friends": user2Friends], merge: true)
+            print("Successfully updated friendship")
         } catch {
+            print("Error updating friendship: \(error.localizedDescription)")
             throw error
         }
     }
@@ -433,26 +479,38 @@ class DatabaseManager {
         let senderRef = db.collection("friendRequestsSent").document(sender)
         
         do {
-            // Fetch both users' current friend lists in parallel
-            async let receiverSnapshot = receiverRef.getDocument()
-            async let senderSnapshot = senderRef.getDocument()
-            let receiverData = try await receiverSnapshot
-            let senderData = try await senderSnapshot
-            
-            var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
-            var senderRequests = senderData.data()?["requests"] as? [String] ?? []
-            
-            if !receiverRequests.contains(sender) {
-                receiverRequests.append(sender)
+            // Use a transaction for atomicity
+            _ = try await db.runTransaction { transaction, errorPointer in
+                let receiverSnapshot: DocumentSnapshot
+                let senderSnapshot: DocumentSnapshot
+                
+                do {
+                    receiverSnapshot = try transaction.getDocument(receiverRef)
+                    senderSnapshot = try transaction.getDocument(senderRef)
+                } catch let fetchError as NSError {
+                    errorPointer?.pointee = fetchError
+                    return nil
+                }
+                
+                var receiverRequests = receiverSnapshot.data()?["requests"] as? [String] ?? []
+                var senderRequests = senderSnapshot.data()?["requests"] as? [String] ?? []
+                
+                if !receiverRequests.contains(sender) {
+                    receiverRequests.append(sender)
+                }
+                if !senderRequests.contains(receiver) {
+                    senderRequests.append(receiver)
+                }
+                
+                // No more silent failures - transaction ensures atomicity
+                transaction.setData(["requests": receiverRequests], forDocument: receiverRef, merge: true)
+                transaction.setData(["requests": senderRequests], forDocument: senderRef, merge: true)
+                
+                return nil
             }
-            if !senderRequests.contains(receiver) {
-                senderRequests.append(receiver)
-            }
-            
-            // Update Firestore in parallel
-            try? await receiverRef.setData(["requests": receiverRequests], merge: true)
-            try? await senderRef.setData(["requests": senderRequests], merge: true)
+            print("Successfully sent friend request")
         } catch {
+            print("Error sending friend request: \(error.localizedDescription)")
             throw error
         }
     }
@@ -465,26 +523,34 @@ class DatabaseManager {
         let senderRef = db.collection("friendRequestsSent").document(sender)
         
         do {
-            // Fetch both users' current friend lists in parallel
-            async let receiverSnapshot = receiverRef.getDocument()
-            async let senderSnapshot = senderRef.getDocument()
-            let receiverData = try await receiverSnapshot
-            let senderData = try await senderSnapshot
-            
-            var receiverRequests = receiverData.data()?["requests"] as? [String] ?? []
-            var senderRequests = senderData.data()?["requests"] as? [String] ?? []
-            
-            if receiverRequests.contains(sender) {
-                receiverRequests.removeAll() { $0 == sender }
+            // Use a transaction for atomicity (Theory 2)
+            _ = try await db.runTransaction { transaction, errorPointer in
+                let receiverSnapshot: DocumentSnapshot
+                let senderSnapshot: DocumentSnapshot
+                
+                do {
+                    receiverSnapshot = try transaction.getDocument(receiverRef)
+                    senderSnapshot = try transaction.getDocument(senderRef)
+                } catch let fetchError as NSError {
+                    errorPointer?.pointee = fetchError
+                    return nil
+                }
+                
+                var receiverRequests = receiverSnapshot.data()?["requests"] as? [String] ?? []
+                var senderRequests = senderSnapshot.data()?["requests"] as? [String] ?? []
+                
+                receiverRequests.removeAll { $0 == sender }
+                senderRequests.removeAll { $0 == receiver }
+                
+                // Theory 1: No more silent failures - transaction ensures atomicity
+                transaction.setData(["requests": receiverRequests], forDocument: receiverRef, merge: true)
+                transaction.setData(["requests": senderRequests], forDocument: senderRef, merge: true)
+                
+                return nil
             }
-            if senderRequests.contains(receiver) {
-                senderRequests.removeAll() { $0 == receiver }
-            }
-            
-            // Update Firestore in parallel
-            try? await receiverRef.setData(["requests": receiverRequests], merge: true)
-            try? await senderRef.setData(["requests": senderRequests], merge: true)
+            print("Successfully removed friend request")
         } catch {
+            print("Error removing friend request: \(error.localizedDescription)")
             throw error
         }
     }

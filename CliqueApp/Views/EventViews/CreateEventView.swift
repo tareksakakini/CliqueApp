@@ -177,7 +177,9 @@ struct CreateEventView: View {
                         let now = Date()
                         // Convert current time to UTC-preserving format
                         event.startDateTime = now.toUTCPreservingWallClock()
-                        event.endDateTime = now.toUTCPreservingWallClock()
+                        // Set end time to 30 minutes after start time
+                        let endTime = Calendar.current.date(byAdding: .minute, value: 30, to: now) ?? now
+                        event.endDateTime = endTime.toUTCPreservingWallClock()
                     }
                 }
             }
@@ -574,7 +576,16 @@ struct CreateEventView: View {
     private var startDateBinding: Binding<Date> {
         Binding(
             get: { event.startDateTime.fromUTCPreservingWallClock() },
-            set: { event.startDateTime = $0.toUTCPreservingWallClock() }
+            set: { newStartTime in
+                event.startDateTime = newStartTime.toUTCPreservingWallClock()
+                
+                // If start time is after end time, automatically update end time to 30 mins after start
+                let endTimeInLocal = event.endDateTime.fromUTCPreservingWallClock()
+                if newStartTime >= endTimeInLocal && !event.noEndTime {
+                    let newEndTime = Calendar.current.date(byAdding: .minute, value: 30, to: newStartTime) ?? newStartTime
+                    event.endDateTime = newEndTime.toUTCPreservingWallClock()
+                }
+            }
         )
     }
     
@@ -673,29 +684,34 @@ struct CreateEventView: View {
             }
             
             if inviteesUserModels.isEmpty && invitedContacts.isEmpty {
-                VStack(spacing: 8) {
-                    Image(systemName: "person.2.circle")
-                        .font(.system(size: 32, weight: .light))
-                        .foregroundColor(.secondary)
-                    
-                    Text("No invitees yet")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    Text("Tap 'Add People' to invite friends")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundColor(.secondary)
+                Button {
+                    showAddInviteeSheet = true
+                } label: {
+                    VStack(spacing: 8) {
+                        Image(systemName: "person.2.circle")
+                            .font(.system(size: 32, weight: .light))
+                            .foregroundColor(.secondary)
+                        
+                        Text("No invitees yet")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
+                        
+                        Text("Tap 'Add People' to invite friends")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6).opacity(0.5))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color(.systemGray4), style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                            )
+                    )
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 32)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color(.systemGray6).opacity(0.5))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color(.systemGray4), style: StrokeStyle(lineWidth: 1, dash: [5, 5]))
-                        )
-                )
+                .buttonStyle(PlainButtonStyle())
             } else {
                 LazyVStack(spacing: 0) {
                     let totalItems = inviteesUserModels.count + invitedContacts.count
