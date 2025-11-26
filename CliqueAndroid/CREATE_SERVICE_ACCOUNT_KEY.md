@@ -54,3 +54,4 @@ If OneSignal doesn't support Service Accounts yet, you need the Legacy Server Ke
 ⚠️ **Keep the downloaded JSON file secure** - it contains sensitive credentials. Don't commit it to Git. Store it safely on your local machine.
 
 
+

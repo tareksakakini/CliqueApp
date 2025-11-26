@@ -95,3 +95,4 @@ CliqueAndroid/app/src/main/res/
 - Legacy icons (for Android < 8.0) are not currently configured but can be added if needed
 
 
+
