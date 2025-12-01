@@ -852,4 +852,6 @@ class CliqueAppViewModel(
             resetVerificationState()
         }
     }
+    
+    fun getRepository(): CliqueRepository = repository
 }

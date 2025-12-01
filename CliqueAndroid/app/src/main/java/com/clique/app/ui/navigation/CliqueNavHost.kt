@@ -18,6 +18,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.clique.app.data.model.Event
+import com.clique.app.data.repository.CliqueRepository
 import com.clique.app.data.repository.model.FriendshipAction
 import com.clique.app.data.repository.model.InviteAction
 import com.clique.app.ui.screens.account.AccountInfoScreen
@@ -174,6 +175,7 @@ fun CliqueNavHost(
                 MainScreen(
                     session = session,
                     users = users,
+                    repository = viewModel.getRepository(),
                     onRespondToInvite = { eventId, action -> viewModel.respondToInvite(eventId, action) },
                     onSaveEvent = { event, imageBytes -> viewModel.saveEvent(event, isNew = true, imageBytes = imageBytes) },
                     onSendFriendRequest = viewModel::sendFriendRequest,

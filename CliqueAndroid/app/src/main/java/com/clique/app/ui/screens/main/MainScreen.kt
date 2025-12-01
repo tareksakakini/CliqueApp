@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.clique.app.data.model.Event
 import com.clique.app.data.model.User
+import com.clique.app.data.repository.CliqueRepository
 import com.clique.app.data.repository.model.FriendshipAction
 import com.clique.app.data.repository.model.InviteAction
 import com.clique.app.ui.screens.create.CreateEventScreen
@@ -41,6 +42,7 @@ private enum class MainTab(val label: String) {
 fun MainScreen(
     session: SessionState,
     users: List<User>,
+    repository: CliqueRepository,
     onRespondToInvite: (String, InviteAction) -> Unit,
     onSaveEvent: (Event, ByteArray?) -> Unit,
     onSendFriendRequest: (String) -> Unit,
@@ -119,6 +121,7 @@ fun MainScreen(
                     friendships = session.friendships,
                     friendRequests = session.friendRequests,
                     friendRequestsSent = session.friendRequestsSent,
+                    repository = repository,
                     onSendRequest = onSendFriendRequest,
                     onRemoveRequest = onRemoveRequest,
                     onUpdateFriendship = onFriendshipUpdate,

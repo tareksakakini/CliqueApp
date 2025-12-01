@@ -36,10 +36,15 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.activity.compose.BackHandler
+import com.clique.app.data.repository.CliqueRepository
+import com.google.firebase.firestore.ListenerRegistration
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,13 +71,28 @@ fun UserDetailScreen(
     friendships: List<String>,
     friendRequests: List<String>,
     friendRequestsSent: List<String>,
+    users: List<User>,
+    repository: CliqueRepository,
     onBack: () -> Unit,
     onSendRequest: (String) -> Unit,
     onRemoveRequest: (String) -> Unit,
-    onUpdateFriendship: (String, FriendshipAction) -> Unit
+    onUpdateFriendship: (String, FriendshipAction) -> Unit,
+    onShowFriends: (String, List<User>) -> Unit = { _, _ -> }
 ) {
     var showActionSheet by remember { mutableStateOf(false) }
+    var viewedUserFriends by remember { mutableStateOf<List<String>>(emptyList()) }
     val sheetState = rememberModalBottomSheetState()
+    val coroutineScope = rememberCoroutineScope()
+    
+    // Listen to the viewed user's friends
+    DisposableEffect(user.uid) {
+        val listener = repository.listenToFriends(user.uid) { friends ->
+            viewedUserFriends = friends
+        }
+        onDispose {
+            listener.remove()
+        }
+    }
     
     val relationshipStatus = remember(user.uid, friendships, friendRequests, friendRequestsSent) {
         when {
@@ -154,7 +174,44 @@ fun UserDetailScreen(
             Spacer(modifier = Modifier.height(32.dp))
             
             // Profile Details Card
-            ProfileDetailsCard(user = user)
+            ProfileDetailsCard(
+                user = user,
+                friendsCount = viewedUserFriends.size,
+                onFriendsClick = {
+                    // Fetch user data for all friends, including those not in the cached users list
+                    coroutineScope.launch {
+                        // First, get all friends that are already in the cached users list
+                        val cachedFriends = viewedUserFriends.mapNotNull { friendId ->
+                            users.find { it.uid == friendId }
+                        }
+                        
+                        // Find friend IDs that are not in the cached list
+                        val cachedFriendIds = cachedFriends.map { it.uid }.toSet()
+                        val missingFriendIds = viewedUserFriends.filter { it !in cachedFriendIds }
+                        
+                        // Fetch missing friends in parallel
+                        val fetchedFriends = if (missingFriendIds.isNotEmpty()) {
+                            missingFriendIds.mapNotNull { friendId ->
+                                try {
+                                    repository.fetchUserByUid(friendId)
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            }
+                        } else {
+                            emptyList()
+                        }
+                        
+                        // Combine cached and fetched friends, maintaining the order from viewedUserFriends
+                        val allFriends = viewedUserFriends.mapNotNull { friendId ->
+                            cachedFriends.find { it.uid == friendId } 
+                                ?: fetchedFriends.find { it.uid == friendId }
+                        }
+                        
+                        onShowFriends(user.uid, allFriends)
+                    }
+                }
+            )
             
             Spacer(modifier = Modifier.height(40.dp))
         }
@@ -253,7 +310,11 @@ private fun RelationshipStatusButton(
 }
 
 @Composable
-private fun ProfileDetailsCard(user: User) {
+private fun ProfileDetailsCard(
+    user: User,
+    friendsCount: Int,
+    onFriendsClick: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -275,7 +336,8 @@ private fun ProfileDetailsCard(user: User) {
                 icon = Icons.Default.Person,
                 title = "FULL NAME",
                 value = user.fullName,
-                showChevron = false
+                showChevron = false,
+                onClick = null
             )
             
             Spacer(modifier = Modifier.height(20.dp))
@@ -294,7 +356,8 @@ private fun ProfileDetailsCard(user: User) {
                 icon = Icons.Default.Person,
                 title = "USERNAME",
                 value = "@${user.username}",
-                showChevron = false
+                showChevron = false,
+                onClick = null
             )
             
             Spacer(modifier = Modifier.height(20.dp))
@@ -308,12 +371,13 @@ private fun ProfileDetailsCard(user: User) {
             
             Spacer(modifier = Modifier.height(20.dp))
             
-            // Friends Count (placeholder - you can add actual count if available)
+            // Friends Count
             ProfileDetailRow(
                 icon = Icons.Default.Person,
                 title = "FRIENDS",
-                value = "5 friends", // Placeholder
-                showChevron = true
+                value = if (friendsCount == 1) "1 friend" else "$friendsCount friends",
+                showChevron = true,
+                onClick = onFriendsClick
             )
         }
     }
@@ -324,10 +388,19 @@ private fun ProfileDetailRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     value: String,
-    showChevron: Boolean
+    showChevron: Boolean,
+    onClick: (() -> Unit)?
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(onClick = onClick)
+                } else {
+                    Modifier
+                }
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(

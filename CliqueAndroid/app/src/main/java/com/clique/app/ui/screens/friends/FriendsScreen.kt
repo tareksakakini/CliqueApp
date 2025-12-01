@@ -32,18 +32,22 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import com.clique.app.data.repository.CliqueRepository
+import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,6 +71,7 @@ fun FriendsScreen(
     friendships: List<String>,
     friendRequests: List<String>,
     friendRequestsSent: List<String>,
+    repository: CliqueRepository,
     onSendRequest: (String) -> Unit,
     onRemoveRequest: (String) -> Unit,
     onUpdateFriendship: (String, FriendshipAction) -> Unit,
@@ -75,6 +80,7 @@ fun FriendsScreen(
     var selectedFilter by remember { mutableStateOf(0) } // 0=Friends, 1=Requests, 2=Sent
     var showAddFriendDialog by remember { mutableStateOf(false) }
     var selectedUser by remember { mutableStateOf<User?>(null) }
+    var viewingUserFriends by remember { mutableStateOf<Pair<String, List<User>>?>(null) }
     val pullRefreshState = rememberPullToRefreshState()
     val coroutineScope = rememberCoroutineScope()
     
@@ -101,6 +107,21 @@ fun FriendsScreen(
         }
     }
 
+    // Show user's friends list if viewing
+    if (viewingUserFriends != null) {
+        UserFriendsListScreen(
+            userName = users.find { it.uid == viewingUserFriends!!.first }?.fullName ?: "User",
+            friends = viewingUserFriends!!.second,
+            users = users,
+            onBack = { viewingUserFriends = null },
+            onUserClick = { user ->
+                viewingUserFriends = null
+                selectedUser = user
+            }
+        )
+        return
+    }
+    
     // Show detail screen if user is selected
     if (selectedUser != null) {
         UserDetailScreen(
@@ -109,10 +130,15 @@ fun FriendsScreen(
             friendships = friendships,
             friendRequests = friendRequests,
             friendRequestsSent = friendRequestsSent,
+            users = users,
+            repository = repository,
             onBack = { selectedUser = null },
             onSendRequest = onSendRequest,
             onRemoveRequest = onRemoveRequest,
-            onUpdateFriendship = onUpdateFriendship
+            onUpdateFriendship = onUpdateFriendship,
+            onShowFriends = { userId, friendsUsers ->
+                viewingUserFriends = Pair(userId, friendsUsers)
+            }
         )
         return
     }
@@ -536,6 +562,68 @@ private fun AddFriendDialog(
                     TextButton(onClick = onDismiss) {
                         Text("Cancel")
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun UserFriendsListScreen(
+    userName: String,
+    friends: List<User>,
+    users: List<User>,
+    onBack: () -> Unit,
+    onUserClick: (User) -> Unit
+) {
+    Scaffold(
+        topBar = {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = Color.White,
+                tonalElevation = 2.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TextButton(onClick = onBack) {
+                        Text("Back", color = Color(0xFF6BBFA8))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "$userName's Friends",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp
+                    )
+                }
+            }
+        },
+        containerColor = Color(0xFFF5F5F5)
+    ) { paddingValues ->
+        if (friends.isEmpty()) {
+            EmptyStateCard(
+                title = "No Friends",
+                message = "$userName hasn't added any friends yet",
+                icon = Icons.Default.Person
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+            ) {
+                items(friends) { friend ->
+                    FriendCard(
+                        user = friend,
+                        section = 0,
+                        onClick = { onUserClick(friend) }
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }
