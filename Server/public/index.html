@@ -790,9 +790,22 @@
             </div>
           </div>
           
-          <div style="text-align: center; margin-top: 20px;">
-            <button class="button" style="background: #5AAD8F;" onclick="showPhoneInputStep()">
-              Make Another Change
+          <!-- App Download CTA - shown after successful RSVP -->
+          <div style="background: linear-gradient(135deg, #5AAD8F 0%, #468C73 100%); border-radius: 16px; padding: 20px; margin: 24px 0 16px 0; color: white; text-align: center;">
+            <div style="font-weight: 600; font-size: 16px; margin-bottom: 6px;">
+              ${isAccepted ? '🎉 Get reminders for this event!' : 'Stay in the loop'}
+            </div>
+            <div style="font-size: 13px; line-height: 1.4; opacity: 0.9; margin-bottom: 14px;">
+              Download Yalla to manage all your invitations in one place
+            </div>
+            <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener" style="display: inline-block;">
+              <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height: 36px;">
+            </a>
+          </div>
+          
+          <div style="text-align: center;">
+            <button class="button" style="background: transparent; border: 2px solid #5AAD8F; color: #5AAD8F; padding: 10px 20px;" onclick="showPhoneInputStep()">
+              Change Response
             </button>
           </div>
         `;
@@ -1039,15 +1052,15 @@
                </div>
              ` : ''}
 
-                         <div class="app-download" style="text-align: center; margin: 30px 0; padding: 20px;">
-              <div style="font-size: 16px; font-weight: 600; color: #374151; margin-bottom: 16px;">
-                Get the Yalla App
+             <!-- Subtle footer -->
+            <div style="text-align: center; padding: 24px 20px 32px 20px; border-top: 1px solid #e5e7eb; margin-top: 8px;">
+              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                <img src="assets/yalla_solid.png" alt="Yalla" style="height: 24px; width: 24px; border-radius: 6px;">
+                <span style="font-size: 14px; color: #6b7280;">Powered by <strong style="color: #374151;">Yalla</strong></span>
               </div>
-              <div style="display: flex; justify-content: center;">
-                <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener" style="transition: transform 0.2s ease;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                  <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height: 40px;">
-                </a>
-              </div>
+              <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener" style="display: inline-block;">
+                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height: 32px; opacity: 0.8;">
+              </a>
             </div>
            </div>
          `;
