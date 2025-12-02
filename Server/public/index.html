@@ -29,7 +29,7 @@
 
     .hero-section {
       position: relative;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: linear-gradient(135deg, #5AAD8F 0%, #468C73 100%);
       border-radius: 20px;
       overflow: hidden;
       margin: 20px 20px 0 20px;
@@ -101,7 +101,7 @@
     }
 
     .card-icon {
-      color: #667eea;
+      color: #5AAD8F;
       font-size: 18px;
     }
 
@@ -141,8 +141,8 @@
     }
 
     .invitees-count {
-      background: rgba(102, 126, 234, 0.1);
-      color: #667eea;
+      background: rgba(90, 173, 143, 0.1);
+      color: #5AAD8F;
       padding: 4px 8px;
       border-radius: 8px;
       font-size: 16px;
@@ -170,7 +170,7 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: #667eea;
+      background: #5AAD8F;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -227,7 +227,7 @@
 
     select:focus {
       outline: none;
-      border-color: #667eea;
+      border-color: #5AAD8F;
     }
 
     .button-group {
@@ -303,7 +303,7 @@
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: #667eea;
+      background: #5AAD8F;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -653,7 +653,7 @@
         </div>
         <div class="button-group" style="margin-bottom: 16px;">
           <button class="button" style="background: #6b7280;" onclick="showPhoneInputStep()">Back</button>
-          <button class="button" style="background: #667eea;" onclick="showChangeRSVPStep()">Change Response</button>
+          <button class="button" style="background: #5AAD8F;" onclick="showChangeRSVPStep()">Change Response</button>
         </div>
       `;
     };
@@ -670,7 +670,7 @@
         </div>
         <div class="button-group" style="margin-bottom: 16px;">
           <button class="button" style="background: #6b7280;" onclick="showPhoneInputStep()">Cancel</button>
-          <button class="button" style="background: #667eea;" onclick="showRSVPStep()">Confirm</button>
+          <button class="button" style="background: #5AAD8F;" onclick="showRSVPStep()">Confirm</button>
         </div>
       `;
     };
@@ -715,8 +715,8 @@
         <div class="rsvp-title">Enter Your Phone Number</div>
         <input type="tel" id="phoneInput" placeholder="Enter your phone number" 
                style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; color: #374151; margin-bottom: 16px; transition: border-color 0.2s ease;"
-               onfocus="this.style.borderColor='#667eea'" onblur="this.style.borderColor='#e5e7eb'">
-        <button class="button" style="background: #667eea; width: 100%;" onclick="checkPhoneNumber()">
+               onfocus="this.style.borderColor='#5AAD8F'" onblur="this.style.borderColor='#e5e7eb'">
+        <button class="button" style="background: #5AAD8F; width: 100%;" onclick="checkPhoneNumber()">
           Continue
         </button>
       `;
@@ -790,19 +790,8 @@
             </div>
           </div>
           
-          <!-- App Download Promotion -->
-          <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 20px; margin: 24px 0; color: white; text-align: center;">
-            <div style="font-size: 20px; margin-bottom: 8px;">📱</div>
-            <div style="font-weight: 600; font-size: 16px; margin-bottom: 8px;">
-              Want to see all your invitations?
-            </div>
-            <div style="font-size: 14px; line-height: 1.4; opacity: 0.9;">
-              Download the Yalla App to link your phone number and access all your past and future invitations in one place.
-            </div>
-          </div>
-          
           <div style="text-align: center; margin-top: 20px;">
-            <button class="button" style="background: #667eea;" onclick="showPhoneInputStep()">
+            <button class="button" style="background: #5AAD8F;" onclick="showPhoneInputStep()">
               Make Another Change
             </button>
           </div>
@@ -930,7 +919,7 @@
         // Set hero background if event has image
         const heroStyle = e.eventPic ? 
           `background-image: url('${e.eventPic}');` : 
-          'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);';
+          'background: linear-gradient(135deg, #5AAD8F 0%, #468C73 100%);';
 
         output.innerHTML = `
                      <div class="container">
@@ -1033,16 +1022,6 @@
                    ` : ''}
                 </div>
               </div>
-              ${hasAnyPhoneNumbers ? `
-                <!-- App Promotion Message -->
-                <div class="info-card">
-                  <div class="card-content">
-                    <div style="text-align: center; font-size: 14px; color: #64748b;">
-                      💡 <strong>Tip:</strong> Download the Yalla App to link your phone number and manage all your invitations in one place!
-                    </div>
-                  </div>
-                </div>
-              ` : ''}
             </div>
 
                                      ${hasAnyPhoneNumbers ? `
@@ -1052,8 +1031,8 @@
                    <div class="rsvp-title">Enter Your Phone Number</div>
                    <input type="tel" id="phoneInput" placeholder="Enter your phone number" 
                           style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; color: #374151; margin-bottom: 16px; transition: border-color 0.2s ease;"
-                          onfocus="this.style.borderColor='#667eea'" onblur="this.style.borderColor='#e5e7eb'">
-                   <button class="button" style="background: #667eea; width: 100%;" onclick="checkPhoneNumber()">
+                          onfocus="this.style.borderColor='#5AAD8F'" onblur="this.style.borderColor='#e5e7eb'">
+                   <button class="button" style="background: #5AAD8F; width: 100%;" onclick="checkPhoneNumber()">
                      Continue
                    </button>
                  </div>
