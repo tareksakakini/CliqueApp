@@ -724,6 +724,13 @@
       `;
     };
 
+    window.hideRSVPSection = function() {
+      // Reset to the phone input step so others can respond
+      showPhoneInputStep();
+      // Clear the matched phone number
+      matchedPhoneNumber = null;
+    };
+
     window.updateRSVP = async function(isAccepted) {
       if (!matchedPhoneNumber) {
         alert("No phone number selected.");
@@ -779,38 +786,15 @@
         // Update current event data for future checks
         currentEventData = { ...eventData, ...updateData };
         
-        const rsvpContent = document.getElementById('rsvpContent');
-        rsvpContent.innerHTML = `
-          <div class="rsvp-title">Response Updated</div>
-          <div style="text-align: center; margin: 20px 0;">
-            <div style="font-size: 48px; margin-bottom: 16px;">${isAccepted ? '✅' : '❌'}</div>
-            <div style="font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 8px;">
-              ${isAccepted ? 'Invitation Accepted' : 'Invitation Declined'}
-            </div>
-            <div style="color: #6b7280;">
-              Your response has been updated.
-            </div>
-          </div>
-          
-          <!-- App Download CTA - shown after successful RSVP -->
-          <div style="background: linear-gradient(135deg, #5AAD8F 0%, #468C73 100%); border-radius: 16px; padding: 20px; margin: 24px 0 16px 0; color: white; text-align: center;">
-            <div style="font-weight: 600; font-size: 16px; margin-bottom: 6px;">
-              ${isAccepted ? '🎉 Get reminders for this event!' : 'Stay in the loop'}
-            </div>
-            <div style="font-size: 13px; line-height: 1.4; opacity: 0.9; margin-bottom: 14px;">
-              Download Yalla to manage all your invitations in one place
-            </div>
-            <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener" style="display: inline-block;">
-              <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height: 36px;">
-            </a>
-          </div>
-          
-          <div style="text-align: center;">
-            <button class="button" style="background: transparent; border: 2px solid #5AAD8F; color: #5AAD8F; padding: 10px 20px;" onclick="showPhoneInputStep()">
-              Change Response
-            </button>
-          </div>
-        `;
+        // Store the success state to show after reload
+        const successState = {
+          isAccepted: isAccepted,
+          phoneNumber: matchedPhoneNumber
+        };
+        sessionStorage.setItem('rsvpSuccess', JSON.stringify(successState));
+        
+        // Reload the page to refresh the invitees list
+        window.location.reload();
       } catch (error) {
         console.error("Error updating RSVP:", error);
         alert("Error updating RSVP status.");
@@ -1085,7 +1069,56 @@
       }
     }
 
-    loadEvent();
+    loadEvent().then(() => {
+      // Check if we just completed an RSVP and need to show success message
+      const rsvpSuccessData = sessionStorage.getItem('rsvpSuccess');
+      if (rsvpSuccessData) {
+        const { isAccepted, phoneNumber } = JSON.parse(rsvpSuccessData);
+        sessionStorage.removeItem('rsvpSuccess');
+        
+        // Restore the matched phone number for potential changes
+        matchedPhoneNumber = phoneNumber;
+        
+        // Show the success message in the RSVP section
+        const rsvpContent = document.getElementById('rsvpContent');
+        if (rsvpContent) {
+          rsvpContent.innerHTML = `
+            <div class="rsvp-title">Response Updated</div>
+            <div style="text-align: center; margin: 20px 0;">
+              <div style="font-size: 48px; margin-bottom: 16px;">${isAccepted ? '✅' : '❌'}</div>
+              <div style="font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 8px;">
+                ${isAccepted ? 'Invitation Accepted' : 'Invitation Declined'}
+              </div>
+              <div style="color: #6b7280;">
+                Your response has been updated.
+              </div>
+            </div>
+            
+            <!-- App Download CTA - shown after successful RSVP -->
+            <div style="background: linear-gradient(135deg, #5AAD8F 0%, #468C73 100%); border-radius: 16px; padding: 20px; margin: 24px 0 16px 0; color: white; text-align: center;">
+              <div style="font-weight: 600; font-size: 16px; margin-bottom: 6px;">
+                ${isAccepted ? '🎉 Get reminders for this event!' : 'Stay in the loop'}
+              </div>
+              <div style="font-size: 13px; line-height: 1.4; opacity: 0.9; margin-bottom: 14px;">
+                Download Yalla to manage all your invitations in one place
+              </div>
+              <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener" style="display: inline-block;">
+                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height: 36px;">
+              </a>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: center;">
+              <button class="button" style="background: transparent; border: 2px solid #5AAD8F; color: #5AAD8F; padding: 10px 20px; flex: 1; max-width: 160px;" onclick="showChangeRSVPStep()">
+                Change Response
+              </button>
+              <button class="button" style="background: #5AAD8F; color: white; padding: 10px 20px; flex: 1; max-width: 160px;" onclick="hideRSVPSection()">
+                Done
+              </button>
+            </div>
+          `;
+        }
+      }
+    });
   </script>
 </body>
 </html>
