@@ -25,6 +25,8 @@
       background: #f8f9fa;
       min-height: 100vh;
       position: relative;
+      padding-top: 8px;
+      padding-bottom: 24px;
     }
 
     .hero-section {
@@ -1052,14 +1054,22 @@
                </div>
              ` : ''}
 
-             <!-- Subtle footer -->
-            <div style="text-align: center; padding: 24px 20px 32px 20px; border-top: 1px solid #e5e7eb; margin-top: 8px;">
-              <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 12px;">
-                <img src="assets/yalla_solid.png" alt="Yalla" style="height: 24px; width: 24px; border-radius: 6px;">
-                <span style="font-size: 14px; color: #6b7280;">Powered by <strong style="color: #374151;">Yalla</strong></span>
-              </div>
-              <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener" style="display: inline-block;">
-                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height: 32px; opacity: 0.8;">
+             <!-- Footer CTA -->
+            <div style="margin: 16px 20px 24px 20px;">
+              <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener" style="text-decoration: none; display: block;">
+                <div style="background: linear-gradient(135deg, #f8faf9 0%, #e8f5f0 100%); border: 1px solid rgba(90, 173, 143, 0.2); border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; transition: all 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(90,173,143,0.15)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                  <img src="assets/yalla_solid.png" alt="Yalla" style="height: 44px; width: 44px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                  <div style="flex: 1;">
+                    <div style="font-size: 15px; font-weight: 600; color: #374151; margin-bottom: 2px;">Get the Yalla App</div>
+                    <div style="font-size: 13px; color: #6b7280; display: flex; align-items: center; gap: 4px;">
+                      <svg width="12" height="12" viewBox="0 0 384 512" fill="#6b7280"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-googl61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+                      Available on iOS
+                    </div>
+                  </div>
+                  <div style="background: #5AAD8F; color: white; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                    Get
+                  </div>
+                </div>
               </a>
             </div>
            </div>
