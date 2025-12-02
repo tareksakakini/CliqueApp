@@ -282,7 +282,24 @@ class CliqueAppViewModel(
             startRealtimeListeners(user.uid)
             loadUsers()
             runCatching { repository.linkPhoneNumberToUser(user.uid, user.phoneNumber) }
+            
+            // Log OneSignal status before login
+            val statusBefore = oneSignalManager.getStatus()
+            android.util.Log.d("CliqueAppViewModel", "🔐 Logging user into OneSignal: ${user.uid}")
+            android.util.Log.d("CliqueAppViewModel", "   OneSignal status before login: $statusBefore")
+            
             oneSignalManager.login(user.uid)
+            
+            // Verify login after a short delay
+            kotlinx.coroutines.delay(500)
+            val statusAfter = oneSignalManager.getStatus()
+            android.util.Log.d("CliqueAppViewModel", "   OneSignal status after login: $statusAfter")
+            
+            if (oneSignalManager.isConfiguredFor(user.uid)) {
+                android.util.Log.d("CliqueAppViewModel", "✅ User successfully logged into OneSignal")
+            } else {
+                android.util.Log.w("CliqueAppViewModel", "⚠️ User may not be properly logged into OneSignal. External ID mismatch.")
+            }
         }
     }
 
