@@ -8,6 +8,10 @@
     ],
     "rewrites": [
       {
+        "source": "/eventImage",
+        "function": "eventImage"
+      },
+      {
         "source": "**",
         "function": "eventPage"
       }

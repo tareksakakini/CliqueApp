@@ -3,6 +3,40 @@ const admin = require('firebase-admin');
 
 admin.initializeApp();
 const db = admin.firestore();
+const storage = admin.storage();
+
+// Image proxy endpoint to serve images with correct content-type for iMessage
+exports.eventImage = functions.https.onRequest(async (req, res) => {
+  const eventId = req.query.eventId;
+  
+  if (!eventId) {
+    res.status(400).send('Missing eventId');
+    return;
+  }
+
+  try {
+    const bucket = storage.bucket();
+    const file = bucket.file(`event_images/${eventId}.jpg`);
+    
+    const [exists] = await file.exists();
+    if (!exists) {
+      // Return a default image or 404
+      res.status(404).send('Image not found');
+      return;
+    }
+
+    // Set proper headers for image
+    res.set('Content-Type', 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+    
+    // Stream the file to the response
+    const stream = file.createReadStream();
+    stream.pipe(res);
+  } catch (error) {
+    console.error('Error serving image:', error);
+    res.status(500).send('Error loading image');
+  }
+});
 
 // Helper function to format date
 function formatDate(timestamp) {
@@ -51,12 +85,17 @@ exports.eventPage = functions.https.onRequest(async (req, res) => {
   let imageUrl = `${baseUrl}/assets/yalla_solid.png`;
   let eventData = null;
 
+  console.log('Received eventId:', eventId);
+  
   if (eventId) {
     try {
+      console.log('Fetching event from Firestore...');
       const eventDoc = await db.collection('events').doc(eventId).get();
+      console.log('Document exists:', eventDoc.exists);
       
       if (eventDoc.exists) {
         eventData = eventDoc.data();
+        console.log('Event data retrieved successfully');
         
         // Set dynamic title
         title = eventData.title || 'Event Invitation';
@@ -86,15 +125,20 @@ exports.eventPage = functions.https.onRequest(async (req, res) => {
         }));
         
         if (eventData.eventPic && eventData.eventPic.trim() !== '') {
-          imageUrl = eventData.eventPic;
-          console.log('Using event image:', imageUrl);
+          // Use our image proxy to serve with correct content-type for iMessage
+          imageUrl = `${baseUrl}/eventImage?eventId=${eventId}`;
+          console.log('Using event image proxy:', imageUrl);
         } else {
           console.log('No event image found, using fallback');
         }
+      } else {
+        console.log('Event document does not exist for ID:', eventId);
       }
     } catch (error) {
-      console.error('Error fetching event:', error);
+      console.error('Error fetching event:', error.message, error.stack);
     }
+  } else {
+    console.log('No eventId provided in request');
   }
 
   // Escape values for HTML attributes
