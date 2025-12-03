@@ -1,0 +1,1256 @@
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
+
+admin.initializeApp();
+const db = admin.firestore();
+
+// Helper function to format date
+function formatDate(timestamp) {
+  if (!timestamp) return '';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC'
+  });
+}
+
+// Helper function to format time
+function formatTime(timestamp) {
+  if (!timestamp) return '';
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  return date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'UTC'
+  });
+}
+
+// Escape HTML special characters
+function escapeHtml(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+exports.eventPage = functions.https.onRequest(async (req, res) => {
+  const eventId = req.query.eventId;
+  // Use x-forwarded-host header when behind Firebase Hosting proxy, fallback to host
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const baseUrl = `https://${host}`;
+  
+  // Default fallback values
+  let title = 'Yalla - Event Invitation';
+  let description = 'You\'ve been invited to an event on Yalla!';
+  let imageUrl = `${baseUrl}/assets/yalla_solid.png`;
+  let eventData = null;
+
+  if (eventId) {
+    try {
+      const eventDoc = await db.collection('events').doc(eventId).get();
+      
+      if (eventDoc.exists) {
+        eventData = eventDoc.data();
+        
+        // Set dynamic title
+        title = eventData.title || 'Event Invitation';
+        
+        // Build description with date/time/location
+        const dateStr = eventData.startDateTime ? formatDate(eventData.startDateTime) : '';
+        const timeStr = eventData.startDateTime ? formatTime(eventData.startDateTime) : '';
+        const location = eventData.location ? eventData.location.split('||')[0] : '';
+        
+        const parts = [];
+        if (dateStr) parts.push(`📅 ${dateStr}`);
+        if (timeStr) parts.push(`🕐 ${timeStr}`);
+        if (location) parts.push(`📍 ${location}`);
+        
+        if (parts.length > 0) {
+          description = parts.join(' • ');
+        } else if (eventData.description) {
+          description = eventData.description.substring(0, 150);
+        }
+        
+        // Use event image if available
+        console.log('Event data for', eventId, ':', JSON.stringify({
+          title: eventData.title,
+          eventPic: eventData.eventPic,
+          hasEventPic: !!eventData.eventPic,
+          eventPicTrimmed: eventData.eventPic ? eventData.eventPic.trim() : 'N/A'
+        }));
+        
+        if (eventData.eventPic && eventData.eventPic.trim() !== '') {
+          imageUrl = eventData.eventPic;
+          console.log('Using event image:', imageUrl);
+        } else {
+          console.log('No event image found, using fallback');
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching event:', error);
+    }
+  }
+
+  // Escape values for HTML attributes
+  const safeTitle = escapeHtml(title);
+  const safeDescription = escapeHtml(description);
+  const pageUrl = eventId ? `${baseUrl}/?eventId=${eventId}` : baseUrl;
+
+  // Return HTML with Open Graph meta tags
+  // The page will still load normally and use JavaScript to render content
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- Open Graph Meta Tags for Rich Link Previews -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="${safeTitle}" />
+  <meta property="og:description" content="${safeDescription}" />
+  <meta property="og:image" content="${imageUrl}" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:url" content="${pageUrl}" />
+  <meta property="og:site_name" content="Yalla" />
+  
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${safeTitle}" />
+  <meta name="twitter:description" content="${safeDescription}" />
+  <meta name="twitter:image" content="${imageUrl}" />
+  
+  <!-- Standard Meta Tags -->
+  <meta name="description" content="${safeDescription}" />
+  
+  <link rel="icon" href="assets/yalla_solid.png" type="image/png">
+  <title>${safeTitle}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+      color: #333;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #f8f9fa;
+      min-height: 100vh;
+      position: relative;
+      padding-top: 8px;
+      padding-bottom: 24px;
+    }
+
+    .hero-section {
+      position: relative;
+      background: linear-gradient(135deg, #5AAD8F 0%, #468C73 100%);
+      border-radius: 20px;
+      overflow: hidden;
+      margin: 20px 20px 0 20px;
+      min-height: 200px;
+      padding: 24px;
+      display: flex;
+      align-items: flex-end;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(transparent 40%, rgba(0,0,0,0.6));
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      color: white;
+      width: 100%;
+    }
+
+    .event-title {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .event-meta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 16px;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .content-section {
+      padding: 20px;
+      padding-bottom: 20px;
+    }
+
+    .info-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .card-icon {
+      color: #5AAD8F;
+      font-size: 18px;
+    }
+
+    .card-title {
+      font-size: 12px;
+      font-weight: bold;
+      color: #6b7280;
+      letter-spacing: 0.5px;
+    }
+
+    .card-content {
+      color: #374151;
+      line-height: 1.6;
+    }
+
+    .location-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .location-address {
+      color: #6b7280;
+      font-size: 16px;
+    }
+
+    .description-text {
+      font-size: 16px;
+      font-weight: 500;
+    }
+
+    .invitees-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .invitees-count {
+      background: rgba(90, 173, 143, 0.1);
+      color: #5AAD8F;
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .attendee-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .attendee-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .attendee-item:last-child {
+      border-bottom: none;
+    }
+
+    .attendee-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #5AAD8F;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .attendee-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .phone-avatar {
+      background: #10b981 !important;
+    }
+
+    .attendee-name {
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .rsvp-section {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin: 0 20px 16px 20px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .rsvp-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #374151;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 16px;
+      background: white;
+      color: #374151;
+      margin-bottom: 16px;
+      transition: border-color 0.2s ease;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: #5AAD8F;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: white;
+    }
+
+    .accept-btn {
+      background: #10b981;
+    }
+
+    .accept-btn:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+
+    .reject-btn {
+      background: #ef4444;
+    }
+
+    .reject-btn:hover {
+      background: #dc2626;
+      transform: translateY(-1px);
+    }
+
+    .app-download {
+      text-align: center;
+      padding: 20px;
+      margin-top: 16px;
+    }
+
+    .app-download img {
+      height: 50px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: transform 0.2s ease;
+    }
+
+    .app-download img:hover {
+      transform: translateY(-2px);
+    }
+
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #6b7280;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 16px 0;
+    }
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+
+    .host-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #5AAD8F;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .host-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    @media (max-width: 600px) {
+      .hero-section {
+        min-height: 180px;
+        padding: 20px;
+        margin: 16px 16px 0 16px;
+      }
+
+      .event-title {
+        font-size: 24px;
+      }
+
+      .meta-item {
+        font-size: 14px;
+      }
+
+      .content-section {
+        padding: 16px;
+      }
+
+      .info-card {
+        padding: 20px;
+      }
+
+      .rsvp-section {
+        margin: 16px;
+      }
+    }
+
+    /* Icons using Unicode symbols */
+    .icon-calendar::before { content: "📅"; margin-right: 4px; }
+    .icon-clock::before { content: "🕐"; margin-right: 4px; }
+    .icon-location::before { content: "📍"; margin-right: 4px; }
+    .icon-description::before { content: "📝"; margin-right: 4px; }
+    .icon-people::before { content: "👥"; margin-right: 4px; }
+    .icon-crown::before { content: "👑"; margin-right: 4px; }
+    .icon-timer::before { content: "⏱️"; margin-right: 4px; }
+  </style>
+  </head>
+  <body>
+    <div id="output">
+    <div class="container">
+      <div style="text-align: center; padding: 50px 20px;">
+        <div style="font-size: 18px; color: #6b7280;">Loading event details...</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyASDT6VIhDen_jFK5QwKZMEkVgDafmd738",
+      authDomain: "cliqueapp-3834b.firebaseapp.com",
+      projectId: "cliqueapp-3834b",
+      storageBucket: "cliqueapp-3834b.appspot.com",
+      messagingSenderId: "798737564089",
+      appId: "1:798737564089:web:d149491a02639b64e73668",
+      measurementId: "G-K8SMHMZ7FK"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const urlParams = new URLSearchParams(window.location.search);
+    const eventId = urlParams.get('eventId');
+
+    // Cache for user data to avoid multiple lookups
+    const userCache = {};
+
+    function buildUserFromData(userData = {}, identifier = '') {
+      const normalizedIdentifier = typeof identifier === 'string' ? identifier : '';
+      const fallbackName = userData.fullname 
+        || userData.username 
+        || (normalizedIdentifier.includes('@') ? normalizedIdentifier.split('@')[0] : normalizedIdentifier) 
+        || 'Guest';
+
+      return {
+        fullname: fallbackName,
+        email: userData.email || (normalizedIdentifier.includes('@') ? normalizedIdentifier : ''),
+        username: userData.username || fallbackName,
+        profilePic: userData.profilePic || null
+      };
+    }
+
+    async function getUserByIdentifier(identifier) {
+      const normalizedIdentifier = typeof identifier === 'string' ? identifier : (identifier ? String(identifier) : '');
+
+      if (!normalizedIdentifier) {
+        return buildUserFromData({}, 'Guest');
+      }
+
+      if (userCache[normalizedIdentifier]) {
+        return userCache[normalizedIdentifier];
+      }
+
+      const cacheAndReturn = (user) => {
+        userCache[normalizedIdentifier] = user;
+        return user;
+      };
+
+      try {
+        // Attempt to fetch by document ID (UID)
+        const userDocRef = doc(db, 'users', normalizedIdentifier);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          return cacheAndReturn(buildUserFromData(userDoc.data(), normalizedIdentifier));
+        }
+      } catch (error) {
+        console.error('Error fetching user by ID:', error);
+      }
+
+      // Legacy support: lookup by email if identifier looks like an email
+      if (normalizedIdentifier.includes('@')) {
+        try {
+          const usersRef = collection(db, 'users');
+          const q = query(usersRef, where('email', '==', normalizedIdentifier));
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            return cacheAndReturn(buildUserFromData(querySnapshot.docs[0].data(), normalizedIdentifier));
+          }
+        } catch (error) {
+          console.error('Error fetching user by email:', error);
+        }
+      }
+
+      // Fallback if user not found anywhere
+      return cacheAndReturn(buildUserFromData({}, normalizedIdentifier));
+    }
+
+    function maskPhoneNumber(phoneNumber) {
+      // Remove any non-digit characters for processing
+      const digitsOnly = phoneNumber.replace(/\\D/g, '');
+      
+      if (digitsOnly.length < 4) {
+        return phoneNumber; // Return as-is if too short
+      }
+      
+      // Get last 4 digits
+      const lastFour = digitsOnly.slice(-4);
+      
+      // Create masked version with asterisks
+      const maskedLength = Math.max(6, digitsOnly.length - 4); // At least 6 asterisks
+      const asterisks = '*'.repeat(maskedLength);
+      
+      return asterisks + lastFour;
+    }
+
+    function formatTimestamp(timestamp) {
+      const date = timestamp.toDate();
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'UTC'
+      });
+    }
+
+    function formatTime(timestamp) {
+      const date = timestamp.toDate();
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'UTC'
+      });
+    }
+
+    function createAttendeeItem(user, isAccepted = true) {
+      // For phone numbers, use "☎" as initials, for regular users use their name initials
+      const initials = user.isPhoneNumber 
+        ? "☎" 
+        : user.fullname.split(' ').map(n => n[0]).join('').toUpperCase();
+      
+      const hasValidProfilePic = user.profilePic && user.profilePic !== 'userDefault' && user.profilePic.trim() !== '';
+      
+      // Set background color based on user type
+      const avatarClass = user.isPhoneNumber ? 'attendee-avatar phone-avatar' : 'attendee-avatar';
+      
+      const avatarContent = hasValidProfilePic 
+        ? \`<img src="\${user.profilePic}" alt="\${user.fullname}" onerror="this.style.display='none'; this.parentElement.innerHTML='\${initials}';">\`
+        : initials;
+      
+      return \`
+        <li class="attendee-item">
+          <div class="\${avatarClass}">\${avatarContent}</div>
+          <span class="attendee-name">\${user.fullname}</span>
+        </li>
+      \`;
+    }
+
+    let currentEventData = null;
+    let matchedPhoneNumber = null;
+
+    window.checkPhoneNumber = async function() {
+      const phoneInput = document.getElementById('phoneInput');
+      const enteredPhone = phoneInput.value.trim();
+
+      if (!enteredPhone) {
+        alert("Please enter your phone number.");
+        return;
+      }
+
+      if (!currentEventData) {
+        const eventRef = doc(db, "events", eventId);
+        const eventSnap = await getDoc(eventRef);
+        if (eventSnap.exists()) {
+          currentEventData = eventSnap.data();
+        } else {
+          alert("Event not found.");
+          return;
+        }
+      }
+
+      const invitedPhones = currentEventData.invitedPhoneNumbers || [];
+      const acceptedPhones = currentEventData.acceptedPhoneNumbers || [];
+      const rsvps = currentEventData.rsvps || {};
+
+      // Enhanced phone number matching function
+      function normalizePhoneNumber(phone) {
+        if (!phone) return '';
+        
+        // Remove all non-digits
+        const digitsOnly = phone.replace(/\\D/g, '');
+        
+        // Handle US numbers specifically (assuming most numbers are US-based)
+        // If it's 11 digits and starts with 1, remove the 1 (US country code)
+        if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+          return digitsOnly.substring(1);
+        }
+        
+        // If it's 10 digits, assume it's a US number without country code
+        if (digitsOnly.length === 10) {
+          return digitsOnly;
+        }
+        
+        // For other lengths, return as-is (could be international)
+        return digitsOnly;
+      }
+      
+      function phoneNumbersMatch(phone1, phone2) {
+        const norm1 = normalizePhoneNumber(phone1);
+        const norm2 = normalizePhoneNumber(phone2);
+        
+        // Direct match after normalization
+        if (norm1 === norm2) return true;
+        
+        // If one number is longer, check if the shorter one is a suffix of the longer one
+        // This handles cases like "2176210670" vs "+12176210670"
+        if (norm1.length !== norm2.length) {
+          const longer = norm1.length > norm2.length ? norm1 : norm2;
+          const shorter = norm1.length > norm2.length ? norm2 : norm1;
+          
+          // Check if the shorter number matches the end of the longer number
+          if (longer.endsWith(shorter) && shorter.length >= 10) {
+            return true;
+          }
+        }
+        
+        return false;
+      }
+
+      // Check if phone number exists in any of the lists using enhanced matching
+      const matchingInvited = invitedPhones.find(phone => 
+        phoneNumbersMatch(phone, enteredPhone)
+      );
+      const matchingAccepted = acceptedPhones.find(phone => 
+        phoneNumbersMatch(phone, enteredPhone)
+      );
+      const matchingDeclined = (currentEventData.declinedPhoneNumbers || []).find(phone => 
+        phoneNumbersMatch(phone, enteredPhone)
+      );
+      
+      // Check if phone number exists in RSVPs (could be declined)
+      const matchingRSVP = Object.keys(rsvps).find(phone => 
+        phoneNumbersMatch(phone, enteredPhone)
+      );
+
+      const matchingPhone = matchingInvited || matchingAccepted || matchingDeclined || matchingRSVP;
+
+      if (matchingPhone) {
+        matchedPhoneNumber = matchingPhone;
+        
+        // Check if they've already responded
+        if (matchingAccepted || matchingDeclined || matchingRSVP) {
+          const hasAccepted = matchingAccepted || (rsvps[matchingPhone] === true && !matchingDeclined);
+          showExistingResponseStep(matchingPhone, hasAccepted);
+        } else {
+          // First time responding
+          showConfirmationStep(matchingPhone);
+        }
+      } else {
+        showNoMatchStep();
+      }
+    };
+
+    window.showNoMatchStep = function() {
+      const rsvpContent = document.getElementById('rsvpContent');
+      rsvpContent.innerHTML = \`
+        <div class="rsvp-title">Phone Number Not Found</div>
+        <div style="margin-bottom: 20px; color: #6b7280; line-height: 1.6;">
+          The phone number you entered was not found in the invitation list for this event.
+        </div>
+        <button class="button" style="background: #6b7280; width: 100%;" onclick="showPhoneInputStep()">
+          Back
+        </button>
+      \`;
+    };
+
+    window.showExistingResponseStep = function(phoneNumber, hasAccepted) {
+      const rsvpContent = document.getElementById('rsvpContent');
+      const statusColor = hasAccepted ? '#10b981' : '#ef4444';
+      const statusIcon = hasAccepted ? '✅' : '❌';
+      const statusText = hasAccepted ? 'Accepted' : 'Declined';
+      
+      rsvpContent.innerHTML = \`
+        <div class="rsvp-title">Your Current Response</div>
+        <div style="margin-bottom: 20px;">
+          <div style="background: #f9fafb; padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">Phone Number</div>
+            <div style="color: #6b7280; margin-bottom: 12px;">\${phoneNumber}</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-size: 18px;">\${statusIcon}</span>
+              <span style="font-weight: 600; color: \${statusColor};">You \${statusText} this invitation</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-bottom: 16px; color: #6b7280; text-align: center;">
+          Would you like to change your response?
+        </div>
+        <div class="button-group" style="margin-bottom: 16px;">
+          <button class="button" style="background: #6b7280;" onclick="showPhoneInputStep()">Back</button>
+          <button class="button" style="background: #5AAD8F;" onclick="showChangeRSVPStep()">Change Response</button>
+        </div>
+      \`;
+    };
+
+    window.showConfirmationStep = function(phoneNumber) {
+      const rsvpContent = document.getElementById('rsvpContent');
+      rsvpContent.innerHTML = \`
+        <div class="rsvp-title">Confirm Your Details</div>
+        <div style="margin-bottom: 20px;">
+          <div style="background: #f9fafb; padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">Phone Number</div>
+            <div style="color: #6b7280;">\${phoneNumber}</div>
+          </div>
+        </div>
+        <div class="button-group" style="margin-bottom: 16px;">
+          <button class="button" style="background: #6b7280;" onclick="showPhoneInputStep()">Cancel</button>
+          <button class="button" style="background: #5AAD8F;" onclick="showRSVPStep()">Confirm</button>
+        </div>
+      \`;
+    };
+
+    window.showChangeRSVPStep = function() {
+      const rsvpContent = document.getElementById('rsvpContent');
+      rsvpContent.innerHTML = \`
+        <div class="rsvp-title">Change Your Response</div>
+        <div style="margin-bottom: 20px;">
+          <div style="background: #f9fafb; padding: 16px; border-radius: 12px;">
+            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">Responding as</div>
+            <div style="color: #6b7280;">\${matchedPhoneNumber}</div>
+          </div>
+        </div>
+        <div class="button-group">
+          <button class="button accept-btn" onclick="updateRSVP(true)">Accept</button>
+          <button class="button reject-btn" onclick="updateRSVP(false)">Decline</button>
+        </div>
+      \`;
+    };
+
+    window.showRSVPStep = function() {
+      const rsvpContent = document.getElementById('rsvpContent');
+      rsvpContent.innerHTML = \`
+        <div class="rsvp-title">Respond to Invitation</div>
+        <div style="margin-bottom: 20px;">
+          <div style="background: #f9fafb; padding: 16px; border-radius: 12px;">
+            <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">Responding as</div>
+            <div style="color: #6b7280;">\${matchedPhoneNumber}</div>
+          </div>
+        </div>
+        <div class="button-group">
+          <button class="button accept-btn" onclick="updateRSVP(true)">Accept</button>
+          <button class="button reject-btn" onclick="updateRSVP(false)">Decline</button>
+        </div>
+      \`;
+    };
+
+    window.showPhoneInputStep = function() {
+      const rsvpContent = document.getElementById('rsvpContent');
+      rsvpContent.innerHTML = \`
+        <div class="rsvp-title">Enter Your Phone Number</div>
+        <input type="tel" id="phoneInput" placeholder="Enter your phone number" 
+               style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; color: #374151; margin-bottom: 16px; transition: border-color 0.2s ease;"
+               onfocus="this.style.borderColor='#5AAD8F'" onblur="this.style.borderColor='#e5e7eb'">
+        <button class="button" style="background: #5AAD8F; width: 100%;" onclick="checkPhoneNumber()">
+          Continue
+        </button>
+      \`;
+    };
+
+    window.hideRSVPSection = function() {
+      // Reset to the phone input step so others can respond
+      showPhoneInputStep();
+      // Clear the matched phone number
+      matchedPhoneNumber = null;
+    };
+
+    window.updateRSVP = async function(isAccepted) {
+      if (!matchedPhoneNumber) {
+        alert("No phone number selected.");
+        return;
+      }
+
+      const eventRef = doc(db, "events", eventId);
+      const eventSnap = await getDoc(eventRef);
+
+      if (!eventSnap.exists()) {
+        alert("Event not found.");
+        return;
+      }
+
+      const eventData = eventSnap.data();
+      const invited = eventData.invitedPhoneNumbers || [];
+      const accepted = eventData.acceptedPhoneNumbers || [];
+      const declined = eventData.declinedPhoneNumbers || [];
+
+      // Remove from invited list (if present)
+      const updatedInvited = invited.filter(num => num !== matchedPhoneNumber);
+      
+      let updateData = {
+        [\`rsvps.\${matchedPhoneNumber}\`]: isAccepted,
+        invitedPhoneNumbers: updatedInvited
+      };
+
+      if (isAccepted) {
+        // Add to accepted list if not already there
+        const updatedAccepted = accepted.includes(matchedPhoneNumber)
+          ? accepted
+          : [...accepted, matchedPhoneNumber];
+        updateData.acceptedPhoneNumbers = updatedAccepted;
+        
+        // Remove from declined list if previously declined
+        const updatedDeclined = declined.filter(num => num !== matchedPhoneNumber);
+        updateData.declinedPhoneNumbers = updatedDeclined;
+      } else {
+        // Remove from accepted list if declining (handles changing from accept to decline)
+        const updatedAccepted = accepted.filter(num => num !== matchedPhoneNumber);
+        updateData.acceptedPhoneNumbers = updatedAccepted;
+        
+        // Add to declined list if not already there
+        const updatedDeclined = declined.includes(matchedPhoneNumber)
+          ? declined
+          : [...declined, matchedPhoneNumber];
+        updateData.declinedPhoneNumbers = updatedDeclined;
+      }
+
+      try {
+        await updateDoc(eventRef, updateData);
+        
+        // Update current event data for future checks
+        currentEventData = { ...eventData, ...updateData };
+        
+        // Store the success state to show after reload
+        const successState = {
+          isAccepted: isAccepted,
+          phoneNumber: matchedPhoneNumber
+        };
+        sessionStorage.setItem('rsvpSuccess', JSON.stringify(successState));
+        
+        // Reload the page to refresh the invitees list
+        window.location.reload();
+      } catch (error) {
+        console.error("Error updating RSVP:", error);
+        alert("Error updating RSVP status.");
+      }
+    };
+
+    async function loadEvent() {
+      const output = document.getElementById('output');
+      if (!eventId) {
+        output.innerHTML = \`
+          <div class="container">
+            <div style="text-align: center; padding: 50px 20px;">
+              <div style="font-size: 18px; color: #ef4444;">No event ID provided in URL</div>
+            </div>
+          </div>
+        \`;
+        return;
+      }
+
+      const eventRef = doc(db, "events", eventId);
+      const eventSnap = await getDoc(eventRef);
+
+      if (eventSnap.exists()) {
+        const e = eventSnap.data();
+        const formattedDate = formatTimestamp(e.startDateTime);
+        const formattedTime = formatTime(e.startDateTime);
+        document.title = e.title;
+
+        // Parse location
+        const locationParts = e.location.split('||');
+        const locationTitle = locationParts[0] || e.location;
+        const locationAddress = locationParts[1] || '';
+
+        // Duration logic
+        let durationHTML = "";
+        if (!e.noEndTime && e.startDateTime && e.endDateTime) {
+          const start = new Date(e.startDateTime.toDate().setSeconds(0, 0));
+          const end = new Date(e.endDateTime.toDate().setSeconds(0, 0));
+          const diffMs = end - start;
+
+          const hours = Math.floor(diffMs / (1000 * 60 * 60));
+          const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+
+          if (hours > 0 || minutes > 0) {
+            const durationText = hours > 0 ? \`\${hours}h \${minutes}m\` : \`\${minutes}m\`;
+            durationHTML = \`
+              <span class="meta-item">
+                <span class="icon-timer"></span>
+                \${durationText}
+              </span>
+            \`;
+          }
+        }
+
+        // Fetch user data for attendees and host
+        const hostUser = await getUserByIdentifier(e.host);
+        
+        // Process accepted attendees (both user IDs and phone numbers)
+        const acceptedIdentifiers = e.attendeesAccepted || [];
+        const acceptedPhones = e.acceptedPhoneNumbers || [];
+        const acceptedUsers = await Promise.all(acceptedIdentifiers.map(identifier => getUserByIdentifier(identifier)));
+        const acceptedPhoneUsers = acceptedPhones.map(phone => ({ 
+          fullname: maskPhoneNumber(phone), 
+          email: phone, 
+          username: maskPhoneNumber(phone),
+          isPhoneNumber: true
+        }));
+        const allAccepted = [...acceptedUsers, ...acceptedPhoneUsers];
+
+        // Process invited attendees (both user IDs and phone numbers)
+        const invitedIdentifiers = e.attendeesInvited || [];
+        const invitedPhones = e.invitedPhoneNumbers || [];
+        const invitedUsers = await Promise.all(invitedIdentifiers.map(identifier => getUserByIdentifier(identifier)));
+        const invitedPhoneUsers = invitedPhones.map(phone => ({ 
+          fullname: maskPhoneNumber(phone), 
+          email: phone, 
+          username: maskPhoneNumber(phone),
+          isPhoneNumber: true
+        }));
+        const allInvited = [...invitedUsers, ...invitedPhoneUsers];
+
+        // Process declined attendees (from both declinedPhoneNumbers and attendeesDeclined)
+        const declinedIdentifiers = e.attendeesDeclined || [];
+        const declinedPhones = e.declinedPhoneNumbers || [];
+        const declinedUsers = await Promise.all(declinedIdentifiers.map(identifier => getUserByIdentifier(identifier)));
+        const declinedPhoneUsers = declinedPhones.map(phone => ({ 
+          fullname: maskPhoneNumber(phone), 
+          email: phone, 
+          username: maskPhoneNumber(phone),
+          isPhoneNumber: true
+        }));
+        
+        // Also check rsvps for backwards compatibility with legacy declined entries
+        const rsvps = e.rsvps || {};
+        const legacyDeclinedPhones = Object.keys(rsvps).filter(phone => 
+          rsvps[phone] === false && !declinedPhones.includes(phone)
+        );
+        const legacyDeclinedPhoneUsers = legacyDeclinedPhones.map(phone => ({ 
+          fullname: maskPhoneNumber(phone), 
+          email: phone, 
+          username: maskPhoneNumber(phone),
+          isPhoneNumber: true
+        }));
+        
+        const allDeclined = [...declinedUsers, ...declinedPhoneUsers, ...legacyDeclinedPhoneUsers];
+
+        const totalInvitees = allAccepted.length + allInvited.length + allDeclined.length;
+
+        // Create attendee HTML
+        const acceptedHTML = allAccepted.map(user => createAttendeeItem(user, true)).join('');
+        const invitedHTML = allInvited.map(user => createAttendeeItem(user, false)).join('');
+        const declinedHTML = allDeclined.map(user => createAttendeeItem(user, false)).join('');
+
+        // Check if there are any phone numbers (invited, accepted, declined, or in rsvps)
+        const allInvitedPhones = e.invitedPhoneNumbers || [];
+        const allAcceptedPhones = e.acceptedPhoneNumbers || [];
+        const allDeclinedPhones = e.declinedPhoneNumbers || [];
+        const allRsvpPhones = Object.keys(e.rsvps || {});
+        const hasAnyPhoneNumbers = allInvitedPhones.length > 0 || allAcceptedPhones.length > 0 || allDeclinedPhones.length > 0 || allRsvpPhones.length > 0;
+
+        // Set hero background if event has image
+        const heroStyle = e.eventPic ? 
+          \`background-image: url('\${e.eventPic}');\` : 
+          'background: linear-gradient(135deg, #5AAD8F 0%, #468C73 100%);';
+
+        output.innerHTML = \`
+                     <div class="container">
+             <div class="hero-section" style="\${heroStyle}">
+               <div class="hero-overlay"></div>
+               <div class="hero-content">
+                 <h1 class="event-title">\${e.title}</h1>
+                 <div class="event-meta">
+                   <span class="meta-item">
+                     <span class="icon-calendar"></span>
+                     \${formattedDate}
+                   </span>
+                   <span class="meta-item">
+                     <span class="icon-clock"></span>
+                     \${formattedTime}
+                   </span>
+                   \${durationHTML}
+                 </div>
+               </div>
+             </div>
+
+            <div class="content-section">
+              <div class="info-card">
+                <div class="card-header">
+                  <span class="card-icon icon-location"></span>
+                  <span class="card-title">LOCATION</span>
+                </div>
+                <div class="card-content">
+                  <div class="location-title">\${locationTitle}</div>
+                  \${locationAddress ? \`<div class="location-address">\${locationAddress}</div>\` : ''}
+                </div>
+              </div>
+
+                             <div class="info-card">
+                 <div class="card-header">
+                   <span class="card-icon icon-crown"></span>
+                   <span class="card-title">HOST</span>
+                 </div>
+                 <div class="card-content">
+                   <div class="attendee-item" style="border-bottom: none; padding: 0;">
+                     <div class="host-avatar">\${
+                       hostUser.profilePic && hostUser.profilePic !== 'userDefault' && hostUser.profilePic.trim() !== ''
+                         ? \`<img src="\${hostUser.profilePic}" alt="\${hostUser.fullname}" onerror="this.style.display='none'; this.parentElement.innerHTML='\${hostUser.fullname.split(' ').map(n => n[0]).join('').toUpperCase()}';">\`
+                         : hostUser.fullname.split(' ').map(n => n[0]).join('').toUpperCase()
+                     }</div>
+                     <span class="attendee-name">\${hostUser.fullname}</span>
+                   </div>
+                 </div>
+               </div>
+
+              \${e.description ? \`
+                <div class="info-card">
+                  <div class="card-header">
+                    <span class="card-icon icon-description"></span>
+                    <span class="card-title">DESCRIPTION</span>
+                  </div>
+                  <div class="card-content">
+                    <div class="description-text">\${e.description}</div>
+                  </div>
+                </div>
+              \` : ''}
+
+              <div class="info-card">
+                <div class="invitees-header">
+                  <div class="card-header" style="margin-bottom: 0;">
+                    <span class="card-icon icon-people"></span>
+                    <span class="card-title">INVITEES</span>
+                  </div>
+                  <span class="invitees-count">\${totalInvitees}</span>
+                </div>
+                <div class="card-content">
+                                     \${allAccepted.length > 0 ? \`
+                     <div class="section-divider">
+                       <div class="status-indicator"></div>
+                       <span>Coming (\${allAccepted.length})</span>
+                     </div>
+                     <ul class="attendee-list">
+                       \${acceptedHTML}
+                     </ul>
+                   \` : ''}
+                   
+                   \${allInvited.length > 0 ? \`
+                     <div class="section-divider">
+                       <div class="status-indicator" style="background: #f59e0b;"></div>
+                       <span>Pending (\${allInvited.length})</span>
+                     </div>
+                     <ul class="attendee-list">
+                       \${invitedHTML}
+                     </ul>
+                   \` : ''}
+                   
+                   \${allDeclined.length > 0 ? \`
+                     <div class="section-divider">
+                       <div class="status-indicator" style="background: #ef4444;"></div>
+                       <span>Not Coming (\${allDeclined.length})</span>
+                     </div>
+                     <ul class="attendee-list">
+                       \${declinedHTML}
+                     </ul>
+                   \` : ''}
+                </div>
+              </div>
+            </div>
+
+                                     \${hasAnyPhoneNumbers ? \`
+               
+               <div class="rsvp-section">
+                 <div id="rsvpContent">
+                   <div class="rsvp-title">Enter Your Phone Number</div>
+                   <input type="tel" id="phoneInput" placeholder="Enter your phone number" 
+                          style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 12px; font-size: 16px; background: white; color: #374151; margin-bottom: 16px; transition: border-color 0.2s ease;"
+                          onfocus="this.style.borderColor='#5AAD8F'" onblur="this.style.borderColor='#e5e7eb'">
+                   <button class="button" style="background: #5AAD8F; width: 100%;" onclick="checkPhoneNumber()">
+                     Continue
+                   </button>
+                 </div>
+               </div>
+             \` : ''}
+
+             <!-- Footer CTA -->
+            <div style="margin: 0 20px 0 20px;">
+              <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener" style="text-decoration: none; display: block;">
+                <div style="background: linear-gradient(135deg, #f8faf9 0%, #e8f5f0 100%); border: 1px solid rgba(90, 173, 143, 0.2); border-radius: 16px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; transition: all 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(90,173,143,0.15)';" onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+                  <img src="assets/yalla_solid.png" alt="Yalla" style="height: 44px; width: 44px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                  <div style="flex: 1;">
+                    <div style="font-size: 15px; font-weight: 600; color: #374151; margin-bottom: 2px;">Get the Yalla App</div>
+                    <div style="font-size: 13px; color: #6b7280; display: flex; align-items: center; gap: 4px;">
+                      <svg width="12" height="12" viewBox="0 0 384 512" fill="#6b7280"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-googl61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+                      Available on iOS
+                    </div>
+                  </div>
+                  <div style="background: #5AAD8F; color: white; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;">
+                    Get
+                  </div>
+                </div>
+              </a>
+            </div>
+           </div>
+         \`;
+      } else {
+        output.innerHTML = \`
+          <div class="container">
+            <div style="text-align: center; padding: 50px 20px;">
+              <div style="font-size: 18px; color: #ef4444;">Event not found</div>
+            </div>
+          </div>
+        \`;
+      }
+    }
+
+    loadEvent().then(() => {
+      // Check if we just completed an RSVP and need to show success message
+      const rsvpSuccessData = sessionStorage.getItem('rsvpSuccess');
+      if (rsvpSuccessData) {
+        const { isAccepted, phoneNumber } = JSON.parse(rsvpSuccessData);
+        sessionStorage.removeItem('rsvpSuccess');
+        
+        // Restore the matched phone number for potential changes
+        matchedPhoneNumber = phoneNumber;
+        
+        // Show the success message in the RSVP section
+        const rsvpContent = document.getElementById('rsvpContent');
+        if (rsvpContent) {
+          rsvpContent.innerHTML = \`
+            <div class="rsvp-title">Response Updated</div>
+            <div style="text-align: center; margin: 20px 0;">
+              <div style="font-size: 48px; margin-bottom: 16px;">\${isAccepted ? '✅' : '❌'}</div>
+              <div style="font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 8px;">
+                \${isAccepted ? 'Invitation Accepted' : 'Invitation Declined'}
+              </div>
+              <div style="color: #6b7280;">
+                Your response has been updated.
+              </div>
+            </div>
+            
+            <!-- App Download CTA - shown after successful RSVP -->
+            <div style="background: linear-gradient(135deg, #5AAD8F 0%, #468C73 100%); border-radius: 16px; padding: 20px; margin: 24px 0 16px 0; color: white; text-align: center;">
+              <div style="font-weight: 600; font-size: 16px; margin-bottom: 6px;">
+                \${isAccepted ? '🎉 Get reminders for this event!' : 'Stay in the loop'}
+              </div>
+              <div style="font-size: 13px; line-height: 1.4; opacity: 0.9; margin-bottom: 14px;">
+                Download Yalla to manage all your invitations in one place
+              </div>
+              <a href="https://apps.apple.com/us/app/yalla-plan-your-next-outing/id6742435514" target="_blank" rel="noopener" style="display: inline-block;">
+                <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" style="height: 36px;">
+              </a>
+            </div>
+            
+            <div style="display: flex; gap: 12px; justify-content: center;">
+              <button class="button" style="background: transparent; border: 2px solid #5AAD8F; color: #5AAD8F; padding: 10px 20px; flex: 1; max-width: 160px;" onclick="showChangeRSVPStep()">
+                Change Response
+              </button>
+              <button class="button" style="background: #5AAD8F; color: white; padding: 10px 20px; flex: 1; max-width: 160px;" onclick="hideRSVPSection()">
+                Done
+              </button>
+            </div>
+          \`;
+        }
+      }
+    });
+  </script>
+</body>
+</html>`;
+
+  res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
+  res.status(200).send(html);
+});
+
