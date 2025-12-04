@@ -98,7 +98,8 @@ exports.eventPage = functions.https.onRequest(async (req, res) => {
         console.log('Event data retrieved successfully');
         
         // Set dynamic title
-        title = eventData.title || 'Event Invitation';
+        const baseTitle = eventData.title || 'Event Invitation';
+        title = `You're invited: ${baseTitle}`;
         
         // Build description with date/time/location
         const dateStr = eventData.startDateTime ? formatDate(eventData.startDateTime) : '';
@@ -1297,4 +1298,3 @@ exports.eventPage = functions.https.onRequest(async (req, res) => {
   res.set('Cache-Control', 'public, max-age=300, s-maxage=600');
   res.status(200).send(html);
 });
-
