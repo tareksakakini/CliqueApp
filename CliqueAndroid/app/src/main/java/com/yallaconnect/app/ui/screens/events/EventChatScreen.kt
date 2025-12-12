@@ -1,6 +1,7 @@
 package com.yallaconnect.app.ui.screens.events
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,7 +22,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
@@ -47,6 +47,8 @@ import coil.compose.AsyncImage
 import com.yallaconnect.app.data.model.Event
 import com.yallaconnect.app.data.model.EventChatMessage
 import com.yallaconnect.app.data.model.User
+import com.yallaconnect.app.ui.theme.CliqueCardStroke
+import com.yallaconnect.app.ui.theme.CliqueSurfaceHighlight
 import com.yallaconnect.app.ui.theme.TealAccent
 import java.time.Instant
 import java.time.ZoneId
@@ -82,12 +84,28 @@ fun EventChatScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
-        ChatHeader(
-            eventTitle = event.title,
-            onBack = onBack
-        )
-        
-        Divider()
+        Spacer(modifier = Modifier.height(28.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .background(CliqueSurfaceHighlight, RoundedCornerShape(16.dp))
+                .border(1.dp, CliqueCardStroke, RoundedCornerShape(16.dp))
+                .padding(horizontal = 16.dp, vertical = 14.dp)
+        ) {
+            Text(
+                text = event.title,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         
         if (messages.isEmpty()) {
             Box(
@@ -142,34 +160,6 @@ fun EventChatScreen(
             onTextChange = onComposerTextChange,
             onSend = onSendMessage,
             enabled = composerText.trim().isNotEmpty()
-        )
-    }
-}
-
-@Composable
-private fun ChatHeader(eventTitle: String, onBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.ArrowBack,
-            contentDescription = "Back",
-            modifier = Modifier
-                .size(44.dp)
-                .clickable { onBack() },
-            tint = Color.Black
-        )
-        
-        Text(
-            text = eventTitle,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
-            modifier = Modifier.padding(start = 8.dp),
-            maxLines = 1
         )
     }
 }
@@ -455,4 +445,3 @@ private fun isYesterday(date: Instant): Boolean {
     val messageDate = date.atZone(zoneId).toLocalDate()
     return yesterday == messageDate
 }
-

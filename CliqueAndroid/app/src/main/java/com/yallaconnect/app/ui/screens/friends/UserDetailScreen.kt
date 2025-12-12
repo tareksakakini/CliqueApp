@@ -1,6 +1,8 @@
 package com.yallaconnect.app.ui.screens.friends
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,15 +37,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.activity.compose.BackHandler
-import com.yallaconnect.app.data.repository.CliqueRepository
-import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,7 +53,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yallaconnect.app.data.model.User
+import com.yallaconnect.app.data.repository.CliqueRepository
 import com.yallaconnect.app.data.repository.model.FriendshipAction
+import com.yallaconnect.app.ui.theme.CliqueCardStroke
+import com.yallaconnect.app.ui.theme.CliqueMutedText
+import com.yallaconnect.app.ui.theme.CliquePrimary
+import com.yallaconnect.app.ui.theme.CliqueSecondary
+import com.yallaconnect.app.ui.theme.CliqueSurface
+import com.yallaconnect.app.ui.theme.CliqueSurfaceHighlight
 
 enum class RelationshipStatus {
     FRIEND,
@@ -113,16 +119,25 @@ fun UserDetailScreen(
     }
 
     Scaffold(
-        containerColor = Color(0xFFF5F5F5)
+        containerColor = CliqueSurface
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            CliqueSurface,
+                            CliqueSurfaceHighlight,
+                            CliqueSurface
+                        )
+                    )
+                )
                 .padding(horizontal = 20.dp)
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(28.dp))
             
             // Profile Section
             Column(
@@ -134,13 +149,14 @@ fun UserDetailScreen(
                     modifier = Modifier
                         .size(120.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFE0E0E0)),
+                        .background(CliqueSurfaceHighlight)
+                        .border(1.dp, CliqueCardStroke, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = "Profile",
-                        tint = Color.White,
+                        tint = CliquePrimary,
                         modifier = Modifier.size(60.dp)
                     )
                 }
@@ -152,13 +168,14 @@ fun UserDetailScreen(
                     user.fullName,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp
+                    fontSize = 28.sp,
+                    color = CliqueSecondary
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     "@${user.username}",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = Color.Gray,
+                    color = CliqueMutedText,
                     fontSize = 18.sp
                 )
             }
@@ -261,12 +278,12 @@ private fun RelationshipStatusButton(
 ) {
     val (backgroundColor, icon, text) = when (status) {
         RelationshipStatus.FRIEND -> Triple(
-            Color(0xFF4CAF50),
+            CliquePrimary.copy(alpha = 0.9f),
             Icons.Default.Check,
             "Friends"
         )
         RelationshipStatus.REQUEST_RECEIVED -> Triple(
-            Color(0xFF6BBFA8),
+            CliquePrimary,
             Icons.Default.Person,
             "Friendship Requested"
         )
@@ -276,7 +293,7 @@ private fun RelationshipStatusButton(
             "Pending"
         )
         RelationshipStatus.NONE -> Triple(
-            Color(0xFF6BBFA8),
+            CliquePrimary,
             Icons.Default.PersonAdd,
             "Add Friend"
         )
@@ -316,17 +333,20 @@ private fun ProfileDetailsCard(
     onFriendsClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, CliqueCardStroke, RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        colors = CardDefaults.cardColors(containerColor = CliqueSurfaceHighlight),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column(modifier = Modifier.padding(28.dp)) {
             Text(
                 "Profile Details",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
+                fontSize = 20.sp,
+                color = CliqueSecondary
             )
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -346,7 +366,7 @@ private fun ProfileDetailsCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(Color(0xFFE0E0E0))
+                    .background(CliqueCardStroke)
             )
             
             Spacer(modifier = Modifier.height(20.dp))
@@ -366,7 +386,7 @@ private fun ProfileDetailsCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
-                    .background(Color(0xFFE0E0E0))
+                    .background(CliqueCardStroke)
             )
             
             Spacer(modifier = Modifier.height(20.dp))
@@ -407,13 +427,14 @@ private fun ProfileDetailRow(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFF5F5F5)),
+                .background(CliqueSurfaceHighlight)
+                .border(1.dp, CliqueCardStroke, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color(0xFF757575),
+                tint = CliqueMutedText,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -424,7 +445,7 @@ private fun ProfileDetailRow(
             Text(
                 title,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray,
+                color = CliqueMutedText,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Medium
             )
@@ -433,7 +454,8 @@ private fun ProfileDetailRow(
                 value,
                 style = MaterialTheme.typography.bodyLarge,
                 fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                color = CliqueSecondary
             )
         }
         
@@ -441,7 +463,7 @@ private fun ProfileDetailRow(
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = Color(0xFFBDBDBD),
+                tint = CliqueMutedText,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -539,4 +561,3 @@ private fun ActionSheetButton(
         )
     }
 }
-
