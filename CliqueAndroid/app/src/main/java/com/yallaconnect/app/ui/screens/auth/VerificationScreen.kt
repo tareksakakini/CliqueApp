@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -62,6 +65,7 @@ fun VerificationScreen(
 ) {
     val context = LocalContext.current
     var code by remember { mutableStateOf("") }
+    val scrollState = rememberScrollState()
 
     Box(
         modifier = Modifier
@@ -71,6 +75,8 @@ fun VerificationScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(scrollState)
+                .imePadding()
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
             // Back button
