@@ -217,3 +217,4 @@ adb logcat -s OneSignalManager:* CliqueAppViewModel:* > notification_debug.txt
 - Or use Android Studio's time filter in Logcat toolbar
 
 
+

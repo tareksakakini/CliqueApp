@@ -1,0 +1,367 @@
+package com.yallaconnect.app.ui.navigation
+
+import android.app.Activity
+import android.net.Uri
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.yallaconnect.app.data.model.Event
+import com.yallaconnect.app.data.repository.CliqueRepository
+import com.yallaconnect.app.data.repository.model.FriendshipAction
+import com.yallaconnect.app.data.repository.model.InviteAction
+import com.yallaconnect.app.ui.screens.account.AccountInfoScreen
+import com.yallaconnect.app.ui.screens.auth.LoginScreen
+import com.yallaconnect.app.ui.screens.auth.SignUpScreen
+import com.yallaconnect.app.ui.screens.auth.VerificationScreen
+import com.yallaconnect.app.ui.screens.create.CreateEventScreen
+import com.yallaconnect.app.ui.screens.events.EventChatScreen
+import com.yallaconnect.app.ui.screens.events.EventDetailScreen
+import com.yallaconnect.app.ui.screens.main.MainScreen
+import com.yallaconnect.app.ui.screens.starting.StartingScreen
+import com.yallaconnect.app.ui.state.AuthMode
+import com.yallaconnect.app.ui.state.CliqueAppViewModel
+import com.yallaconnect.app.ui.state.AccountCreationResult
+
+@Composable
+fun CliqueNavHost(
+    viewModel: CliqueAppViewModel,
+    modifier: Modifier = Modifier
+) {
+    val navController = rememberNavController()
+    val session by viewModel.sessionState.collectAsStateWithLifecycle()
+    val verificationState by viewModel.verificationState.collectAsStateWithLifecycle()
+    val pendingAccount by viewModel.pendingAccount.collectAsStateWithLifecycle()
+    val users by viewModel.users.collectAsStateWithLifecycle()
+    val verificationRoute = "${CliqueDestination.Verification.route}?$ARG_VERIFICATION_ID={$ARG_VERIFICATION_ID}&$ARG_PHONE={$ARG_PHONE}&$ARG_MODE={$ARG_MODE}"
+    val accountRoute = "${CliqueDestination.AccountInfo.route}?$ACCOUNT_PHONE_KEY={$ACCOUNT_PHONE_KEY}"
+
+    NavHost(
+        navController = navController,
+        startDestination = CliqueDestination.Starting.route,
+        modifier = modifier
+    ) {
+        composable(CliqueDestination.Starting.route) {
+            StartingScreen(
+                isLoading = session.isLoading,
+                onLogin = {
+                    viewModel.resetVerificationState()
+                    navController.navigate(CliqueDestination.Login.route)
+                },
+                onSignUp = {
+                    viewModel.resetVerificationState()
+                    navController.navigate(CliqueDestination.SignUp.route)
+                }
+            )
+            LaunchedEffect(session.isLoading, session.user) {
+                if (!session.isLoading && session.user != null) {
+                    navController.navigateAndPopUp(CliqueDestination.Main.route)
+                }
+            }
+        }
+        composable(CliqueDestination.Login.route) {
+            LoginScreen(
+                state = verificationState,
+                onSendCode = { activity, raw, country ->
+                    viewModel.sendVerificationCode(activity, raw, country, AuthMode.SIGN_IN)
+                },
+                onNavigateToVerification = { verificationId, phone, mode ->
+                    val route = "${CliqueDestination.Verification.route}?$ARG_VERIFICATION_ID=${Uri.encode(verificationId)}&$ARG_PHONE=${Uri.encode(phone)}&$ARG_MODE=${mode.name}"
+                    navController.navigate(route)
+                },
+                onGoToSignUp = {
+                    viewModel.resetVerificationState()
+                    navController.navigate(CliqueDestination.SignUp.route)
+                }
+            )
+        }
+        composable(CliqueDestination.SignUp.route) {
+            SignUpScreen(
+                state = verificationState,
+                onSendCode = { activity, raw, country ->
+                    viewModel.sendVerificationCode(activity, raw, country, AuthMode.SIGN_UP)
+                },
+                onNavigateToVerification = { verificationId, phone, mode ->
+                    val route = "${CliqueDestination.Verification.route}?$ARG_VERIFICATION_ID=${Uri.encode(verificationId)}&$ARG_PHONE=${Uri.encode(phone)}&$ARG_MODE=${mode.name}"
+                    navController.navigate(route)
+                },
+                onLogin = {
+                    viewModel.resetVerificationState()
+                    navController.navigate(CliqueDestination.Login.route)
+                }
+            )
+        }
+        composable(
+            route = verificationRoute,
+            arguments = listOf(
+                navArgument(ARG_VERIFICATION_ID) { type = NavType.StringType },
+                navArgument(ARG_PHONE) { type = NavType.StringType },
+                navArgument(ARG_MODE) { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val context = LocalContext.current
+            val verificationId = backStackEntry.arguments?.getString(ARG_VERIFICATION_ID).orEmpty()
+            val phone = backStackEntry.arguments?.getString(ARG_PHONE).orEmpty()
+            val mode = backStackEntry.arguments?.getString(ARG_MODE)?.let { AuthMode.valueOf(it) } ?: AuthMode.SIGN_IN
+            VerificationScreen(
+                state = verificationState.copy(phoneNumber = phone, mode = mode),
+                onVerify = { code, authMode ->
+                    viewModel.verifyCode(verificationId, code, authMode)
+                },
+                onBack = {
+                    navController.popBackStack()
+                },
+                onResendCode = { activity ->
+                    viewModel.resendVerificationCode(activity)
+                }
+            )
+            if (pendingAccount != null && mode == AuthMode.SIGN_UP) {
+                val accountRouteWithPhone = "${CliqueDestination.AccountInfo.route}?$ACCOUNT_PHONE_KEY=${Uri.encode(phone)}"
+                LaunchedEffect(pendingAccount) {
+                    navController.navigate(accountRouteWithPhone)
+                }
+            } else if (session.user != null && mode == AuthMode.SIGN_IN) {
+                LaunchedEffect(session.user) {
+                    navController.navigateAndPopUp(CliqueDestination.Main.route)
+                }
+            }
+        }
+        composable(
+            route = accountRoute,
+            arguments = listOf(navArgument(ACCOUNT_PHONE_KEY) { type = NavType.StringType })
+        ) { backStackEntry ->
+            val phone = backStackEntry.arguments?.getString(ACCOUNT_PHONE_KEY).orEmpty()
+            val localError = remember { mutableStateOf<String?>(null) }
+            val submitting = remember { mutableStateOf(false) }
+            AccountInfoScreen(
+                phoneNumber = phone,
+                errorMessage = localError.value,
+                isSubmitting = submitting.value,
+                onSubmit = { fullName, username, gender ->
+                    submitting.value = true
+                    viewModel.completeAccountCreation(fullName, username, gender) { result ->
+                        submitting.value = false
+                        when (result) {
+                            is AccountCreationResult.Success -> {
+                                navController.navigateAndPopUp(CliqueDestination.Main.route)
+                            }
+                            is AccountCreationResult.Error -> localError.value = result.message
+                        }
+                    }
+                },
+                onViewPolicy = { },
+                onCheckUsernameAvailability = { username, callback ->
+                    viewModel.checkUsernameAvailability(username, excludeUid = null, callback)
+                }
+            )
+        }
+        composable(CliqueDestination.Main.route) {
+            if (session.user == null) {
+                LaunchedEffect(Unit) {
+                    navController.navigateAndPopUp(CliqueDestination.Starting.route)
+                }
+            } else {
+                MainScreen(
+                    session = session,
+                    users = users,
+                    repository = viewModel.getRepository(),
+                    onRespondToInvite = { eventId, action -> viewModel.respondToInvite(eventId, action) },
+                    onSaveEvent = { event, imageBytes -> viewModel.saveEvent(event, isNew = true, imageBytes = imageBytes) },
+                    onSendFriendRequest = viewModel::sendFriendRequest,
+                    onRemoveRequest = viewModel::removeFriendRequest,
+                    onFriendshipUpdate = viewModel::updateFriendship,
+                    onUpdateFullName = { name, callback -> viewModel.updateFullName(name, callback) },
+                    onUpdateUsername = { username, callback -> viewModel.updateUsername(username, callback) },
+                    onDeleteAccount = { callback -> viewModel.deleteAccount(callback) },
+                    onUploadProfilePhoto = { bytes, callback -> viewModel.uploadProfilePhoto(bytes, callback) },
+                    onRemoveProfilePhoto = { callback -> viewModel.removeProfilePhoto(callback) },
+                    onSignOut = viewModel::signOut,
+                    onEventClick = { event ->
+                        val route = "${CliqueDestination.EventDetail.route}?$ARG_EVENT_ID=${Uri.encode(event.id)}&$ARG_INVITE_VIEW=false"
+                        navController.navigate(route)
+                    },
+                    onChatClick = { event ->
+                        val route = "${CliqueDestination.EventChat.route}?$ARG_CHAT_EVENT_ID=${Uri.encode(event.id)}"
+                        navController.navigate(route)
+                    },
+                    onRefresh = viewModel::refreshAll,
+                    onCheckUsernameAvailability = { username, excludeUid, callback ->
+                        viewModel.checkUsernameAvailability(username, excludeUid, callback)
+                    }
+                )
+            }
+        }
+        composable(
+            route = "${CliqueDestination.EventDetail.route}?$ARG_EVENT_ID={$ARG_EVENT_ID}&$ARG_INVITE_VIEW={$ARG_INVITE_VIEW}",
+            arguments = listOf(
+                navArgument(ARG_EVENT_ID) { type = NavType.StringType },
+                navArgument(ARG_INVITE_VIEW) { type = NavType.BoolType }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString(ARG_EVENT_ID).orEmpty()
+            val inviteView = backStackEntry.arguments?.getBoolean(ARG_INVITE_VIEW) ?: false
+            
+            if (session.user == null) {
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            } else {
+                EventDetailScreen(
+                    eventId = eventId,
+                    inviteView = inviteView,
+                    user = session.user,
+                    users = users,
+                    events = session.events,
+                    onBack = { navController.popBackStack() },
+                    onEdit = { event ->
+                        android.util.Log.d("Navigation", "Edit button clicked for event: ${event.id}")
+                        val route = "${CliqueDestination.EditEvent.route}?$ARG_EDIT_EVENT_ID=${Uri.encode(event.id)}"
+                        android.util.Log.d("Navigation", "Navigating to route: $route")
+                        navController.navigate(route)
+                    },
+                    onDelete = { event ->
+                        viewModel.deleteEvent(event.id)
+                        navController.popBackStack()
+                    },
+                    onRespond = { event, action ->
+                        viewModel.respondToInvite(event.id, action)
+                    },
+                    onChatClick = { event ->
+                        val route = "${CliqueDestination.EventChat.route}?$ARG_CHAT_EVENT_ID=${Uri.encode(event.id)}"
+                        navController.navigate(route)
+                    },
+                    onRefreshEvent = { id ->
+                        viewModel.refreshEvent(id)
+                    }
+                )
+            }
+        }
+        composable(
+            route = "${CliqueDestination.EventChat.route}?$ARG_CHAT_EVENT_ID={$ARG_CHAT_EVENT_ID}",
+            arguments = listOf(
+                navArgument(ARG_CHAT_EVENT_ID) { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString(ARG_CHAT_EVENT_ID).orEmpty()
+            val event = session.events.find { it.id == eventId }
+            
+            if (session.user == null || event == null) {
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            } else {
+                var composerText by remember { mutableStateOf("") }
+                var messages by remember { mutableStateOf<List<com.yallaconnect.app.data.model.EventChatMessage>>(emptyList()) }
+                
+                // Listen to chat messages
+                LaunchedEffect(eventId) {
+                    viewModel.listenToEventChatMessages(eventId) { newMessages ->
+                        messages = newMessages
+                        // Mark chat as read when new messages arrive
+                        if (newMessages.isNotEmpty()) {
+                            viewModel.markEventChatAsRead(eventId)
+                        }
+                    }
+                    // Mark chat as read when entering
+                    viewModel.markEventChatAsRead(eventId)
+                }
+                
+                // Mark as read when messages change
+                LaunchedEffect(messages.size) {
+                    if (messages.isNotEmpty()) {
+                        viewModel.markEventChatAsRead(eventId)
+                    }
+                }
+                
+                // Stop listening when leaving
+                DisposableEffect(eventId) {
+                    onDispose {
+                        viewModel.stopListeningToEventChatMessages(eventId)
+                    }
+                }
+                
+                EventChatScreen(
+                    event = event,
+                    user = session.user!!,
+                    users = users,
+                    messages = messages,
+                    composerText = composerText,
+                    onComposerTextChange = { composerText = it },
+                    onSendMessage = {
+                        val trimmed = composerText.trim()
+                        if (trimmed.isNotEmpty()) {
+                            viewModel.sendEventChatMessage(eventId, trimmed)
+                            composerText = ""
+                        }
+                    },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+        }
+        composable(
+            route = "${CliqueDestination.EditEvent.route}?$ARG_EDIT_EVENT_ID={$ARG_EDIT_EVENT_ID}",
+            arguments = listOf(
+                navArgument(ARG_EDIT_EVENT_ID) { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val eventId = backStackEntry.arguments?.getString(ARG_EDIT_EVENT_ID).orEmpty()
+            android.util.Log.d("Navigation", "EditEvent route - eventId: $eventId")
+            
+            var eventToEdit by remember { mutableStateOf<Event?>(null) }
+            var isLoadingEvent by remember { mutableStateOf(true) }
+            
+            // Try to find event in session first
+            LaunchedEffect(eventId, session.events) {
+                eventToEdit = session.events.find { it.id == eventId }
+                if (eventToEdit == null) {
+                    // If not found, try to refresh it
+                    android.util.Log.d("Navigation", "Event not in session, refreshing...")
+                    val refreshed = viewModel.refreshEvent(eventId)
+                    eventToEdit = refreshed
+                }
+                isLoadingEvent = false
+                android.util.Log.d("Navigation", "Event found: ${eventToEdit != null}")
+            }
+            
+            if (session.user == null) {
+                android.util.Log.d("Navigation", "No user, popping back")
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            } else if (!isLoadingEvent && eventToEdit == null) {
+                android.util.Log.d("Navigation", "Event not found after refresh, popping back")
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            } else if (!isLoadingEvent && eventToEdit != null) {
+                android.util.Log.d("Navigation", "Showing CreateEventScreen for editing")
+                CreateEventScreen(
+                    user = session.user,
+                    users = users,
+                    friendships = session.friendships,
+                    onSave = { event, imageBytes ->
+                        android.util.Log.d("Navigation", "Saving edited event: ${event.id}")
+                        viewModel.saveEvent(event, isNew = false, imageBytes = imageBytes)
+                        navController.popBackStack()
+                    },
+                    eventToEdit = eventToEdit,
+                    onBack = {
+                        android.util.Log.d("Navigation", "Back button pressed in edit screen")
+                        navController.popBackStack()
+                    }
+                )
+            }
+        }
+    }
+}
