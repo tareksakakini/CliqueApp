@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.yallaconnect.app.data.model.Event
 import com.yallaconnect.app.data.model.User
 import com.yallaconnect.app.data.repository.CliqueRepository
@@ -29,6 +31,8 @@ import com.yallaconnect.app.ui.screens.events.EventsScreen
 import com.yallaconnect.app.ui.screens.friends.FriendsScreen
 import com.yallaconnect.app.ui.screens.settings.SettingsScreen
 import com.yallaconnect.app.ui.state.SessionState
+import com.yallaconnect.app.ui.theme.CliqueMutedText
+import com.yallaconnect.app.ui.theme.CliquePrimary
 
 private enum class MainTab(val label: String) {
     EVENTS("Events"),
@@ -62,7 +66,10 @@ fun MainScreen(
     var selectedTab by remember { mutableStateOf(MainTab.EVENTS) }
     Scaffold(
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+                tonalElevation = 6.dp
+            ) {
                 MainTab.values().forEach { tab ->
                     val icon = when (tab) {
                         MainTab.EVENTS -> Icons.Default.Event
@@ -75,7 +82,14 @@ fun MainScreen(
                         selected = tab == selectedTab,
                         onClick = { selectedTab = tab },
                         icon = { Icon(icon, contentDescription = tab.label) },
-                        label = { Text(tab.label) }
+                        label = { Text(tab.label) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = CliquePrimary,
+                            selectedTextColor = CliquePrimary,
+                            unselectedIconColor = CliqueMutedText,
+                            unselectedTextColor = CliqueMutedText,
+                            indicatorColor = CliquePrimary.copy(alpha = 0.14f)
+                        )
                     )
                 }
             }

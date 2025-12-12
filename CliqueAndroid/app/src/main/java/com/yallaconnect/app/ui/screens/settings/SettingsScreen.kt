@@ -1,5 +1,6 @@
 package com.yallaconnect.app.ui.screens.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -48,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -61,6 +64,12 @@ import coil.compose.AsyncImage
 import com.yallaconnect.app.data.model.User
 import com.yallaconnect.app.ui.state.DeleteAccountResult
 import com.yallaconnect.app.ui.state.UpdateResult
+import com.yallaconnect.app.ui.theme.CliqueCardStroke
+import com.yallaconnect.app.ui.theme.CliqueMutedText
+import com.yallaconnect.app.ui.theme.CliquePrimary
+import com.yallaconnect.app.ui.theme.CliqueSecondary
+import com.yallaconnect.app.ui.theme.CliqueSurface
+import com.yallaconnect.app.ui.theme.CliqueSurfaceHighlight
 
 @Composable
 fun SettingsScreen(
@@ -122,7 +131,15 @@ fun SettingsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        CliqueSurface,
+                        CliqueSurfaceHighlight,
+                        CliqueSurface
+                    )
+                )
+            )
             .verticalScroll(rememberScrollState())
             .padding(vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -132,7 +149,7 @@ fun SettingsScreen(
             text = "My Profile",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = CliqueSecondary
         )
         
         Spacer(modifier = Modifier.height(8.dp))
@@ -140,7 +157,7 @@ fun SettingsScreen(
         Text(
             text = "Manage your account and preferences",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = CliqueMutedText
         )
         
         Spacer(modifier = Modifier.height(32.dp))
@@ -154,7 +171,8 @@ fun SettingsScreen(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFE0E0E0)),
+                    .background(CliqueSurfaceHighlight)
+                    .border(1.dp, CliqueCardStroke, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 if (user.profilePic.isNotEmpty() && user.profilePic != "userDefault") {
@@ -171,7 +189,7 @@ fun SettingsScreen(
                         imageVector = Icons.Outlined.AccountCircle,
                         contentDescription = "Profile Picture",
                         modifier = Modifier.size(80.dp),
-                        tint = Color.Gray
+                        tint = CliqueMutedText
                     )
                 }
             }
@@ -181,8 +199,8 @@ fun SettingsScreen(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(Color.White)
-                    .border(2.dp, Color.White, CircleShape)
+                    .background(CliqueSurfaceHighlight)
+                    .border(1.dp, CliqueCardStroke, CircleShape)
                     .clickable { showProfilePictureOptionsDialog = true },
                 contentAlignment = Alignment.Center
             ) {
@@ -190,7 +208,7 @@ fun SettingsScreen(
                     imageVector = Icons.Default.CameraAlt,
                     contentDescription = "Change Photo",
                     modifier = Modifier.size(20.dp),
-                    tint = Color.DarkGray
+                    tint = CliquePrimary
                 )
             }
         }
@@ -202,7 +220,7 @@ fun SettingsScreen(
             text = user.fullName,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = Color.Black
+            color = CliqueSecondary
         )
         
         Spacer(modifier = Modifier.height(24.dp))
@@ -213,8 +231,9 @@ fun SettingsScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            colors = CardDefaults.cardColors(containerColor = CliqueSurfaceHighlight),
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            border = BorderStroke(1.dp, CliqueCardStroke)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp)
@@ -271,8 +290,9 @@ fun SettingsScreen(
                 .padding(horizontal = 24.dp)
                 .clickable { onSignOut() },
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            colors = CardDefaults.cardColors(containerColor = CliqueSurfaceHighlight),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            border = BorderStroke(1.dp, CliqueCardStroke)
         ) {
             Row(
                 modifier = Modifier
@@ -288,13 +308,13 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF5F5F5)),
+                            .background(CliquePrimary.copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.ExitToApp,
                             contentDescription = "Sign Out",
-                            tint = Color.Black,
+                            tint = CliquePrimary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -305,14 +325,14 @@ fun SettingsScreen(
                         text = "Sign Out",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Black
+                        color = CliqueSecondary
                     )
                 }
                 
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
                     contentDescription = null,
-                    tint = Color.LightGray,
+                    tint = CliqueMutedText,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -327,8 +347,9 @@ fun SettingsScreen(
                 .padding(horizontal = 24.dp)
                 .clickable { showDeleteAccountDialog = true },
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEDEF)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+            border = BorderStroke(1.dp, Color(0xFFFFC8CE))
         ) {
             Row(
                 modifier = Modifier
@@ -344,13 +365,13 @@ fun SettingsScreen(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFF5F5F5)),
+                            .background(Color(0xFFFFD6DB)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Delete Account",
-                            tint = Color.Black,
+                            tint = Color(0xFFD32F2F),
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -361,14 +382,14 @@ fun SettingsScreen(
                         text = "Delete Account",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Black
+                        color = Color(0xFFD32F2F)
                     )
                 }
                 
                 Icon(
                     imageVector = Icons.Default.ExitToApp,
                     contentDescription = null,
-                    tint = Color.LightGray,
+                    tint = Color(0xFFD32F2F).copy(alpha = 0.5f),
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -499,13 +520,13 @@ private fun ProfileInfoItem(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFF5F5F5)),
+                .background(CliqueSurfaceHighlight),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = Color.DarkGray,
+                tint = CliquePrimary,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -519,7 +540,7 @@ private fun ProfileInfoItem(
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray,
+                color = CliqueMutedText,
                 fontSize = 11.sp,
                 letterSpacing = 0.5.sp
             )
@@ -530,7 +551,7 @@ private fun ProfileInfoItem(
                 text = "$valuePrefix$value",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Medium,
-                color = Color.Black
+                color = CliqueSecondary
             )
         }
         
@@ -543,7 +564,7 @@ private fun ProfileInfoItem(
                 Icon(
                     imageVector = Icons.Default.Edit,
                     contentDescription = "Edit",
-                    tint = Color.Gray,
+                    tint = CliqueMutedText,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -551,7 +572,7 @@ private fun ProfileInfoItem(
             Icon(
                 imageVector = Icons.Default.Edit,
                 contentDescription = "Edit",
-                tint = Color.Gray,
+                tint = CliqueMutedText,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -683,7 +704,7 @@ private fun EditUsernameDialog(
                                 Text(errorMessage!!, color = Color(0xFFD32F2F))
                             }
                             usernameAvailabilityStatus == UsernameAvailabilityStatus.Checking -> {
-                                Text("Checking availability...", color = Color.Gray, fontSize = 12.sp)
+                                Text("Checking availability...", color = CliqueMutedText, fontSize = 12.sp)
                             }
                             usernameAvailabilityStatus == UsernameAvailabilityStatus.Available -> {
                                 Text("Username is available", color = Color(0xFF4CAF50), fontSize = 12.sp)
@@ -692,7 +713,7 @@ private fun EditUsernameDialog(
                                 Text("Username is already taken", color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
                             }
                             username.isNotBlank() && username.length < 3 -> {
-                                Text("Username must be at least 3 characters", color = Color.Gray, fontSize = 12.sp)
+                                Text("Username must be at least 3 characters", color = CliqueMutedText, fontSize = 12.sp)
                             }
                             else -> null
                         }

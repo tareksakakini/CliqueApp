@@ -2,9 +2,12 @@ package com.yallaconnect.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val CliquePrimary = Color(0xFF4C6FFF)
+val CliquePrimary = Color(0xFF16B2A6)
 val CliqueOnPrimary = Color(0xFFFFFFFF)
-val CliqueSecondary = Color(0xFF1F2333)
-val CliqueSurface = Color(0xFFF8F9FB)
-val CliqueDarkPrimary = Color(0xFFB2C5FF)
-val TealAccent = Color(0xFF20B2AA)
+val CliqueSecondary = Color(0xFF111827)
+val CliqueSurface = Color(0xFFEFF2FA)
+val CliqueDarkPrimary = Color(0xFF88D7CE)
+val TealAccent = Color(0xFF0F8B80)
+val CliqueSurfaceHighlight = Color(0xFFF7F9FF)
+val CliqueCardStroke = Color(0xFFD1D9F6)
+val CliqueMutedText = Color(0xFF4B5565)

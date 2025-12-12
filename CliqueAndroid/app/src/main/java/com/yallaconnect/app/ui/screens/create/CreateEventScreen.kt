@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -31,7 +32,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,6 +43,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.ButtonDefaults
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
@@ -55,6 +56,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -64,18 +66,24 @@ import androidx.compose.ui.unit.sp
 import android.util.Log
 import android.widget.Toast
 import coil.compose.AsyncImage
+import com.yallaconnect.app.ui.theme.CliqueCardStroke
+import com.yallaconnect.app.ui.theme.CliqueMutedText
+import com.yallaconnect.app.ui.theme.CliqueOnPrimary
+import com.yallaconnect.app.ui.theme.CliquePrimary
+import com.yallaconnect.app.ui.theme.CliqueSecondary
+import com.yallaconnect.app.ui.theme.CliqueSurface
+import com.yallaconnect.app.ui.theme.CliqueSurfaceHighlight
+import com.yallaconnect.app.ui.theme.TealAccent
 import com.yallaconnect.app.data.model.Event
 import com.yallaconnect.app.data.model.User
-import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
-import java.time.ZonedDateTime
+import androidx.compose.material3.CheckboxDefaults
 
 private val dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy")
 private val timeFormatter = DateTimeFormatter.ofPattern("h:mm a")
-private val greenAccent = Color(0xFF6BBFA8)
 
 @Composable
 fun CreateEventScreen(
@@ -191,7 +199,15 @@ fun CreateEventScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        CliqueSurface,
+                        CliqueSurfaceHighlight,
+                        CliqueSurface
+                    )
+                )
+            )
             .verticalScroll(scrollState)
     ) {
         // Header
@@ -206,13 +222,13 @@ fun CreateEventScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 fontSize = 32.sp,
-                color = Color.Black
+                color = CliqueSecondary
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = if (isEditing) "Update your event details" else "Plan something amazing with your friends",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = CliqueMutedText,
                 fontSize = 16.sp
             )
         }
@@ -221,10 +237,11 @@ fun CreateEventScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp)
+                .border(1.dp, CliqueCardStroke, RoundedCornerShape(20.dp)),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp)
@@ -235,7 +252,7 @@ fun CreateEventScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = Color.Black
+                    color = CliqueSecondary
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Box(
@@ -243,7 +260,8 @@ fun CreateEventScreen(
                         .fillMaxWidth()
                         .height(200.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Color(0xFFF5F5F5))
+                        .background(CliqueSurfaceHighlight)
+                        .border(1.dp, CliqueCardStroke, RoundedCornerShape(12.dp))
                         .clickable { imagePickerLauncher.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
@@ -269,12 +287,12 @@ fun CreateEventScreen(
                                 imageVector = Icons.Default.Add,
                                 contentDescription = "Add Photo",
                                 modifier = Modifier.size(48.dp),
-                                tint = greenAccent
+                                tint = CliquePrimary
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Add Event Picture",
-                                color = greenAccent,
+                                color = CliquePrimary,
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 16.sp
                             )
@@ -290,7 +308,7 @@ fun CreateEventScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = Color.Black
+                    color = CliqueSecondary
                 )
                 Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
@@ -300,7 +318,7 @@ fun CreateEventScreen(
             leadingIcon = {
                 Text(
                     text = "Aa",
-                    color = Color.Gray,
+                    color = CliqueMutedText,
                     fontSize = 16.sp,
                     modifier = Modifier.padding(start = 4.dp)
                 )
@@ -309,10 +327,11 @@ fun CreateEventScreen(
             singleLine = true,
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.Transparent,
-                unfocusedBorderColor = Color.Transparent,
-                focusedContainerColor = Color(0xFFF5F5F5),
-                unfocusedContainerColor = Color(0xFFF5F5F5)
+                focusedBorderColor = CliquePrimary,
+                unfocusedBorderColor = CliqueCardStroke,
+                focusedContainerColor = CliqueSurfaceHighlight,
+                unfocusedContainerColor = CliqueSurfaceHighlight,
+                cursorColor = CliquePrimary
             )
         )
                 
@@ -324,7 +343,7 @@ fun CreateEventScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = Color.Black
+                    color = CliqueSecondary
         )
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
@@ -335,17 +354,18 @@ fun CreateEventScreen(
                         Icon(
                             imageVector = Icons.Default.LocationOn,
                             contentDescription = "Location",
-                            tint = Color.Gray
+                            tint = CliqueMutedText
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = Color(0xFFF5F5F5),
-                        unfocusedContainerColor = Color(0xFFF5F5F5)
+                        focusedBorderColor = CliquePrimary,
+                        unfocusedBorderColor = CliqueCardStroke,
+                        focusedContainerColor = CliqueSurfaceHighlight,
+                        unfocusedContainerColor = CliqueSurfaceHighlight,
+                        cursorColor = CliquePrimary
                     )
                 )
                 
@@ -362,12 +382,12 @@ fun CreateEventScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = Color.Black
+                        color = CliqueSecondary
                     )
                     Text(
                         text = "${description.length}/1000",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray,
+                        color = CliqueMutedText,
                         fontSize = 14.sp
                     )
                 }
@@ -382,10 +402,11 @@ fun CreateEventScreen(
                     maxLines = 5,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color.Transparent,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedContainerColor = Color(0xFFF5F5F5),
-                        unfocusedContainerColor = Color(0xFFF5F5F5)
+                        focusedBorderColor = CliquePrimary,
+                        unfocusedBorderColor = CliqueCardStroke,
+                        focusedContainerColor = CliqueSurfaceHighlight,
+                        unfocusedContainerColor = CliqueSurfaceHighlight,
+                        cursorColor = CliquePrimary
                     )
                 )
                 
@@ -397,7 +418,7 @@ fun CreateEventScreen(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
-                    color = Color.Black
+                    color = CliqueSecondary
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Row(
@@ -408,11 +429,12 @@ fun CreateEventScreen(
                         onClick = { pickDate(start) { start = it } },
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp),
+                            .height(48.dp)
+                            .border(1.dp, CliqueCardStroke, RoundedCornerShape(12.dp)),
                         shape = RoundedCornerShape(12.dp),
-                        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                            containerColor = Color(0xFFF5F5F5),
-                            contentColor = Color.Black
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = CliqueSurfaceHighlight,
+                            contentColor = CliqueSecondary
                         )
                     ) {
                         Text(
@@ -424,11 +446,12 @@ fun CreateEventScreen(
                         onClick = { pickTime(start) { start = it } },
                         modifier = Modifier
                             .weight(1f)
-                            .height(48.dp),
+                            .height(48.dp)
+                            .border(1.dp, CliqueCardStroke, RoundedCornerShape(12.dp)),
                         shape = RoundedCornerShape(12.dp),
-                        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                            containerColor = Color(0xFFF5F5F5),
-                            contentColor = Color.Black
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = CliqueSurfaceHighlight,
+                            contentColor = CliqueSecondary
                         )
                     ) {
                         Text(
@@ -446,12 +469,17 @@ fun CreateEventScreen(
                 ) {
                     Checkbox(
                         checked = noEndTime,
-                        onCheckedChange = { noEndTime = it }
+                        onCheckedChange = { noEndTime = it },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = CliquePrimary,
+                            uncheckedColor = CliqueCardStroke,
+                            checkmarkColor = CliqueOnPrimary
+                        )
                     )
                     Text(
                         text = "This event doesn't have an end time",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Black
+                        color = CliqueSecondary
                     )
                 }
                 
@@ -464,7 +492,7 @@ fun CreateEventScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = Color.Black
+                        color = CliqueSecondary
         )
         Spacer(modifier = Modifier.height(12.dp))
                     Row(
@@ -475,11 +503,12 @@ fun CreateEventScreen(
                             onClick = { pickDate(end) { end = it } },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp),
+                                .height(48.dp)
+                                .border(1.dp, CliqueCardStroke, RoundedCornerShape(12.dp)),
                             shape = RoundedCornerShape(12.dp),
-                            colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                                containerColor = Color(0xFFF5F5F5),
-                                contentColor = Color.Black
+                            colors = ButtonDefaults.textButtonColors(
+                                containerColor = CliqueSurfaceHighlight,
+                                contentColor = CliqueSecondary
                             )
                         ) {
                             Text(
@@ -491,11 +520,12 @@ fun CreateEventScreen(
                             onClick = { pickTime(end) { end = it } },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp),
+                                .height(48.dp)
+                                .border(1.dp, CliqueCardStroke, RoundedCornerShape(12.dp)),
                             shape = RoundedCornerShape(12.dp),
-                            colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
-                                containerColor = Color(0xFFF5F5F5),
-                                contentColor = Color.Black
+                            colors = ButtonDefaults.textButtonColors(
+                                containerColor = CliqueSurfaceHighlight,
+                                contentColor = CliqueSecondary
                             )
                         ) {
                             Text(
@@ -520,12 +550,13 @@ fun CreateEventScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         fontSize = 18.sp,
-                        color = Color.Black
+                        color = CliqueSecondary
                     )
                     Button(
                         onClick = { showAddInviteesDialog = true },
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = greenAccent
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CliquePrimary,
+                            contentColor = CliqueOnPrimary
                         ),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.height(40.dp)
@@ -553,10 +584,11 @@ fun CreateEventScreen(
                             .height(120.dp)
                             .border(
                                 width = 2.dp,
-                                color = Color(0xFFE0E0E0),
+                                color = CliqueCardStroke,
                                 shape = RoundedCornerShape(12.dp)
                             )
-                            .clip(RoundedCornerShape(12.dp)),
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(CliqueSurfaceHighlight),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
@@ -566,18 +598,18 @@ fun CreateEventScreen(
                                 imageVector = Icons.Default.PersonAdd,
                                 contentDescription = "No Invitees",
                                 modifier = Modifier.size(40.dp),
-                                tint = Color.Gray
+                                tint = CliqueMutedText
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "No invitees yet",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
+                                color = CliqueSecondary
                             )
                             Text(
                                 text = "Tap 'Add People' to invite friends",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.Gray,
+                                color = CliqueMutedText,
                                 fontSize = 12.sp
                             )
                         }
@@ -589,7 +621,7 @@ fun CreateEventScreen(
                             .fillMaxWidth()
                             .height(120.dp)
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF5F5F5))
+                            .background(CliqueSurfaceHighlight)
                             .padding(8.dp)
                     ) {
                         items(selectedUsers) { user ->
@@ -603,21 +635,21 @@ fun CreateEventScreen(
                                     modifier = Modifier
                                         .size(32.dp)
                                         .clip(RoundedCornerShape(16.dp))
-                                        .background(Color(0xFFE0E0E0)),
+                                        .background(CliqueCardStroke),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Person,
                                         contentDescription = null,
                                         modifier = Modifier.size(18.dp),
-                                        tint = Color.Gray
+                                        tint = CliqueMutedText
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = user.fullName,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.Black
+                                    color = CliqueSecondary
                                 )
                             }
                         }
@@ -654,10 +686,11 @@ fun CreateEventScreen(
                             .weight(1f)
                             .height(48.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFE0E0E0),
-                            contentColor = Color.Black
-                        )
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CliqueSurfaceHighlight,
+                            contentColor = CliqueSecondary
+                        ),
+                        border = BorderStroke(1.dp, CliqueCardStroke)
                     ) {
                         Text(
                             text = "Cancel",
@@ -708,7 +741,7 @@ fun CreateEventScreen(
                                 Toast.makeText(context, if (isEditing) "Event updated successfully!" else "Event created successfully!", Toast.LENGTH_SHORT).show()
                                 // Mark as successful after a short delay to allow save to process
                                 coroutineScope.launch {
-                                    kotlinx.coroutines.delay(500)
+                                    delay(500)
                                     saveSuccess = true
                                 }
                             }
@@ -718,8 +751,9 @@ fun CreateEventScreen(
                             .weight(1f)
                             .height(48.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = greenAccent
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CliquePrimary,
+                            contentColor = CliqueOnPrimary
                         )
                     ) {
                         if (isSaving) {
@@ -868,17 +902,18 @@ private fun AddInviteesDialog(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = Color.Gray
+                            tint = CliqueMutedText
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = greenAccent,
-                        unfocusedBorderColor = Color(0xFFE0E0E0),
+                        focusedBorderColor = CliquePrimary,
+                        unfocusedBorderColor = CliqueCardStroke,
                         focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
+                        unfocusedContainerColor = Color.White,
+                        cursorColor = CliquePrimary
                     )
                 )
                 
@@ -909,13 +944,13 @@ private fun AddInviteesDialog(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(RoundedCornerShape(20.dp))
-                                    .background(Color(0xFFE0E0E0)),
+                                    .background(CliqueSurfaceHighlight),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = null,
-                                    tint = Color.Gray
+                                    tint = CliqueMutedText
                                 )
                             }
                             Spacer(modifier = Modifier.width(12.dp))
@@ -927,7 +962,7 @@ private fun AddInviteesDialog(
                                 Text(
                                     text = "@${friend.username}",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray,
+                                    color = CliqueMutedText,
                                     fontSize = 12.sp
                                 )
                             }
@@ -935,7 +970,7 @@ private fun AddInviteesDialog(
                             Icon(
                                 imageVector = if (isSelected) Icons.Default.Check else Icons.Default.Add,
                                 contentDescription = if (isSelected) "Selected" else "Add",
-                                tint = if (isSelected) greenAccent else Color.Gray,
+                                tint = if (isSelected) CliquePrimary else CliqueMutedText,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -946,8 +981,9 @@ private fun AddInviteesDialog(
         confirmButton = {
             Button(
                 onClick = { onInviteesSelected(tempSelected.toList()) },
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = greenAccent
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = CliquePrimary,
+                    contentColor = CliqueOnPrimary
                 )
             ) {
                 Text("Done")

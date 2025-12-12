@@ -1,6 +1,7 @@
 package com.yallaconnect.app.ui.screens.events
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,13 +23,11 @@ import androidx.compose.material.icons.filled.ChatBubble
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Mail
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -56,6 +55,13 @@ import com.yallaconnect.app.core.util.PhoneNumberFormatter
 import com.yallaconnect.app.data.model.Event
 import com.yallaconnect.app.data.model.User
 import com.yallaconnect.app.data.repository.model.InviteAction
+import com.yallaconnect.app.ui.theme.CliqueCardStroke
+import com.yallaconnect.app.ui.theme.CliqueMutedText
+import com.yallaconnect.app.ui.theme.CliqueOnPrimary
+import com.yallaconnect.app.ui.theme.CliquePrimary
+import com.yallaconnect.app.ui.theme.CliqueSecondary
+import com.yallaconnect.app.ui.theme.CliqueSurface
+import com.yallaconnect.app.ui.theme.CliqueSurfaceHighlight
 import com.yallaconnect.app.ui.theme.TealAccent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -130,9 +136,9 @@ fun EventsScreen(
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFF5F5F5),
-                        Color(0xFFE8E8E8).copy(alpha = 0.3f),
-                        Color(0xFFF5F5F5).copy(alpha = 0.8f)
+                        CliqueSurface,
+                        CliqueSurfaceHighlight,
+                        CliqueSurface
                     )
                 )
             )
@@ -218,7 +224,8 @@ private fun HeaderSection(title: String, user: User?, onProfileClick: (() -> Uni
             text = title,
             style = MaterialTheme.typography.headlineLarge,
             fontWeight = FontWeight.Bold,
-            fontSize = 32.sp
+            fontSize = 32.sp,
+            color = CliqueSecondary
         )
         
         if (user != null) {
@@ -237,7 +244,8 @@ private fun ProfilePicture(user: User, size: androidx.compose.ui.unit.Dp, onClic
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .background(Color.LightGray)
+            .background(CliqueSurfaceHighlight)
+            .border(1.dp, CliqueCardStroke, CircleShape)
             .then(
                 if (onClick != null) {
                     Modifier.clickable { onClick() }
@@ -258,14 +266,14 @@ private fun ProfilePicture(user: User, size: androidx.compose.ui.unit.Dp, onClic
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Gray.copy(alpha = 0.3f)),
+                    .background(CliquePrimary.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = user.fullName.take(1).uppercase(),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = CliqueSecondary
                 )
             }
         }
@@ -282,8 +290,9 @@ private fun SegmentedControl(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(44.dp)
-            .background(Color.White, RoundedCornerShape(12.dp))
+            .height(48.dp)
+            .background(CliqueSurfaceHighlight, RoundedCornerShape(14.dp))
+            .border(1.dp, CliqueCardStroke, RoundedCornerShape(14.dp))
             .padding(4.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
@@ -292,18 +301,18 @@ private fun SegmentedControl(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(10.dp))
                     .background(
-                        if (selected == option) TealAccent else Color.Transparent
+                        if (selected == option) CliquePrimary else Color.Transparent
                     )
                     .clickable { onSelect(option) },
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = option.label,
-                    color = if (selected == option) Color.White else Color.Black,
-                    fontWeight = if (selected == option) FontWeight.SemiBold else FontWeight.Normal,
-                    fontSize = 16.sp
+                    color = if (selected == option) CliqueOnPrimary else CliqueMutedText,
+                    fontWeight = if (selected == option) FontWeight.SemiBold else FontWeight.Medium,
+                    fontSize = 15.sp
                 )
             }
         }
@@ -323,9 +332,11 @@ private fun ModernEventCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .border(1.dp, CliqueCardStroke, RoundedCornerShape(20.dp))
             .clickable(enabled = onClick != null) { onClick?.invoke() },
         shape = RoundedCornerShape(20.dp),
-        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 6.dp)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 10.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Image Section
@@ -372,8 +383,8 @@ private fun EventImageSection(
                     .background(
                         Brush.linearGradient(
                             colors = listOf(
-                                TealAccent.copy(alpha = 0.8f),
-                                TealAccent.copy(alpha = 0.5f)
+                                CliquePrimary.copy(alpha = 0.85f),
+                                TealAccent.copy(alpha = 0.7f)
                             )
                         )
                     )
@@ -388,7 +399,7 @@ private fun EventImageSection(
                     Brush.verticalGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.Black.copy(alpha = 0.6f)
+                            Color.Black.copy(alpha = 0.75f)
                         )
                     )
                 )
@@ -458,8 +469,9 @@ private fun DateBadge(dateTime: Instant, modifier: Modifier = Modifier) {
     
     Column(
         modifier = modifier
-            .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(8.dp))
-            .padding(8.dp),
+            .background(Color.White.copy(alpha = 0.95f), RoundedCornerShape(10.dp))
+            .border(1.dp, CliqueCardStroke, RoundedCornerShape(10.dp))
+            .padding(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
@@ -467,14 +479,15 @@ private fun DateBadge(dateTime: Instant, modifier: Modifier = Modifier) {
             text = month,
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Bold,
-            color = TealAccent,
+            color = CliquePrimary,
             fontSize = 12.sp
         )
         Text(
             text = day,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            fontSize = 20.sp
+            fontSize = 20.sp,
+            color = CliqueSecondary
         )
     }
 }
@@ -485,14 +498,14 @@ private fun ChatBadge(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    val opacity = if (unreadCount == 0) 0.55f else 1.0f
+    val opacity = if (unreadCount == 0) 0.65f else 1.0f
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(20.dp))
             .background(
                 Brush.horizontalGradient(
                     colors = listOf(
-                        TealAccent.copy(alpha = opacity),
+                        CliquePrimary.copy(alpha = 0.9f * opacity),
                         TealAccent.copy(alpha = 0.85f * opacity)
                     )
                 )
@@ -511,7 +524,7 @@ private fun ChatBadge(
                 tint = Color.White
             )
             Text(
-                text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                text = if (unreadCount > 99) "99+" else if (unreadCount == 0) "Chat" else unreadCount.toString(),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -532,7 +545,10 @@ private fun EventDetailsSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .padding(16.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(CliqueSurfaceHighlight)
+            .border(1.dp, CliqueCardStroke, RoundedCornerShape(16.dp))
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -547,14 +563,15 @@ private fun EventDetailsSection(
                     text = "TIME",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Gray,
+                    color = CliqueMutedText,
                     fontSize = 10.sp
                 )
                 Text(
                     text = timeFormatter.format(event.startDateTime.atZone(ZoneId.systemDefault())),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.Medium,
-                    fontSize = 16.sp
+                    fontSize = 16.sp,
+                    color = CliqueSecondary
                 )
             }
             
@@ -569,7 +586,7 @@ private fun EventDetailsSection(
                         text = "HOST",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Gray,
+                        color = CliqueMutedText,
                         fontSize = 10.sp
                     )
                     Row(
@@ -583,7 +600,8 @@ private fun EventDetailsSection(
                             fontWeight = FontWeight.Medium,
                             fontSize = 14.sp,
                             maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                            overflow = TextOverflow.Ellipsis,
+                            color = CliqueSecondary
                         )
                     }
                 }
@@ -601,9 +619,10 @@ private fun EmptyStateCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .border(1.dp, CliqueCardStroke, RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = CliqueSurfaceHighlight),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -617,14 +636,14 @@ private fun EmptyStateCard(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFF5F5F5)),
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = Color(0xFFD0D0D0)
+                    tint = CliqueMutedText.copy(alpha = 0.6f)
                 )
             }
             
@@ -633,13 +652,13 @@ private fun EmptyStateCard(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp,
-                color = Color.Black
+                color = CliqueSecondary
             )
             
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = CliqueMutedText,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
             )

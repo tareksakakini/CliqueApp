@@ -1,6 +1,8 @@
 package com.yallaconnect.app.ui.screens.friends
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,12 +26,12 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -51,6 +53,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -60,6 +63,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yallaconnect.app.data.model.User
 import com.yallaconnect.app.data.repository.model.FriendshipAction
+import com.yallaconnect.app.ui.theme.CliqueCardStroke
+import com.yallaconnect.app.ui.theme.CliqueMutedText
+import com.yallaconnect.app.ui.theme.CliquePrimary
+import com.yallaconnect.app.ui.theme.CliqueSecondary
+import com.yallaconnect.app.ui.theme.CliqueSurface
+import com.yallaconnect.app.ui.theme.CliqueSurfaceHighlight
+import com.yallaconnect.app.ui.theme.TealAccent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -147,7 +157,15 @@ fun FriendsScreen(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(pullRefreshState.nestedScrollConnection)
-            .background(Color(0xFFF5F5F5))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        CliqueSurface,
+                        CliqueSurfaceHighlight,
+                        CliqueSurface
+                    )
+                )
+            )
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Header
@@ -162,13 +180,15 @@ fun FriendsScreen(
                     "My Friends",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp
+                    fontSize = 32.sp,
+                    color = CliqueSecondary
                 )
                 Button(
                     onClick = { showAddFriendDialog = true },
                     shape = RoundedCornerShape(12.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF6BBFA8)
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = CliquePrimary,
+                        contentColor = Color.White
                     ),
                     modifier = Modifier.height(48.dp)
                 ) {
@@ -186,23 +206,25 @@ fun FriendsScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp),
+                    .padding(horizontal = 20.dp)
+                    .border(1.dp, CliqueCardStroke, RoundedCornerShape(20.dp)),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                colors = CardDefaults.cardColors(containerColor = CliqueSurfaceHighlight),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text(
                         "Your Network",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp
+                        fontSize = 24.sp,
+                        color = CliqueSecondary
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "Tap to filter your connections",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
+                        color = CliqueMutedText
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                     
@@ -248,7 +270,8 @@ fun FriendsScreen(
                     "Friends",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 24.sp
+                    fontSize = 24.sp,
+                    color = CliqueSecondary
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -335,14 +358,15 @@ private fun NetworkFilterItem(
                 .size(64.dp)
                 .clip(CircleShape)
                 .background(
-                    if (isSelected) Color(0xFF6BBFA8) else Color(0xFFE8F5F1)
-                ),
+                    if (isSelected) CliquePrimary else CliqueSurfaceHighlight
+                )
+                .border(1.dp, if (isSelected) CliquePrimary else CliqueCardStroke, CircleShape),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = label,
-                tint = if (isSelected) Color.White else Color(0xFF6BBFA8),
+                tint = if (isSelected) Color.White else CliquePrimary,
                 modifier = Modifier.size(28.dp)
             )
         }
@@ -351,12 +375,13 @@ private fun NetworkFilterItem(
             count.toString(),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            fontSize = 28.sp
+            fontSize = 28.sp,
+            color = CliqueSecondary
         )
         Text(
             label,
             style = MaterialTheme.typography.labelMedium,
-            color = Color(0xFF6BBFA8),
+            color = if (isSelected) CliquePrimary else CliqueMutedText,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -378,7 +403,8 @@ private fun FriendCard(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = BorderStroke(1.dp, CliqueCardStroke)
     ) {
         Row(
             modifier = Modifier
@@ -391,13 +417,13 @@ private fun FriendCard(
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFE0E0E0)),
+                    .background(CliquePrimary.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = "Profile",
-                    tint = Color.White,
+                    tint = CliquePrimary,
                     modifier = Modifier.size(32.dp)
                 )
             }
@@ -409,12 +435,13 @@ private fun FriendCard(
                     user.fullName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = CliqueSecondary
                 )
                 Text(
                     "@${user.username}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
+                    color = CliqueMutedText,
                     fontSize = 14.sp
                 )
             }
@@ -480,14 +507,14 @@ private fun AddFriendDialog(
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = Color.Gray
+                            tint = CliqueMutedText
                         )
                     },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF6BBFA8),
-                        unfocusedBorderColor = Color(0xFFE0E0E0)
+                        focusedBorderColor = CliquePrimary,
+                        unfocusedBorderColor = CliqueCardStroke
                     )
                 )
                 
@@ -505,7 +532,7 @@ private fun AddFriendDialog(
                                         onUserSelected(candidate)
                                     },
                                 colors = CardDefaults.cardColors(
-                                    containerColor = Color(0xFFF0F9F7)
+                                    containerColor = CliqueSurfaceHighlight
                                 ),
                                 shape = RoundedCornerShape(12.dp)
                             ) {
@@ -517,17 +544,17 @@ private fun AddFriendDialog(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .background(Color(0xFFE0E0E0)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Person,
-                                            contentDescription = "Profile",
-                                            tint = Color.White
-                                        )
-                                    }
+                                        .size(40.dp)
+                                        .clip(CircleShape)
+                                        .background(CliquePrimary.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "Profile",
+                                        tint = CliquePrimary
+                                    )
+                                }
                                     Spacer(modifier = Modifier.width(12.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
@@ -537,7 +564,7 @@ private fun AddFriendDialog(
                                         Text(
                                             "@${candidate.username}",
                                             style = MaterialTheme.typography.bodySmall,
-                                            color = Color.Gray
+                                            color = CliqueMutedText
                                         )
                                     }
                                 }
@@ -549,7 +576,7 @@ private fun AddFriendDialog(
                     Text(
                         "No users found",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray,
+                        color = CliqueMutedText,
                         modifier = Modifier.padding(vertical = 8.dp)
                     )
                 }
@@ -590,19 +617,20 @@ private fun UserFriendsListScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onBack) {
-                        Text("Back", color = Color(0xFF6BBFA8))
+                        Text("Back", color = CliquePrimary)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         "$userName's Friends",
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp
+                        fontSize = 24.sp,
+                        color = CliqueSecondary
                     )
                 }
             }
         },
-        containerColor = Color(0xFFF5F5F5)
+        containerColor = CliqueSurface
     ) { paddingValues ->
         if (friends.isEmpty()) {
             EmptyStateCard(
@@ -639,9 +667,10 @@ private fun EmptyStateCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+            .border(1.dp, CliqueCardStroke, RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = CliqueSurfaceHighlight),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
@@ -655,14 +684,14 @@ private fun EmptyStateCard(
                 modifier = Modifier
                     .size(120.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFF5F5F5)),
+                    .background(Color.White),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
                     modifier = Modifier.size(64.dp),
-                    tint = Color(0xFFD0D0D0)
+                    tint = CliqueMutedText.copy(alpha = 0.6f)
                 )
             }
             
@@ -671,13 +700,13 @@ private fun EmptyStateCard(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 fontSize = 20.sp,
-                color = Color.Black
+                color = CliqueSecondary
             )
             
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = CliqueMutedText,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
             )
