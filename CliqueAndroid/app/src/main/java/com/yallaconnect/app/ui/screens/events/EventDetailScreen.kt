@@ -29,6 +29,10 @@ import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -53,6 +57,13 @@ import com.yallaconnect.app.core.util.PhoneNumberFormatter
 import com.yallaconnect.app.data.model.Event
 import com.yallaconnect.app.data.model.User
 import com.yallaconnect.app.data.repository.model.InviteAction
+import com.yallaconnect.app.ui.theme.CliqueCardStroke
+import com.yallaconnect.app.ui.theme.CliqueMutedText
+import com.yallaconnect.app.ui.theme.CliqueOnPrimary
+import com.yallaconnect.app.ui.theme.CliquePrimary
+import com.yallaconnect.app.ui.theme.CliqueSecondary
+import com.yallaconnect.app.ui.theme.CliqueSurface
+import com.yallaconnect.app.ui.theme.CliqueSurfaceHighlight
 import com.yallaconnect.app.ui.theme.TealAccent
 import java.time.Duration
 import java.time.Instant
@@ -99,12 +110,21 @@ fun EventDetailScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        CliqueSurface,
+                        CliqueSurfaceHighlight,
+                        CliqueSurface
+                    )
+                )
+            )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
+                .padding(top = 24.dp)
         ) {
             // Hero Image Section
             HeroImageSection(
@@ -173,9 +193,11 @@ private fun HeroImageSection(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 20.dp),
+            .padding(horizontal = 20.dp, vertical = 20.dp)
+            .border(1.dp, CliqueCardStroke, RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(16.dp),
-        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(containerColor = CliqueSurfaceHighlight),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(
             modifier = Modifier
@@ -197,8 +219,8 @@ private fun HeroImageSection(
                         .background(
                             Brush.linearGradient(
                                 colors = listOf(
-                                    TealAccent.copy(alpha = 0.8f),
-                                    TealAccent.copy(alpha = 0.5f)
+                                    CliquePrimary.copy(alpha = 0.9f),
+                                    TealAccent.copy(alpha = 0.75f)
                                 )
                             )
                         )
@@ -212,10 +234,10 @@ private fun HeroImageSection(
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.3f),
-                                Color.Black.copy(alpha = 0.6f)
+                                Color.Black.copy(alpha = 0.1f),
+                                Color.Black.copy(alpha = 0.35f),
+                                Color.Black.copy(alpha = 0.6f),
+                                Color.Black.copy(alpha = 0.75f)
                             )
                         )
                     )
@@ -232,7 +254,8 @@ private fun HeroImageSection(
                         modifier = Modifier
                             .size(40.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.9f))
+                            .background(Color.White.copy(alpha = 0.95f))
+                            .border(1.dp, CliqueCardStroke, CircleShape)
                             .clickable { onEdit() },
                         contentAlignment = Alignment.Center
                     ) {
@@ -240,7 +263,7 @@ private fun HeroImageSection(
                             imageVector = Icons.Default.Edit,
                             contentDescription = "Edit",
                             modifier = Modifier.size(18.dp),
-                            tint = Color.Black
+                            tint = CliquePrimary
                         )
                     }
                 }
@@ -354,14 +377,15 @@ private fun LocationCard(event: Event) {
                 text = locationTitle,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 18.sp
+                fontSize = 18.sp,
+                color = CliqueSecondary
             )
             
             if (locationAddress.isNotEmpty()) {
                 Text(
                     text = locationAddress,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
+                    color = CliqueMutedText,
                     fontSize = 16.sp
                 )
             }
@@ -380,7 +404,8 @@ private fun DescriptionCard(event: Event) {
             text = event.description,
             style = MaterialTheme.typography.bodyMedium,
             fontSize = 16.sp,
-            lineHeight = 24.sp
+            lineHeight = 24.sp,
+            color = CliqueSecondary
         )
     }
 }
@@ -417,7 +442,7 @@ private fun InviteesCard(
                     Text(
                         text = "PENDING",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Gray,
+                        color = CliqueMutedText,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -450,7 +475,7 @@ private fun InviteesCard(
                     Text(
                         text = "ACCEPTED",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Gray,
+                        color = CliqueMutedText,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -482,7 +507,7 @@ private fun InviteesCard(
                     Text(
                         text = "DECLINED",
                         style = MaterialTheme.typography.labelMedium,
-                        color = Color.Gray,
+                        color = CliqueMutedText,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -523,12 +548,13 @@ private fun InviteeRow(user: User, status: String) {
                 text = user.fullName,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                fontSize = 18.sp
+                fontSize = 18.sp,
+                color = CliqueSecondary
             )
             Text(
                 text = "@${user.username.ifEmpty { "username" }}",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray,
+                color = CliqueMutedText,
                 fontSize = 14.sp
             )
         }
@@ -584,12 +610,13 @@ private fun HostCard(
                     text = if (isViewingUser) "You" else host.fullName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 18.sp
+                    fontSize = 18.sp,
+                    color = CliqueSecondary
                 )
                 Text(
                     text = "@${host.username.ifEmpty { "username" }}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
+                    color = CliqueMutedText,
                     fontSize = 14.sp
                 )
             }
@@ -608,7 +635,9 @@ private fun ChatEntryPoint(
             .padding(horizontal = 20.dp, vertical = 8.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(containerColor = CliqueSurfaceHighlight),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, CliqueCardStroke)
     ) {
         Row(
             modifier = Modifier
@@ -625,19 +654,20 @@ private fun ChatEntryPoint(
                     imageVector = Icons.Default.ChatBubble,
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
-                    tint = TealAccent
+                    tint = CliquePrimary
                 )
                 Column {
                     Text(
                         text = "Event Chat",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 18.sp
+                        fontSize = 18.sp,
+                        color = CliqueSecondary
                     )
                     Text(
                         text = "Last message preview...", // TODO: Get actual last message
                         style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray,
+                        color = CliqueMutedText,
                         fontSize = 14.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -648,7 +678,7 @@ private fun ChatEntryPoint(
             // Unread badge
             Badge(
                 text = "1", // TODO: Get actual unread count
-                color = TealAccent
+                color = CliquePrimary
             )
         }
     }
@@ -667,19 +697,27 @@ private fun ActionButtonsSection(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // Accept Button
-        androidx.compose.material3.Button(
+        Button(
             onClick = { onRespond(event, InviteAction.ACCEPT) },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = CliquePrimary,
+                contentColor = CliqueOnPrimary
+            )
         ) {
             Text("Accept Invite", modifier = Modifier.padding(vertical = 8.dp))
         }
         
         // Decline Button
-        androidx.compose.material3.OutlinedButton(
+        OutlinedButton(
             onClick = { onRespond(event, InviteAction.DECLINE) },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = CliqueSecondary
+            ),
+            border = androidx.compose.foundation.BorderStroke(1.dp, CliqueCardStroke)
         ) {
             Text("Decline Invite", modifier = Modifier.padding(vertical = 8.dp))
         }
@@ -696,7 +734,7 @@ private fun DeleteButtonSection(
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp)
     ) {
-        androidx.compose.material3.OutlinedButton(
+        OutlinedButton(
             onClick = onDelete,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(12.dp),
@@ -725,9 +763,11 @@ private fun InfoCard(
     content: @Composable () -> Unit
 ) {
     Card(
-        modifier = modifier,
+        modifier = modifier
+            .border(1.dp, CliqueCardStroke, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 4.dp)
+        colors = CardDefaults.cardColors(containerColor = CliqueSurfaceHighlight),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier
@@ -748,19 +788,19 @@ private fun InfoCard(
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
-                        tint = TealAccent
+                        tint = CliquePrimary
                     )
                     Text(
                         text = title,
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Gray,
+                        color = CliqueMutedText,
                         fontSize = 12.sp
                     )
                 }
                 
                 if (badge != null) {
-                    Badge(text = badge, color = TealAccent)
+                    Badge(text = badge, color = CliquePrimary)
                 }
             }
             
@@ -773,7 +813,7 @@ private fun InfoCard(
 private fun Badge(text: String, color: Color) {
     Box(
         modifier = Modifier
-            .background(color.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+            .background(color.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
@@ -792,7 +832,8 @@ private fun ProfilePicture(user: User, size: androidx.compose.ui.unit.Dp) {
         modifier = Modifier
             .size(size)
             .clip(CircleShape)
-            .background(Color.LightGray)
+            .background(CliqueSurfaceHighlight)
+            .border(1.dp, CliqueCardStroke, CircleShape)
     ) {
         if (user.profilePic.isNotEmpty() && user.profilePic != "userDefault") {
             AsyncImage(
@@ -805,17 +846,16 @@ private fun ProfilePicture(user: User, size: androidx.compose.ui.unit.Dp) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Gray.copy(alpha = 0.3f)),
+                    .background(CliquePrimary.copy(alpha = 0.18f)),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = user.fullName.take(1).uppercase(),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = CliqueSecondary
                 )
             }
         }
     }
 }
-
